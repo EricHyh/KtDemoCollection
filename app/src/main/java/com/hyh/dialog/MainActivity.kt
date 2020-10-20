@@ -13,6 +13,7 @@ class MainActivity : AppCompatActivity() {
 
        /* AlertDialog.Builder(this)
             .setPositiveButton("",)*/
+
     }
 
     fun click(view: View) {Toast.makeText(this,"click",Toast.LENGTH_LONG).show()}
