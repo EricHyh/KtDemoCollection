@@ -4,7 +4,7 @@ import android.view.View
 
 interface IContentView<T> {
 
-    fun setup(container: IContentContainer<T>, t: T?)
+    fun setup(container: IContentContainer, t: T?)
 
     fun onCreateView(): View
 

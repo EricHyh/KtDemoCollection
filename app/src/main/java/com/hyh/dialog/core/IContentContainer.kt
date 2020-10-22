@@ -1,7 +1,11 @@
 package com.hyh.dialog.core
 
-interface IContentContainer<T> {
+import android.view.View
 
-    fun dismiss()
+interface IContentContainer {
+
+    fun add(view: View)
+
+    fun remove()
 
 }
