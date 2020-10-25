@@ -1,6 +1,7 @@
 package com.hyh.dialog.core
 
 import android.app.Activity
+import android.view.Gravity
 import android.view.View
 import androidx.fragment.app.Fragment
 
@@ -43,16 +44,16 @@ class NNWindow<T> private constructor(builder: Builder<T>) {
     }
 
     interface OnShowListener {
-        fun onShow();
+        fun onShow()
     }
 
     interface OnDismissListener {
-        fun onDismiss();
+        fun onDismiss()
     }
 
-    class Builder<T>() {
+    class Builder<T> {
 
-        var container: IContentContainer? = null
+        var gravity: Int = Gravity.NO_GRAVITY
 
         var content: IContentView<T>? = null
 
@@ -62,8 +63,8 @@ class NNWindow<T> private constructor(builder: Builder<T>) {
 
         var dismissListener: OnDismissListener? = null
 
-        fun container(container: IContentContainer): Builder<T> {
-            this.container = container
+        fun gravity(gravity: Int): Builder<T> {
+            this.gravity = gravity
             return this
         }
 

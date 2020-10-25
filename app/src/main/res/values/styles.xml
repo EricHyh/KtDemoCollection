@@ -8,4 +8,12 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="nnwindow_bottom_anim" parent="android:Animation">
+        <!--//进入时的动画-->
+        <item name="android:windowEnterAnimation">@anim/nnwindow_bottom_anim_in</item>
+        <!--//退出时的动画-->
+        <item name="android:windowExitAnimation">@anim/nnwindow_bottom_anim_out</item>
+
+    </style>
+
 </resources>

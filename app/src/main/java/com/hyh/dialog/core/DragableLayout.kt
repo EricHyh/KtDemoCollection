@@ -13,7 +13,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.pow
 
-class DragableView @JvmOverloads constructor(
+class DragableLayout @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
@@ -103,7 +103,7 @@ class DragableView @JvmOverloads constructor(
 
         override fun onViewReleased(releasedChild: View, xvel: Float, yvel: Float) {
             super.onViewReleased(releasedChild, xvel, yvel)
-            Log.d("DragableView", "xvel = $xvel, yvel = $yvel")
+            Log.d("DragableLayout", "xvel = $xvel, yvel = $yvel")
 
             var finalLeft = 0
             var finalTop = 0
@@ -113,14 +113,14 @@ class DragableView @JvmOverloads constructor(
                 if ((xvel.pow(2) + yvel.pow(2)).pow(0.5f) > mVelocityThreshold) {
                     expectedFinalLeft = if (isBothHorizontalDirection(mDragDirection)) {
                         if (xvel > 0) {
-                            this@DragableView.measuredWidth
+                            this@DragableLayout.measuredWidth
                         } else {
-                            -this@DragableView.measuredWidth
+                            -this@DragableLayout.measuredWidth
                         }
                     } else {
                         if (xvel > 0) {
                             if (releasedChild.left > 0) {
-                                this@DragableView.measuredWidth
+                                this@DragableLayout.measuredWidth
                             } else {
                                 0
                             }
@@ -128,20 +128,20 @@ class DragableView @JvmOverloads constructor(
                             if (releasedChild.left > 0) {
                                 0
                             } else {
-                                -this@DragableView.measuredWidth
+                                -this@DragableLayout.measuredWidth
                             }
                         }
                     }
                     expectedFinalTop = if (isBothVerticalDirection(mDragDirection)) {
                         if (yvel > 0) {
-                            this@DragableView.measuredHeight
+                            this@DragableLayout.measuredHeight
                         } else {
-                            -this@DragableView.measuredHeight
+                            -this@DragableLayout.measuredHeight
                         }
                     } else {
                         if (yvel > 0) {
                             if (releasedChild.top > 0) {
-                                this@DragableView.measuredHeight
+                                this@DragableLayout.measuredHeight
                             } else {
                                 0
                             }
@@ -149,7 +149,7 @@ class DragableView @JvmOverloads constructor(
                             if (releasedChild.top > 0) {
                                 0
                             } else {
-                                -this@DragableView.measuredHeight
+                                -this@DragableLayout.measuredHeight
                             }
                         }
                     }
@@ -158,14 +158,14 @@ class DragableView @JvmOverloads constructor(
                     || abs(releasedChild.top) > releasedChild.measuredHeight / 2
                 ) {
                     expectedFinalLeft = if (releasedChild.left < 0) {
-                        -this@DragableView.measuredWidth
+                        -this@DragableLayout.measuredWidth
                     } else {
-                        this@DragableView.measuredWidth
+                        this@DragableLayout.measuredWidth
                     }
                     expectedFinalTop = if (releasedChild.top < 0) {
-                        -this@DragableView.measuredHeight
+                        -this@DragableLayout.measuredHeight
                     } else {
-                        this@DragableView.measuredHeight
+                        this@DragableLayout.measuredHeight
                     }
                 }
 
@@ -237,7 +237,7 @@ class DragableView @JvmOverloads constructor(
                 }
             }
             mDragHelper.smoothSlideViewTo(releasedChild, finalLeft, finalTop)
-            ViewCompat.postInvalidateOnAnimation(this@DragableView)
+            ViewCompat.postInvalidateOnAnimation(this@DragableLayout)
         }
 
         override fun clampViewPositionHorizontal(child: View, left: Int, dx: Int): Int {

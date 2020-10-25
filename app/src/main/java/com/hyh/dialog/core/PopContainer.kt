@@ -9,7 +9,7 @@ import android.widget.PopupWindow
  * @author eriche 2020/10/22
  */
 
-class PopContainer() : PopupWindow(), IContentContainer {
+class PopContainer(val parentView: View) : PopupWindow(), IContentContainer {
 
     override fun add(view: View) {
 
