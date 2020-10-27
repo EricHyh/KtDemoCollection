@@ -2,6 +2,7 @@ package com.hyh.dialog
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -12,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.hyh.adapter.ChildAdapter
 import com.hyh.adapter.MultiAdapter
+import com.hyh.adapter.TestEn
 
 class MainActivity : AppCompatActivity() {
 
@@ -26,6 +28,13 @@ class MainActivity : AppCompatActivity() {
             .content()
             .eventListener(Runnable {})
             .show()*/
+
+        val values = TestEn.values()
+        for (value in values) {
+            Log.d("TestEn","$value")
+            value.append()
+        }
+
     }
 
 
