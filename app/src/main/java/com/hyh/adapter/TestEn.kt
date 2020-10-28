@@ -23,7 +23,6 @@ abstract class MainTestEn : ITestEn {
     override fun append() {
         Log.d("MainTestEn", "$this.name : ${this.id}")
     }
-
 }
 
 
