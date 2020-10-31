@@ -14,6 +14,7 @@ enum class TestEn(override val id: String) : ITestEn {
     BBB("2") {
         override fun append() {
             Log.d("TestEn", "$this.name : ${this.id}")
+
         }
     }
 }
