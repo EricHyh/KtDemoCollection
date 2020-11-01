@@ -34,3 +34,19 @@ interface ITestEn {
     fun append()
 
 }
+
+
+object XXX {
+
+    @JvmStatic
+    fun test(call: () -> Unit) {
+        call()
+    }
+
+    @JvmStatic
+    fun test(call: (aa: Any) -> String) {
+
+    }
+}
+
+

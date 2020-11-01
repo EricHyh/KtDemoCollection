@@ -12,6 +12,7 @@ abstract class ChildAdapter<T> : RecyclerView.Adapter<ItemHolder<T>>() {
 
     private var mList: MutableList<T>? = null
 
+
     fun getList(): MutableList<T>? {
         return mList
     }
@@ -19,67 +20,30 @@ abstract class ChildAdapter<T> : RecyclerView.Adapter<ItemHolder<T>>() {
     protected fun setup(context: Context, multiAdapter: IMultiAdapter) {
         this.mContext = context
         this.mMultiAdapter = multiAdapter
-        registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-            override fun onChanged() {
-                super.onChanged()
-                mMultiAdapter.notifyItemRangeChanged(
-                    this@ChildAdapter,
-                    0,
-                    itemCount
-                )
-            }
-
-            override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-                super.onItemRangeRemoved(positionStart, itemCount)
-                mMultiAdapter.notifyItemRangeRemoved(
-                    this@ChildAdapter,
-                    positionStart,
-                    itemCount
-                )
-            }
-
-            override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
-                super.onItemRangeMoved(fromPosition, toPosition, itemCount)
-                mMultiAdapter.notifyItemMoved(
-                    this@ChildAdapter,
-                    fromPosition,
-                    toPosition
-                )
-            }
-
-            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                super.onItemRangeInserted(positionStart, itemCount)
-                mMultiAdapter.notifyItemRangeInserted(
-                    this@ChildAdapter,
-                    positionStart,
-                    itemCount
-                )
-            }
-
-            override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
-                super.onItemRangeChanged(positionStart, itemCount)
-                mMultiAdapter.notifyItemRangeChanged(
-                    this@ChildAdapter,
-                    positionStart,
-                    itemCount
-                )
-            }
-
-            override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
-                super.onItemRangeChanged(positionStart, itemCount, payload)
-                mMultiAdapter.notifyItemRangeChanged(
-                    this@ChildAdapter,
-                    positionStart,
-                    itemCount,
-                    payload
-                )
-            }
-        })
+        registerAdapterDataObserver(ChildAdapterDataObserver())
     }
 
     override fun onBindViewHolder(holder: ItemHolder<T>, position: Int) {
-        if (mList?.size ?: 0 > position) {
-            holder.onBindViewHolder(mList!!, position)
+        mList?.let { list ->
+            if (list.size > position) {
+                holder.onBindViewHolder(list[position], {
+                    list.indexOf(it)
+                })
+            }
+        }
+    }
+
+    override fun onBindViewHolder(
+        holder: ItemHolder<T>,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+        } else {
+            mList?.let {
+
+            }
         }
     }
 
@@ -95,6 +59,27 @@ abstract class ChildAdapter<T> : RecyclerView.Adapter<ItemHolder<T>>() {
         val oldSize = mList?.size ?: 0
         this.mList = if (list == null) null else ArrayList(list)
         val currentSize = list?.size ?: 0
+
+        /*DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            }
+
+            override fun getOldListSize(): Int {
+
+            }
+
+            override fun getNewListSize(): Int {
+            }
+
+            override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
+                return super.getChangePayload(oldItemPosition, newItemPosition)
+            }
+
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            }
+        })*/
+
         mMultiAdapter.notifyDataSetChanged(
             this,
             oldSize,
@@ -230,9 +215,80 @@ abstract class ChildAdapter<T> : RecyclerView.Adapter<ItemHolder<T>>() {
         )
     }
 
+    fun moveItem(fromPosition: Int, toPosition: Int): Boolean {
+        return mList?.let { list ->
+            if (list.size <= fromPosition || list.size <= toPosition) {
+                false
+            } else {
+                if (toPosition != fromPosition) {
+                    list.add(toPosition, list.removeAt(fromPosition))
+                }
+                true
+            }
+        } ?: false
+    }
+
     protected fun onDestroy() {
         val list = mList
         mList = null
         list?.clear()
+    }
+
+
+    inner class ChildAdapterDataObserver : RecyclerView.AdapterDataObserver() {
+        override fun onChanged() {
+            super.onChanged()
+            mMultiAdapter.notifyItemRangeChanged(
+                this@ChildAdapter,
+                0,
+                itemCount
+            )
+        }
+
+        override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+            super.onItemRangeRemoved(positionStart, itemCount)
+            mMultiAdapter.notifyItemRangeRemoved(
+                this@ChildAdapter,
+                positionStart,
+                itemCount
+            )
+        }
+
+        override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
+            super.onItemRangeMoved(fromPosition, toPosition, itemCount)
+            mMultiAdapter.notifyItemMoved(
+                this@ChildAdapter,
+                fromPosition,
+                toPosition
+            )
+        }
+
+        override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+            super.onItemRangeInserted(positionStart, itemCount)
+            mMultiAdapter.notifyItemRangeInserted(
+                this@ChildAdapter,
+                positionStart,
+                itemCount
+            )
+        }
+
+        override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+            super.onItemRangeChanged(positionStart, itemCount)
+            mMultiAdapter.notifyItemRangeChanged(
+                this@ChildAdapter,
+                positionStart,
+                itemCount
+            )
+        }
+
+        override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
+            super.onItemRangeChanged(positionStart, itemCount, payload)
+            mMultiAdapter.notifyItemRangeChanged(
+                this@ChildAdapter,
+                positionStart,
+                itemCount,
+                payload
+            )
+        }
     }
 }

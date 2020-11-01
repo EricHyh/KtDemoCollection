@@ -3,15 +3,16 @@ package com.hyh.adapter
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
-class MultiAdapter : RecyclerView.Adapter<ItemHolder<Any?>>() {
+class MultiAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val mChildAdapters: MutableList<ChildAdapter<Any?>> = mutableListOf()
+    private val mChildAdapters: MutableList<RecyclerView.Adapter<out RecyclerView.ViewHolder>> =
+        mutableListOf()
 
-    fun addChildAdapter(adapter: ChildAdapter<*>) {
-        mChildAdapters.add(adapter as ChildAdapter<Any?>)
+    fun addChildAdapter(adapter: RecyclerView.Adapter<out RecyclerView.ViewHolder>) {
+        mChildAdapters.add(adapter)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemHolder<Any?> {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
@@ -23,16 +24,20 @@ class MultiAdapter : RecyclerView.Adapter<ItemHolder<Any?>>() {
         return itemCount
     }
 
-    override fun onBindViewHolder(holder: ItemHolder<Any?>, position: Int) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (position == RecyclerView.NO_POSITION) {
             return
         }
         var curPosition = position
 
         for (adapter in mChildAdapters) {
+
             val itemCount = adapter.itemCount
             if (curPosition <= itemCount - 1) {
-                adapter.onBindViewHolder(holder, position)
+                (adapter as RecyclerView.Adapter<RecyclerView.ViewHolder>).onBindViewHolder(
+                    holder,
+                    position
+                )
             } else {
                 curPosition -= itemCount
             }
@@ -43,7 +48,7 @@ class MultiAdapter : RecyclerView.Adapter<ItemHolder<Any?>>() {
         return super.getItemViewType(position)
     }
 
-    private fun findChildAdapter(position: Int): ChildAdapter<*>? {
+    private fun findChildAdapter(position: Int): RecyclerView.Adapter<out RecyclerView.ViewHolder>? {
         var curPosition = position
         mChildAdapters.forEach {
             val itemCount = it.itemCount
@@ -73,9 +78,14 @@ interface IMultiAdapter {
     fun notifyItemChanged(childAdapter: ChildAdapter<*>, index: Int)
 
     fun notifyItemRangeChanged(childAdapter: ChildAdapter<*>, startIndex: Int, itemCount: Int)
-    
-    fun notifyItemRangeChanged(childAdapter: ChildAdapter<*>, startIndex: Int, itemCount: Int, payload: Any?)
-    
+
+    fun notifyItemRangeChanged(
+        childAdapter: ChildAdapter<*>,
+        startIndex: Int,
+        itemCount: Int,
+        payload: Any?
+    )
+
     fun notifyItemMoved(childAdapter: ChildAdapter<*>, fromPosition: Int, toPosition: Int)
 
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingLeft="16dp"
+    android:paddingRight="16dp">
+
+
+    <ImageView
+        android:id="@+id/iv_account_icon"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_gravity="center_vertical"
+        android:background="#FF0000" />
+
+    <TextView
+        android:id="@+id/tv_account_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_weight="1"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#ff3d3c3c"
+        tools:text="港股融资融券(1001)" />
+
+    <ImageView
+        android:id="@+id/iv_account_selected"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center_vertical"
+        android:background="#000"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+</LinearLayout>

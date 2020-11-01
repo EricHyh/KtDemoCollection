@@ -31,9 +31,17 @@ class MainActivity : AppCompatActivity() {
 
         val values = TestEn.values()
         for (value in values) {
-            Log.d("TestEn","$value")
+            Log.d("TestEn", "$value")
             value.append()
         }
+
+
+        val b1: A1 = B(A1()).t
+        val b2: A2 = B(A2()).t
+
+        val t1: A1 = C(A1()).t
+        val t2: A2 = C(A2()).t
+
 
     }
 
@@ -141,6 +149,37 @@ class MainActivity : AppCompatActivity() {
 
 
     class ItemHolder(view: View) : RecyclerView.ViewHolder(view)
+
+}
+
+
+open class A1 {
+
+    var a1: Int = 1
+
+    override fun toString(): String {
+        return "A(a1=$a1)"
+    }
+}
+
+open class A2 : A1() {
+
+    var a2: Int = 2
+
+    override fun toString(): String {
+        return "A2(a2=$a2)"
+    }
+
+}
+
+class B<T : A1>(val t: T) {
+
+}
+
+class C<out T : A1>(val t: T) {
+
+
+
 
 
 }

@@ -5,24 +5,22 @@ import androidx.recyclerview.widget.RecyclerView
 
 abstract class ItemHolder<T>(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-    protected var list: List<T>? = null
+
+    protected var data: T? = null
         private set
 
-    var data: T? = null
-        private set
+    private var positionFun: ((data: T) -> Int)? = null
 
-    protected val itemPosition: Int
-        get() = if (list == null) -1 else list!!.indexOf(data)
+    protected var itemPosition: Int = -1
+        get() = data?.let { positionFun?.invoke(it) } ?: field
 
-    protected fun isFullSpan(position: Int): Boolean {
+    fun isFullSpan(position: Int): Boolean {
         return false
     }
 
-    internal fun onBindViewHolder(list: List<T>, position: Int) {
-        this.list = list
-        if (this.list != null && position < this.list!!.size) {
-            this.data = list[position]
-        }
+    internal fun onBindViewHolder(data: T, positionFun: (data: T) -> Int) {
+        this.data = data
+        this.positionFun = positionFun
         bindDataAndEvent()
     }
 
