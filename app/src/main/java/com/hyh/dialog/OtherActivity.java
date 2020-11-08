@@ -9,6 +9,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.hyh.dialog.account.AccountData;
 import com.hyh.dialog.account.AccountGroup;
@@ -25,6 +26,8 @@ import kotlin.jvm.functions.Function1;
 
 public class OtherActivity extends AppCompatActivity {
 
+    private BottomSheetDialog dialog;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,10 +39,14 @@ public class OtherActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (dialog != null) {
+                    dialog.show();
+                    return;
+                }
 
-                final BottomSheetDialog dialog = new BottomSheetDialog(v.getContext());
+                dialog = new BottomSheetDialog(v.getContext());
 
-                AccountListView accountListView = new AccountListView(v.getContext(), null, 0);
+                final AccountListView accountListView = new AccountListView(v.getContext(), null, 0);
 
                 List<AccountGroup> groups = new ArrayList<>();
                 groups.add(new AccountGroup(1,
@@ -61,7 +68,9 @@ public class OtherActivity extends AppCompatActivity {
                                 new AccountData(3, AccountType.CN, 100),
                                 new AccountData(3, AccountType.CN, 101),
                                 new AccountData(3, AccountType.CN, 102),
-                                new AccountData(3, AccountType.CN, 103)
+                                new AccountData(3, AccountType.CN, 103),
+                                new AccountData(3, AccountType.CN, 104),
+                                new AccountData(3, AccountType.CN, 105)
                         )));
                 accountListView.setAccountGroups(groups, 12L);
 
@@ -82,13 +91,27 @@ public class OtherActivity extends AppCompatActivity {
                     }
                 });
 
-                dialog.setContentView(accountListView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1000));
+                dialog.setContentView(accountListView,
+                        new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+                View parent = (View) accountListView.getParent();
+
+                final BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(parent);
+
+
+                parent.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                    @Override
+                    public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                        if (v.getHeight() > 0) {
+                            behavior.setPeekHeight(v.getHeight());
+                        }
+                    }
+                });
 
                 dialog.show();
 
             }
         });
-
 
     }
 }

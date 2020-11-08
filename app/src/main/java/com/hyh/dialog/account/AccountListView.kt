@@ -2,12 +2,13 @@ package com.hyh.dialog.account
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.RelativeLayout
 import android.widget.TextView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.dialog.R
@@ -15,7 +16,12 @@ import kotlin.math.roundToInt
 
 
 class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) :
-    ConstraintLayout(context, attrs, defStyleAttr) {
+    RelativeLayout(context, attrs, defStyleAttr) {
+
+    companion object {
+        private const val TAG = "AccountListView"
+    }
+
 
     private var mCloseClickListener: (() -> Unit)? = null
 
@@ -27,9 +33,9 @@ class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
     init {
         LayoutInflater.from(context).inflate(R.layout.layout_account_list_view, this)
-        findViewById<View>(R.id.iv_close).setOnClickListener {
+        /*findViewById<View>(R.id.iv_close).setOnClickListener {
             mCloseClickListener?.invoke()
-        }
+        }*/
         mRecyclerView = findViewById(R.id.recycler_view)
         mRecyclerView.overScrollMode = View.OVER_SCROLL_NEVER
         mRecyclerView.layoutManager =
@@ -38,6 +44,29 @@ class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
         //mRecyclerView.addItemDecoration(DividerItemDecoration(context,DividerItemDecoration.VERTICAL))
     }
+
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        Log.d(TAG, "onSizeChanged -> $measuredHeight")
+    }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        val heightPixels = resources.displayMetrics.heightPixels
+        if (measuredHeight == (heightPixels * 0.56).roundToInt()
+            || measuredHeight == (heightPixels * 0.76).roundToInt()
+        ) {
+            return
+        }
+        val newHeightMeasureSpec: Int = if (measuredHeight < (heightPixels * 0.66).roundToInt()) {
+            MeasureSpec.makeMeasureSpec((heightPixels * 0.56).roundToInt(), MeasureSpec.EXACTLY)
+        } else {
+            MeasureSpec.makeMeasureSpec((heightPixels * 0.76).roundToInt(), MeasureSpec.EXACTLY)
+        }
+        super.measure(widthMeasureSpec, newHeightMeasureSpec)
+    }
+
 
     fun setCloseClickListener(listener: () -> Unit) {
         this.mCloseClickListener = listener
@@ -91,15 +120,23 @@ class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAtt
                     )
                     mCloseClickListener?.invoke()
                 }
+                3 -> {
+                    val height = parent.context.resources.displayMetrics.density * 40
+                    val view = View(parent.context)
+                    view.layoutParams =
+                        ViewGroup.LayoutParams(LayoutParams.MATCH_PARENT, height.roundToInt())
+                    object : RecyclerView.ViewHolder(view) {}
+                }
                 else -> object : RecyclerView.ViewHolder(View(parent.context)) {}
             }
         }
 
         override fun getItemCount(): Int {
-            return mDataList.size
+            return mDataList.size + 1
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+            if (position !in 0 until mDataList.size) return
             mDataList[position].let {
                 if (it.type == 1) {
                     val paddingTop =
@@ -122,6 +159,7 @@ class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         }
 
         override fun getItemViewType(position: Int): Int {
+            if (position == mDataList.size) return 3
             return mDataList[position].type
         }
     }
