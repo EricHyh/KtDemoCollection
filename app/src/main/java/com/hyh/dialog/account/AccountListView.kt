@@ -33,6 +33,7 @@ class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAtt
 
     init {
         LayoutInflater.from(context).inflate(R.layout.layout_account_list_view, this)
+        setBackgroundColor(0x55FF0000)
         /*findViewById<View>(R.id.iv_close).setOnClickListener {
             mCloseClickListener?.invoke()
         }*/
@@ -64,7 +65,7 @@ class AccountListView(context: Context, attrs: AttributeSet? = null, defStyleAtt
         } else {
             MeasureSpec.makeMeasureSpec((heightPixels * 0.76).roundToInt(), MeasureSpec.EXACTLY)
         }
-        super.measure(widthMeasureSpec, newHeightMeasureSpec)
+        super.onMeasure(widthMeasureSpec, newHeightMeasureSpec)
     }
 
 

@@ -1,5 +1,6 @@
 package com.hyh.dialog;
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +25,7 @@ import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 
-public class OtherActivity extends AppCompatActivity {
+public class OtherActivity extends Activity {
 
     private BottomSheetDialog dialog;
 
@@ -63,7 +64,7 @@ public class OtherActivity extends AppCompatActivity {
                                 new AccountData(2, AccountType.US, 12),
                                 new AccountData(2, AccountType.US, 13)
                         )));
-                groups.add(new AccountGroup(3,
+                /*groups.add(new AccountGroup(3,
                         Arrays.asList(
                                 new AccountData(3, AccountType.CN, 100),
                                 new AccountData(3, AccountType.CN, 101),
@@ -71,7 +72,7 @@ public class OtherActivity extends AppCompatActivity {
                                 new AccountData(3, AccountType.CN, 103),
                                 new AccountData(3, AccountType.CN, 104),
                                 new AccountData(3, AccountType.CN, 105)
-                        )));
+                        )));*/
                 accountListView.setAccountGroups(groups, 12L);
 
 
@@ -96,7 +97,7 @@ public class OtherActivity extends AppCompatActivity {
                 dialog.setContentView(accountListView,
                         new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-                View parent = (View) accountListView.getParent();
+                final View parent = (View) accountListView.getParent();
 
                 final BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(parent);
 
@@ -109,6 +110,13 @@ public class OtherActivity extends AppCompatActivity {
                         }
                     }
                 });
+
+                parent.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        parent.requestLayout();
+                    }
+                }, 5000);
 
                 dialog.show();
 

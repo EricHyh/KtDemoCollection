@@ -3,9 +3,11 @@ package com.hyh.dialog
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.internal.resumeCancellableWith
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
+import kotlin.coroutines.intrinsics.intercepted
 
 class TestActivity : AppCompatActivity() {
 
@@ -13,6 +15,11 @@ class TestActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        invoke<Int, String> {
+            Log.d("TestActivity", "onCreate: xxxxx")
+            "2"
+        }
     }
 
 
@@ -32,4 +39,32 @@ class TestActivity : AppCompatActivity() {
         "1"
     }
 
+
+    public operator fun <R, T> invoke(block: R.() -> T): Unit {
+        Log.d("TestActivity", "invoke1: $this")
+        block.xxx {
+
+            Log.d("TestActivity", "invoke2: $this")
+            it.printStackTrace()
+        }
+    }
+
+}
+
+internal fun <R, T> ((R) -> T).xxx(
+    onCancellation: ((cause: Throwable) -> Unit)? = null
+) {
+    runSafely {
+
+    }
+    Log.d("TestActivity", "xxx: $this")
+    onCancellation?.invoke(Exception("xxxx"))
+}
+
+
+private inline fun runSafely(block: () -> Unit) {
+    try {
+        block()
+    } catch (e: Throwable) {
+    }
 }
