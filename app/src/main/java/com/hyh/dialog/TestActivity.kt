@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 
 class TestActivity : AppCompatActivity() {
 
+    var mFlag: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -16,10 +17,14 @@ class TestActivity : AppCompatActivity() {
 
 
     private fun test() {
+        var num = 0
         GlobalScope.launch {
+            num++
             val data = getData()
             val await = data.await()
-            Log.d("TestActivity", await)
+            num++
+            mFlag = true
+            Log.d("TestActivity", "$await, $num, $mFlag")
         }
     }
 
