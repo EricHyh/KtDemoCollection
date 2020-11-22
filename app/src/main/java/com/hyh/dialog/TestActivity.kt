@@ -3,11 +3,9 @@ package com.hyh.dialog
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import kotlinx.coroutines.*
-import kotlinx.coroutines.internal.resumeCancellableWith
-import kotlin.coroutines.Continuation
-import kotlin.coroutines.intrinsics.createCoroutineUnintercepted
-import kotlin.coroutines.intrinsics.intercepted
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 
 class TestActivity : AppCompatActivity() {
 
@@ -21,6 +19,12 @@ class TestActivity : AppCompatActivity() {
             "2"
         }
     }
+
+
+
+
+
+
 
 
     private fun test() {
