@@ -5,10 +5,10 @@ import androidx.recyclerview.widget.RecyclerView
 
 class MultiAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
-    private val mChildAdapters: MutableList<RecyclerView.Adapter<out RecyclerView.ViewHolder>> =
+    private val mChildAdapters: MutableList<RecyclerView.Adapter<RecyclerView.ViewHolder>> =
         mutableListOf()
 
-    fun addChildAdapter(adapter: RecyclerView.Adapter<out RecyclerView.ViewHolder>) {
+    fun addChildAdapter(adapter: RecyclerView.Adapter<RecyclerView.ViewHolder>) {
         mChildAdapters.add(adapter)
     }
 
@@ -29,12 +29,10 @@ class MultiAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             return
         }
         var curPosition = position
-
         for (adapter in mChildAdapters) {
-
             val itemCount = adapter.itemCount
             if (curPosition <= itemCount - 1) {
-                (adapter as RecyclerView.Adapter<RecyclerView.ViewHolder>).onBindViewHolder(
+                adapter.onBindViewHolder(
                     holder,
                     position
                 )

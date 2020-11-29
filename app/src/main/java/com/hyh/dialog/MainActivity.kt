@@ -2,7 +2,6 @@ package com.hyh.dialog
 
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.*
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -13,7 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.hyh.adapter.ChildAdapter
 import com.hyh.adapter.MultiAdapter
-import com.hyh.adapter.TestEn
+import com.hyh.feeds.FeedsResult
+import kotlinx.coroutines.flow.flow
 
 class MainActivity : AppCompatActivity() {
 
@@ -29,11 +29,6 @@ class MainActivity : AppCompatActivity() {
             .eventListener(Runnable {})
             .show()*/
 
-        val values = TestEn.values()
-        for (value in values) {
-            Log.d("TestEn", "$value")
-            value.append()
-        }
 
 
         val b1: A1 = B(A1()).t
@@ -41,8 +36,6 @@ class MainActivity : AppCompatActivity() {
 
         val t1: A1 = C(A1()).t
         val t2: A2 = C(A2()).t
-
-
     }
 
 
