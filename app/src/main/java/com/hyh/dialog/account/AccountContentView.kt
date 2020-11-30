@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.dialog.R
+import com.hyh.demo.R
 import com.hyh.dialog.core.IContentView
 import com.hyh.dialog.core.WindowInterface
 

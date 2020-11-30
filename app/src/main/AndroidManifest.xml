@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.hyh.dialog">
+    package="com.hyh.demo">
 
     <application
         android:allowBackup="true"
@@ -9,15 +9,19 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name="com.hyh.activity.MainActivity">
 
         </activity>
 
-        <activity android:name=".OtherActivity">
+        <activity android:name="com.hyh.activity.OtherActivity">
 
         </activity>
 
-        <activity android:name=".TestActivity">
+        <activity android:name="com.hyh.activity.TestActivity">
+
+        </activity>
+
+        <activity android:name="com.hyh.activity.StickyListActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

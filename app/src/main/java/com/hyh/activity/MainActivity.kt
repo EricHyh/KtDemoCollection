@@ -1,4 +1,4 @@
-package com.hyh.dialog
+package com.hyh.activity
 
 import android.graphics.Color
 import android.os.Bundle
@@ -12,8 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.hyh.adapter.ChildAdapter
 import com.hyh.adapter.MultiAdapter
-import com.hyh.feeds.FeedsResult
-import kotlinx.coroutines.flow.flow
+import com.hyh.demo.R
 
 class MainActivity : AppCompatActivity() {
 
@@ -91,8 +90,8 @@ class MainActivity : AppCompatActivity() {
 
 
         val adapter = MultiAdapter()
-        adapter.addChildAdapter(Xxx())
-        adapter.addChildAdapter(Xxxx())
+        //adapter.addChildAdapter(Xxx())
+        //adapter.addChildAdapter(Xxxx())
 
     }
 

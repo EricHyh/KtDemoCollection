@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
 
     <TextView
@@ -10,7 +11,11 @@
         android:layout_width="wrap_content"
         style="@style/text_style_1"
         android:layout_height="wrap_content"
-        android:text="文字"/>
+        android:text="文字" />
+
+    <com.hyh.widget.TTT
+        android:layout_height="30dp"
+        android:layout_width="match_parent" />
 
 
 </LinearLayout>
