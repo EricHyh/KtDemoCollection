@@ -65,7 +65,6 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
             is StaggeredGridLayoutManager -> {
                 val into = obtainIntArray(layoutManager.spanCount)
                 layoutManager.findLastVisibleItemPositions(into)
-
                 findMax(into)
             }
             else -> RecyclerView.NO_POSITION
@@ -82,7 +81,6 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
             is StaggeredGridLayoutManager -> {
                 val into = obtainIntArray(layoutManager.spanCount)
                 layoutManager.findLastCompletelyVisibleItemPositions(into)
-
                 findMax(into)
             }
             else -> RecyclerView.NO_POSITION
@@ -98,9 +96,10 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
         }
     }
 
-    private fun findMin(lastPositions: IntArray): Int {
-        var min = lastPositions[0]
-        for (value in lastPositions) {
+    private fun findMin(firstPositions: IntArray): Int {
+        var min = firstPositions[0]
+        for (value in firstPositions) {
+            if (value == RecyclerView.NO_POSITION) continue
             if (value < min) {
                 min = value
             }

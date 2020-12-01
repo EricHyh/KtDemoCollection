@@ -50,7 +50,6 @@ class StickyListActivity : AppCompatActivity() {
         recyclerView.adapter = StickyHeadersHeadersAdapter()
 
 
-        StickyHeadersLayout(this).setAdapter(StickyHeadersHeadersAdapter())
     }
 }
 

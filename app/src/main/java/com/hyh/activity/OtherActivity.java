@@ -121,6 +121,11 @@ public class OtherActivity extends Activity {
 
             }
         });
+    }
+
+
+    private void get() {
 
     }
+
 }

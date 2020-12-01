@@ -42,6 +42,11 @@ class MultiAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        super.onBindViewHolder(holder, position, payloads)
+        notifyItemRangeChanged()
+    }
+
     override fun getItemViewType(position: Int): Int {
         return super.getItemViewType(position)
     }
