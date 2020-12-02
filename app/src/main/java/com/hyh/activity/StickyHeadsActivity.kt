@@ -1,6 +1,7 @@
 package com.hyh.activity
 
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -29,13 +30,12 @@ class StickyHeadsActivity : AppCompatActivity() {
         recycler_view.adapter = ListAdapter()
         sticky_headers_layout.setup(recycler_view, recycler_view.adapter as IStickyHeadersAdapter<*>)
         test(EventData().apply {
-            extra = "xx"
+
         })
     }
 
     private fun test(eventData: EventData) {
-        val typedExtra = eventData.getTypedExtra<Int>()
-        Log.d("StickyHeadsActivity_", "test: $typedExtra")
+
     }
 }
 
@@ -59,10 +59,15 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(), IStickyHead
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         (holder.itemView as TextView).setText("条目：$position")
+        if (position % 10 == 0) {
+            holder.itemView.background = ColorDrawable(Color.RED)
+        } else {
+            holder.itemView.background = ColorDrawable(Color.WHITE)
+        }
     }
 
     override fun isStickyHeader(position: Int): Boolean {
-        return position == 10
+        return position % 10 == 0
     }
 
     override fun onBindStickyViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
