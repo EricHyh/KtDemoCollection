@@ -1,10 +1,11 @@
 package com.hyh.widget.sticky
 
 import android.content.Context
-import android.graphics.Canvas
 import android.util.AttributeSet
 import android.util.Log
 import android.util.SparseArray
+import android.view.ViewConfiguration
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.core.util.contains
 import androidx.recyclerview.widget.RecyclerView
@@ -30,9 +31,15 @@ class StickyHeadersLayout : FrameLayout {
 
     private var mLastHeaderPosition = RecyclerView.NO_POSITION
 
-    private val mAttachedHeaders: SparseArray<RecyclerView.ViewHolder> = SparseArray()
+    private val mAttachedHeaders: SparseArray<StickyHeader> = SparseArray()
 
-    private var mBindStickyViewHolder = false
+    private var mInitialTouchX: Int = 0
+    private var mInitialTouchY: Int = 0
+    private var mLastTouchX: Int = 0
+    private var mLastTouchY: Int = 0
+    private val mTouchSlop: Int by lazy {
+        ViewConfiguration.get(context).scaledTouchSlop
+    }
 
     private val mOnScrollListener = object : RecyclerView.OnScrollListener() {
 
@@ -44,7 +51,8 @@ class StickyHeadersLayout : FrameLayout {
 
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
             super.onScrolled(recyclerView, dx, dy)
-            val firstCompletelyVisibleItemPosition = mVisibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
+            val firstCompletelyVisibleItemPosition =
+                mVisibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
             //val position = mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
 
             val currentHeaderPosition = findCurrentHeaderPosition(recyclerView)
@@ -59,57 +67,68 @@ class StickyHeadersLayout : FrameLayout {
                     detachStickyHeader(mLastHeaderPosition)
                     mLastHeaderPosition = currentHeaderPosition
                 }
-                var headerHolder = getHeaderHolder(currentHeaderPosition)
-                if (headerHolder == null) {
-                    headerHolder = createStickyViewHolder(recyclerView, currentHeaderPosition) ?: return
-                    bindHeaderViewHolder(headerHolder, currentHeaderPosition)
-                    attachStickyHeader(currentHeaderPosition, headerHolder)
-                    headerHolder.itemView.measure(0, 0)
+                var header: StickyHeader? = getStickyHeader(currentHeaderPosition)
+                if (header == null) {
+                    header =
+                        createStickyHeader(recyclerView, currentHeaderPosition) ?: return
+                    bindHeaderViewHolder(header, currentHeaderPosition)
+                    attachStickyHeader(currentHeaderPosition, header)
+                    header.viewHolder.itemView.measure(0, 0)
                 }
 
-
-                val firstVisibleItemPosition = mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
+                val firstVisibleItemPosition =
+                    mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
                 if (firstVisibleItemPosition == currentHeaderPosition) {
                     if (recyclerView.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
                         bindNormalViewHolder(recyclerView, currentHeaderPosition)
-                    } else {
-                        bindHeaderViewHolder(headerHolder, currentHeaderPosition)
                     }
                 }
+                if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                    bindHeaderViewHolder(header, currentHeaderPosition)
+                }
 
-                val headerHeight = headerHolder.itemView.measuredHeight
+
+                val headerHeight = header.viewHolder.itemView.measuredHeight
 
                 val nextHeaderPosition = findNextHeaderPosition(recyclerView, currentHeaderPosition)
                 val viewHolder = recyclerView.findViewHolderForAdapterPosition(nextHeaderPosition)
 
                 if (viewHolder != null && viewHolder.itemView.top < headerHeight) {
                     val headerOffsetY = viewHolder.itemView.top - headerHeight
-                    headerHolder.itemView.translationY = headerOffsetY.toFloat()
+                    header.viewHolder.itemView.translationY = headerOffsetY.toFloat()
                 } else {
-                    headerHolder.itemView.translationY = 0.0f
+                    header.viewHolder.itemView.translationY = 0.0f
                 }
             }
         }
     }
 
     private fun bindNormalViewHolder(recyclerView: RecyclerView, position: Int) {
-        if (mBindStickyViewHolder) {
+        val stickyHeader = getStickyHeader(position) ?: return
+        if (stickyHeader.bound) {
             val viewHolder = recyclerView.findViewHolderForAdapterPosition(position)
             if (viewHolder != null) {
+                Log.d("StickyHeadersLayout", "bindNormalViewHolder -> $position")
                 mAdapter?.onBindViewHolder(viewHolder, position)
+                stickyHeader.bound = false
             }
-            mBindStickyViewHolder = false
         }
     }
 
-    private fun bindHeaderViewHolder(headerHolder: RecyclerView.ViewHolder, position: Int) {
-        mStickyHeadersAdapter?.onBindStickyViewHolder(headerHolder, position)
-        mBindStickyViewHolder = true
+    private fun bindHeaderViewHolder(header: StickyHeader, position: Int) {
+        if (header.bound) return
+        Log.d("StickyHeadersLayout", "bindHeaderViewHolder -> $position")
+        mStickyHeadersAdapter?.onBindStickyViewHolder(header.viewHolder, position)
+        header.bound = true
     }
 
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
+    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr
+    )
 
     @Suppress("UNCHECKED_CAST")
     fun setup(recyclerView: RecyclerView, adapter: IStickyHeadersAdapter<*>) {
@@ -119,21 +138,74 @@ class StickyHeadersLayout : FrameLayout {
         registerAdapterDataObserver(recyclerView)
     }
 
+
+    private var mScrollVertically = false
+
+    /*override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val action = ev.actionMasked
+
+
+        when (action) {
+            MotionEvent.ACTION_DOWN -> {
+                mInitialTouchX = ev.x.roundToInt()
+                mInitialTouchY = ev.y.roundToInt()
+                mLastTouchX = mInitialTouchX
+                mLastTouchY = mInitialTouchY
+            }
+            MotionEvent.ACTION_MOVE -> {
+
+                if (mScrollVertically) {
+                    return false
+                }
+
+                val curX = ev.x.roundToInt()
+                val curY = ev.y.roundToInt()
+
+                val tx = abs(curX - mInitialTouchX)
+                val ty = abs(curY - mInitialTouchY)
+
+                if (tx > mTouchSlop || ty > mTouchSlop) {
+                    if (ty > tx) {
+                        mScrollVertically = true
+                        return false
+                    }
+                }
+            }
+            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
+                mScrollVertically = false
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }*/
+
+
+    override fun canScrollVertically(direction: Int): Boolean {
+        return super.canScrollVertically(direction) || mRecyclerView?.canScrollVertically(direction) ?: false
+    }
+
+
     //region private
-    private fun getHeaderHolder(position: Int): RecyclerView.ViewHolder? {
+    private fun getStickyHeader(position: Int): StickyHeader? {
         return mAttachedHeaders.get(position)
     }
 
-    private fun createStickyViewHolder(recyclerView: RecyclerView, position: Int): RecyclerView.ViewHolder? {
+    private fun createStickyHeader(
+        recyclerView: RecyclerView,
+        position: Int
+    ): StickyHeader? {
         val adapter = recyclerView.adapter ?: return null
         val itemViewType = adapter.getItemViewType(position)
-        return recyclerView.recycledViewPool.getRecycledView(itemViewType) ?: adapter.onCreateViewHolder(recyclerView, itemViewType)
+        val viewHolder: RecyclerView.ViewHolder =
+            recyclerView.recycledViewPool.getRecycledView(itemViewType)
+                ?: adapter.onCreateViewHolder(recyclerView, itemViewType)
+                ?: return null
+        return StickyHeader(viewHolder, position)
     }
 
-    private fun attachStickyHeader(position: Int, viewHolder: RecyclerView.ViewHolder) {
+    private fun attachStickyHeader(position: Int, header: StickyHeader) {
         if (!mAttachedHeaders.contains(position)) {
-            mAttachedHeaders.put(position, viewHolder)
-            addView(viewHolder.itemView)
+            mAttachedHeaders.put(position, header)
+            addView(header.viewHolder.itemView)
         }
     }
 
@@ -141,7 +213,7 @@ class StickyHeadersLayout : FrameLayout {
         val headerHolder = mAttachedHeaders.get(position)
         if (headerHolder != null) {
             mAttachedHeaders.remove(position)
-            removeView(headerHolder.itemView)
+            removeView(headerHolder.viewHolder.itemView)
         }
     }
 
@@ -154,7 +226,8 @@ class StickyHeadersLayout : FrameLayout {
     }
 
     private fun findCurrentHeaderPosition(recyclerView: RecyclerView): Int {
-        val firstCompletelyVisibleItemPosition = mVisibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
+        val firstCompletelyVisibleItemPosition =
+            mVisibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
         if (firstCompletelyVisibleItemPosition == 0) return RecyclerView.NO_POSITION
         for (position in (firstCompletelyVisibleItemPosition - 1) downTo 0) {
             if (isHeaderPosition(position)) return position
@@ -163,7 +236,8 @@ class StickyHeadersLayout : FrameLayout {
     }
 
     private fun findLastHeaderPosition(recyclerView: RecyclerView): Int {
-        val firstVisibleItemPosition = mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
+        val firstVisibleItemPosition =
+            mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
         if (firstVisibleItemPosition <= 0) {
             return RecyclerView.NO_POSITION
         }
@@ -171,8 +245,10 @@ class StickyHeadersLayout : FrameLayout {
     }
 
     private fun findNextHeaderPosition(recyclerView: RecyclerView, lastHeaderPosition: Int): Int {
-        val firstVisibleItemPosition = mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
-        val lastVisibleItemPosition = mVisibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
+        val firstVisibleItemPosition =
+            mVisibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
+        val lastVisibleItemPosition =
+            mVisibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
         return if (firstVisibleItemPosition == lastHeaderPosition) {
             findFirstHeaderPosition(firstVisibleItemPosition + 1, lastVisibleItemPosition)
         } else if (firstVisibleItemPosition > lastHeaderPosition) {
@@ -193,6 +269,7 @@ class StickyHeadersLayout : FrameLayout {
     }
 
     private fun registerAdapterDataObserver(recyclerView: RecyclerView) {
+        (recyclerView.parent as ViewGroup).isMotionEventSplittingEnabled = false
         val adapter = recyclerView.adapter
         if (adapter == mAdapter) return
         if (mAdapter != null) {
@@ -203,13 +280,6 @@ class StickyHeadersLayout : FrameLayout {
         adapter?.registerAdapterDataObserver(mObserver)
     }
     //endregion
-
-    private class StickyHeader {
-
-        var viewHolder: RecyclerView.ViewHolder? = null
-        var position: Int? = null
-
-    }
 
     private inner class RecyclerViewDataObserver : RecyclerView.AdapterDataObserver() {
 
@@ -240,5 +310,14 @@ class StickyHeadersLayout : FrameLayout {
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
             super.onItemRangeChanged(positionStart, itemCount, payload)
         }
+    }
+
+    private class StickyHeader(
+        val viewHolder: RecyclerView.ViewHolder,
+        val position: Int
+    ) {
+
+        var bound: Boolean = false
+
     }
 }
