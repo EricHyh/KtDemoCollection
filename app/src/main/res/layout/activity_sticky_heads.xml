@@ -1,7 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="removeItem"
+        android:text="删除条目" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="addItem"
+        android:text="添加条目" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="updateItem"
+        android:text="修改条目" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="refresh"
+        android:text="刷新" />
+
 
     <com.scwang.smart.refresh.layout.SmartRefreshLayout
         android:id="@+id/smart_refresh_layout"
@@ -15,6 +41,7 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recycler_view"
                 android:layout_width="match_parent"
+                android:background="@android:color/darker_gray"
                 android:layout_height="match_parent" />
 
             <com.hyh.widget.sticky.StickyHeadersLayout
@@ -26,4 +53,4 @@
 
     </com.scwang.smart.refresh.layout.SmartRefreshLayout>
 
-</FrameLayout>
+</LinearLayout>

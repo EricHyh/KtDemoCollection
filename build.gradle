@@ -6,7 +6,7 @@ buildscript {
     repositories {
         google()
         jcenter()
-        
+
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.2'
@@ -20,10 +20,28 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+        mavenCentral()
     }
+
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+ext {
+    compileSdkVersion = 29
+    buildToolsVersion = '29.0.3'
+    minSdkVersion = 21
+    targetSdkVersion = 29
+
+    versionName = '1.0.1'
+    versionCode = 101
+
+
+    okhttp = 'com.squareup.okhttp3:okhttp:3.12.2'
+    okio = 'com.squareup.okio:okio:1.15.0'
+    retrofit = 'com.squareup.retrofit2:retrofit:2.2.0'
+    gson = 'com.google.code.gson:gson:2.8.0'
+    gsonconverter = 'com.squareup.retrofit2:converter-gson:2.3.0'
 }

@@ -2,6 +2,7 @@ package com.hyh.activity
 
 import android.graphics.Color
 import android.os.Bundle
+import android.provider.Settings
 import android.view.*
 import android.widget.PopupWindow
 import android.widget.TextView
@@ -13,6 +14,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.hyh.adapter.ChildAdapter
 import com.hyh.adapter.MultiAdapter
 import com.hyh.demo.R
+import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -28,6 +30,12 @@ class MainActivity : AppCompatActivity() {
             .eventListener(Runnable {})
             .show()*/
 
+
+        runBlocking {
+            launch(Dispatchers.Unconfined) {
+                delay(10)
+            }
+        }
 
 
         val b1: A1 = B(A1()).t
@@ -169,9 +177,6 @@ class B<T : A1>(val t: T) {
 }
 
 class C<out T : A1>(val t: T) {
-
-
-
 
 
 }

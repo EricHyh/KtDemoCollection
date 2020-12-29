@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#008577</color>
+    <color name="colorPrimaryDark">#00574B</color>
+    <color name="colorAccent">#D81B60</color>
+
+
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="red">#FF0000</color>
+    <color name="transparent">#00000000</color>
+    <color name="primary_red">#F85959</color>
+
+
+    <color name="sc_btn_background_color">#ff8855</color>
+
+
+    <color name="tabhost_tab_text_color_selected_light_style">@color/primary_red</color>
+    <color name="tabhost_tab_text_color_nor_light_style">@color/black</color>
+
+
+    <color name="status_bar_color_white_style">#DDDDDD</color>
+    <color name="status_bar_color_black_style">#000000</color>
+
+
+    <color name="commonui_default_img_color_light_style">#FFE8E8E8</color>
+    <color name="commonui_default_img_color_gray_style">#FFD6D6D6</color>
+    <color name="commonui_default_img_color_dark_style">#FF384552</color>
+</resources>

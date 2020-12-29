@@ -1,2 +1,2 @@
-include ':app', ':kt_demo'
+include ':app', ':kt_demo', ':pagingdemo', ':paging3demo'
 rootProject.name='KtDemoCollection'
