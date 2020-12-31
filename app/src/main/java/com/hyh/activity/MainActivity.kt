@@ -11,9 +11,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.hyh.TestEnum
 import com.hyh.adapter.ChildAdapter
 import com.hyh.adapter.MultiAdapter
 import com.hyh.demo.R
+import com.hyh.test
 import kotlinx.coroutines.*
 
 class MainActivity : AppCompatActivity() {

@@ -32,13 +32,42 @@ fun main() {
                 }
 
 
+
+            flow<String> {
+
+            }.collect(){
+
+            }
+
+
+
+
+
+
+            val xx: Flow<Int> = flowOf(1)
+
+            xx.collect(){
+
+            }
+
+            fun getNum(): Int {
+                return 1
+            }
+
+            ::getNum.asFlow()
+                .collect() { a ->
+
+                }
+
+
+
             flowOf("")
                 .filter {
                     true
                 }.map {
                     1
                 }.flatMapConcat {
-                    flowOf (1)
+                    flowOf(1)
                 }.onEmpty {
                     2
                 }.onCompletion {
