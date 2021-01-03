@@ -4,10 +4,21 @@
 
 ## flow基本用法
 ### 创建flow
+
+#### FusibleFlow
+
+#### StateFlow
+
+#### SharedFlow 
+
+
 ### 操作符
 ### 执行flow
 
 ## flow与rxjava对比
+
+
+
 
 
 ## flow实现原理
