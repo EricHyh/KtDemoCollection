@@ -27,23 +27,14 @@ fun main() {
         }
         println("Collected in $time ms")*/
 
-
         /*val startTime = System.currentTimeMillis() // 记录开始时间
         (1..3).asFlow().onEach { delay(100) } // 每 100 毫秒发射一个数字
             .flatMapLatest { requestFlow(it) }
             .collect { value -> // 收集并打印
                 println("$value at ${System.currentTimeMillis() - startTime} ms from start")
             }*/
-
-
-
-        flowOf(1)
-
-
-        val startTime = System.currentTimeMillis() // 记录开始时间
+        /*val startTime = System.currentTimeMillis() // 记录开始时间
         val time = measureTimeMillis {
-
-
             flowOf(1)
                 .flatMapConcat {
                     (1..10).asFlow()
@@ -65,7 +56,24 @@ fun main() {
                 .collect {
                     println("collect: $it ,  ${Thread.currentThread()}")
                 }
+        }*/
+
+        val time = measureTimeMillis {
+            flowOf(1)
+                .buffer()
+                .flatMapMerge {
+                    combine(getFlow()) {
+                        it
+                    }
+                }
+                .flowOn(Dispatchers.Default)
+                .collect { array ->
+                    array.forEach { str ->
+                        println("collect: value=$str , ${Thread.currentThread().name}")
+                    }
+                }
         }
+
         println("Collected in $time ms , ${Thread.currentThread().name}")
     }
 }
@@ -81,9 +89,11 @@ fun getObservable(): List<Observable<String>> {
 
 fun getFlow(): List<Flow<String>> {
     val list = mutableListOf<Flow<String>>()
-    for (index in 1..100) {
+    for (index in 1..10) {
         list.add(flow<String> {
+
             emit("value=$index")
+            delay(200)
         })
     }
     return list
