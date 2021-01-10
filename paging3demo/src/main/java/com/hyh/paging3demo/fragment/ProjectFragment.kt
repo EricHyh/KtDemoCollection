@@ -3,10 +3,12 @@ package com.hyh.paging3demo.fragment
 
 import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
+import androidx.paging.LoadState
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.recyclerview.widget.DiffUtil
@@ -57,7 +59,6 @@ class ProjectFragment : CommonBaseFragment() {
         mRecyclerView?.apply {
             layoutManager =
                 LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
-
             addItemDecoration(object : RecyclerView.ItemDecoration() {
                 override fun getItemOffsets(
                     outRect: Rect,
@@ -86,17 +87,23 @@ class ProjectFragment : CommonBaseFragment() {
     }
 
     override fun initData() {
-        /*mProjectAdapter?.addLoadStateListener {
-            mProjectAdapter?.refresh()
-        }*/
-
-
+        mProjectAdapter?.addLoadStateListener { states ->
+            //mProjectAdapter?.refresh()
+            when (states.refresh) {
+                is LoadState.NotLoading -> {
+                    if (mSwipeRefreshLayout?.isRefreshing == true) {
+                        mSwipeRefreshLayout?.isRefreshing = false
+                    }
+                }
+            }
+            Log.d("ProjectFragment", "initData -> $states")
+        }
         lifecycleScope.launch(Dispatchers.IO) {
             mPager?.flow
                 ?.flowOn(Dispatchers.Main)
                 ?.collect {
-                mProjectAdapter?.submitData(it)
-            }
+                    mProjectAdapter?.submitData(it)
+                }
         }
     }
 }

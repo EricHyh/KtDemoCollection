@@ -61,6 +61,9 @@ dependencies {
     implementation rootProject.ext.gson
     implementation rootProject.ext.gsonconverter
 
+    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.2.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.2.0"
+
     implementation('com.github.bumptech.glide:glide:4.9.0') {
         exclude group: "com.android.support"
     }
