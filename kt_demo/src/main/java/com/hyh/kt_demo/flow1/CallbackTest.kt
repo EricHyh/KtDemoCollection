@@ -2,10 +2,8 @@ package com.hyh.kt_demo.flow1
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.*
+import java.lang.IllegalStateException
 import java.util.concurrent.Executors
 import kotlin.concurrent.thread
 
@@ -15,6 +13,9 @@ fun main() {
         val collectJob = Job()
         launch(dispatcher + collectJob) {
             getDataFlow()
+                .catch {
+                    log("catch : $it")
+                }
                 .collect {
                     log(it)
                 }
@@ -35,12 +36,16 @@ fun getDataFlow(): Flow<String> {
         getData(
             {
                 offer(it)
+                //close(IllegalStateException("error"))
+                close()
+                //offer(it)
             },
             {
-                offer("error")
+                //offer("error")
+                error("error")
             })
         awaitClose {
-            log("awaitClose")
+            cancel()
         }
     }
 }
@@ -48,7 +53,7 @@ fun getDataFlow(): Flow<String> {
 
 fun getData(success: ((str: String) -> Unit), error: (() -> Unit)) {
     thread {
-        Thread.sleep(10000)
+        Thread.sleep(1000)
         success("1")
     }
 }
