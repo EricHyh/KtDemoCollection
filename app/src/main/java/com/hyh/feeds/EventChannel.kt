@@ -1,5 +1,7 @@
 package com.hyh.feeds
 
+import kotlinx.coroutines.flow.Flow
+
 /**
  * TODO: Add Description
  *
@@ -13,22 +15,33 @@ package com.hyh.feeds
  * @author eriche
  * @data 2020/12/1
  */
-class EventChannel {
-
-    fun registerEvent(type: Int) {
-
-    }
-
-    //Type的关联性太弱，可读性弱
-    //容易出现定义模糊的Type，约束性弱
-    fun postEvent(type: Int, data: EventData) {
-
-    }
+interface EventChannelFactory {
 }
 
-interface EventReceiver {
+interface ClickEventFactory<T> : EventChannelFactory {
+    fun getClickEventChannel(): IEventChannel<T>
+}
 
-    fun onEvent(type: Int, data: EventData)
+interface DeleteEventFactory<T> : EventChannelFactory {
+    fun getDeleteEventChannel(): IEventChannel<T>
+}
+
+interface ClickAndDeleteEventFactory<T1, T2> : ClickEventFactory<T1>, DeleteEventFactory<T2>
+
+
+inline fun <reified T : EventChannelFactory> EventChannelFactory.asTyped(): T? {
+    return if (this is T) this else null
+}
+
+inline fun <reified T : EventChannelFactory> createEventChannelFactory(): T {
+    return null!!
+}
+
+interface IEventChannel<T> {
+
+    fun send(t: T)
+
+    fun asFlow(): Flow<T>
 
 }
 
@@ -41,4 +54,3 @@ class EventData(val data: Any? = null) {
         }
     }
 }
-
