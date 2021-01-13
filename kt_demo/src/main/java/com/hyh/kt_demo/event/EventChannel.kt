@@ -1,11 +1,17 @@
-package com.hyh.feeds
+package com.hyh.kt_demo.event
 
-import android.util.Log
+import com.hyh.kt_demo.flow1.log
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
 import java.util.*
+import kotlin.collections.HashMap
 
 /**
  * TODO: Add Description
@@ -38,11 +44,11 @@ inline fun <reified T : EventChannelFactory> EventChannelFactory.asTyped(): T? {
     return if (this is T) this else null
 }
 
-inline fun <reified T : EventChannelFactory> createEventChannelFactory(): T {
+inline fun <reified T : EventChannelFactory> newEventChannelFactory(): T {
     return Proxy.newProxyInstance(
         EventChannelFactory::class.java.classLoader,
         arrayOf(T::class.java),
-        null
+        EventInvocationHandler()
     ) as T
 }
 
@@ -82,10 +88,52 @@ class EventInvocationHandler : InvocationHandler {
         }
     }
 
-    override fun invoke(proxy: Any, method: Method, args: Array<out Any>): Any? {
+    val map: HashMap<String, IEventChannel<*>> = HashMap()
+
+    override fun invoke(proxy: Any?, method: Method, args: Array<out Any?>?): Any? {
         val returnType = method.returnType
         val genericReturnType = method.genericReturnType
 
+        if (returnType == IEventChannel::class.java) {
+            if (map[method.name] != null) return map[method.name]
+            map[method.name] = InnerEventChannel()
+            return map[method.name]
+        }
+
         return PRIMITIVE_DEFAULT_VALUE[returnType]
     }
+
+    class InnerEventChannel : IEventChannel<Any?> {
+
+        val flow: MutableStateFlow<Any?> = MutableStateFlow(1)
+
+        override fun send(t: Any?) {
+            flow.value = t
+        }
+
+        override fun asFlow(): Flow<Any?> {
+            return flow
+        }
+    }
+}
+
+fun main() {
+    val factory = newEventChannelFactory<ClickAndDeleteEventFactory<Int, String>>()
+
+    GlobalScope.launch {
+        val asFlow = factory.getClickEventChannel()
+            .asFlow()
+        asFlow
+            .collect {
+                log("collect : $it")
+            }
+    }
+
+    Thread.sleep(1000)
+
+    runBlocking {
+        factory.getClickEventChannel().send(10)
+    }
+
+    Thread.sleep(10000)
 }
