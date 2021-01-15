@@ -2,9 +2,7 @@ package com.hyh.kt_demo.event
 
 import com.hyh.kt_demo.flow1.log
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.lang.reflect.InvocationHandler
@@ -105,14 +103,25 @@ class EventInvocationHandler : InvocationHandler {
 
     class InnerEventChannel : IEventChannel<Any?> {
 
-        val flow: MutableStateFlow<Any?> = MutableStateFlow(1)
+        private var sendFlow: MutableStateFlow<Any?>? = null
+
+        private var receiveFlow: MutableSharedFlow<Any?> = MutableSharedFlow()
 
         override fun send(t: Any?) {
-            flow.value = t
+            if (sendFlow == null) {
+                sendFlow = MutableStateFlow(t)
+                GlobalScope.launch {
+                    sendFlow?.collect {
+                        receiveFlow.emit(it)
+                    }
+                }
+            } else {
+                sendFlow?.value = t
+            }
         }
 
         override fun asFlow(): Flow<Any?> {
-            return flow
+            return receiveFlow
         }
     }
 }
