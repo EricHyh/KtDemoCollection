@@ -50,6 +50,10 @@ inline fun <reified T : EventChannelFactory> newEventChannelFactory(): T {
     ) as T
 }
 
+fun <T> newEventChannel(): IEventChannel<T> {
+    return InnerEventChannel()
+}
+
 interface IEventChannel<T> {
 
     fun send(t: T)
@@ -58,13 +62,27 @@ interface IEventChannel<T> {
 
 }
 
-class EventData(val data: Any? = null) {
-    inline fun <reified T> getTypedData(): T? {
-        return if (data is T) {
-            data as T
+private class InnerEventChannel<T> : IEventChannel<T> {
+
+    private var sendFlow: MutableStateFlow<T>? = null
+
+    private var receiveFlow: MutableSharedFlow<T> = MutableSharedFlow()
+
+    override fun send(t: T) {
+        if (sendFlow == null) {
+            sendFlow = MutableStateFlow(t)
+            GlobalScope.launch {
+                sendFlow?.collect {
+                    receiveFlow.emit(it)
+                }
+            }
         } else {
-            null
+            sendFlow?.value = t
         }
+    }
+
+    override fun asFlow(): Flow<T> {
+        return receiveFlow
     }
 }
 
@@ -90,39 +108,12 @@ class EventInvocationHandler : InvocationHandler {
 
     override fun invoke(proxy: Any?, method: Method, args: Array<out Any?>?): Any? {
         val returnType = method.returnType
-        val genericReturnType = method.genericReturnType
-
         if (returnType == IEventChannel::class.java) {
             if (map[method.name] != null) return map[method.name]
-            map[method.name] = InnerEventChannel()
+            map[method.name] = InnerEventChannel<Any?>()
             return map[method.name]
         }
-
         return PRIMITIVE_DEFAULT_VALUE[returnType]
-    }
-
-    class InnerEventChannel : IEventChannel<Any?> {
-
-        private var sendFlow: MutableStateFlow<Any?>? = null
-
-        private var receiveFlow: MutableSharedFlow<Any?> = MutableSharedFlow()
-
-        override fun send(t: Any?) {
-            if (sendFlow == null) {
-                sendFlow = MutableStateFlow(t)
-                GlobalScope.launch {
-                    sendFlow?.collect {
-                        receiveFlow.emit(it)
-                    }
-                }
-            } else {
-                sendFlow?.value = t
-            }
-        }
-
-        override fun asFlow(): Flow<Any?> {
-            return receiveFlow
-        }
     }
 }
 
