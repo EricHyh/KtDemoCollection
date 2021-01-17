@@ -10,7 +10,7 @@ import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectsAdapter
-import com.hyh.paging3demo.bean.ProjectCategoriesBean
+import com.hyh.paging3demo.bean.ProjectChaptersBean
 import com.hyh.paging3demo.viewmodel.ContextViewModelFactory
 import com.hyh.paging3demo.viewmodel.ProjectCategoriesViewModel
 
@@ -43,11 +43,11 @@ class ProjectsFragment : CommonBaseFragment() {
 
         mProjectCategoriesViewModel!!.mutableLiveData.observe(
             this,
-            Observer<ProjectCategoriesBean> { projectGroupData ->
-                if (projectGroupData?.projectCategories == null) {
+            Observer<ProjectChaptersBean> { projectGroupData ->
+                if (projectGroupData?.projectChapters == null) {
                     showErrorView()
                 } else {
-                    projectsAdapter.setProjectData(projectGroupData.projectCategories)
+                    projectsAdapter.setProjectData(projectGroupData.projectChapters)
                     showSuccessView()
                 }
             })

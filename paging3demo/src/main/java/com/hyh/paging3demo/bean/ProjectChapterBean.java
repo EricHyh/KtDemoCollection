@@ -5,7 +5,7 @@ import android.os.Parcelable;
 
 import com.google.gson.annotations.SerializedName;
 
-public class ProjectCategoryBean implements Parcelable {
+public class ProjectChapterBean implements Parcelable {
 
     /**
      * "courseId": 13,
@@ -23,23 +23,23 @@ public class ProjectCategoryBean implements Parcelable {
     @SerializedName("name")
     public String name;
 
-    public ProjectCategoryBean() {
+    public ProjectChapterBean() {
     }
 
-    protected ProjectCategoryBean(Parcel in) {
+    protected ProjectChapterBean(Parcel in) {
         id = in.readInt();
         name = in.readString();
     }
 
-    public static final Creator<ProjectCategoryBean> CREATOR = new Creator<ProjectCategoryBean>() {
+    public static final Creator<ProjectChapterBean> CREATOR = new Creator<ProjectChapterBean>() {
         @Override
-        public ProjectCategoryBean createFromParcel(Parcel in) {
-            return new ProjectCategoryBean(in);
+        public ProjectChapterBean createFromParcel(Parcel in) {
+            return new ProjectChapterBean(in);
         }
 
         @Override
-        public ProjectCategoryBean[] newArray(int size) {
-            return new ProjectCategoryBean[size];
+        public ProjectChapterBean[] newArray(int size) {
+            return new ProjectChapterBean[size];
         }
     };
 

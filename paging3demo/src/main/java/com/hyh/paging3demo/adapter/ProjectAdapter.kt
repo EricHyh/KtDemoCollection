@@ -1,5 +1,6 @@
 package com.hyh.paging3demo.adapter
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,10 +14,55 @@ import com.hyh.paging3demo.bean.ProjectBean
 import com.hyh.paging3demo.databinding.ItemProjectInfoBinding
 
 
-class ProjectAdapter(diffCallback: DiffUtil.ItemCallback<ProjectBean>) :
-    PagingDataAdapter<ProjectBean, ProjectAdapter.ProjectItemHolder>(diffCallback) {
+class ProjectAdapter() :
+    PagingDataAdapter<ProjectBean, ProjectAdapter.ProjectItemHolder>(PROJECT_COMPARATOR) {
+
+    init {
+        registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onChanged() {
+                super.onChanged()
+            }
+
+            override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
+                super.onItemRangeRemoved(positionStart, itemCount)
+                Log.d("ProjectAdapter", "onItemRangeRemoved -> $positionStart - $itemCount")
+            }
+
+            override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
+                super.onItemRangeMoved(fromPosition, toPosition, itemCount)
+                Log.d(
+                    "ProjectAdapter",
+                    "onItemRangeMoved -> $fromPosition - $toPosition - $itemCount"
+                )
+            }
+
+            override fun onStateRestorationPolicyChanged() {
+                super.onStateRestorationPolicyChanged()
+            }
+
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                super.onItemRangeInserted(positionStart, itemCount)
+                Log.d("ProjectAdapter", "onItemRangeInserted -> $positionStart - $itemCount")
+            }
+
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
+                super.onItemRangeChanged(positionStart, itemCount)
+                Log.d("ProjectAdapter", "onItemRangeChanged -> $positionStart - $itemCount")
+            }
+
+            override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
+                super.onItemRangeChanged(positionStart, itemCount, payload)
+                Log.d(
+                    "ProjectAdapter",
+                    "onItemRangeChanged -> $positionStart - $itemCount - $payload"
+                )
+            }
+        })
+    }
+
 
     override fun onBindViewHolder(holder: ProjectItemHolder, position: Int) {
+        Log.d("ProjectAdapter", "onBindViewHolder -> $position")
         getItem(position)?.let {
             holder.bindDataAndEvent(it)
         }
@@ -39,6 +85,16 @@ class ProjectAdapter(diffCallback: DiffUtil.ItemCallback<ProjectBean>) :
                 ?.setOnClickListener {
                     Toast.makeText(itemView.context, "", Toast.LENGTH_SHORT).show()
                 }
+        }
+    }
+
+    companion object {
+        val PROJECT_COMPARATOR = object : DiffUtil.ItemCallback<ProjectBean>() {
+            override fun areContentsTheSame(oldItem: ProjectBean, newItem: ProjectBean): Boolean =
+                oldItem.projectId == newItem.projectId
+
+            override fun areItemsTheSame(oldItem: ProjectBean, newItem: ProjectBean): Boolean =
+                oldItem.projectId == newItem.projectId
         }
     }
 }

@@ -9,9 +9,9 @@ import java.util.List;
  * @description
  * @data 2020/4/11
  */
-public class ProjectCategoriesBean {
+public class ProjectChaptersBean {
 
     @SerializedName("data")
-    public List<ProjectCategoryBean> projectCategories;
+    public List<ProjectChapterBean> projectChapters;
 
 }

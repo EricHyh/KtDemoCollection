@@ -18,17 +18,25 @@ val Dispatchers.Test1: ExecutorCoroutineDispatcher
 val Dispatchers.Test2: ExecutorCoroutineDispatcher
     get() = Utils.Dispatcher2
 
+val Dispatchers.Single1: ExecutorCoroutineDispatcher
+    get() = Utils.Single1
+
 object Utils {
 
     private val num1: AtomicInteger = AtomicInteger(0)
     private val num2: AtomicInteger = AtomicInteger(0)
+    private val num3: AtomicInteger = AtomicInteger(0)
 
     val Dispatcher1 = Executors.newFixedThreadPool(4) {
-        Thread(it, "Test1-${num1.getAndIncrement()}")
+        Thread(it, "Dispatcher1-${num1.getAndIncrement()}")
     }.asCoroutineDispatcher()
 
     val Dispatcher2 = Executors.newFixedThreadPool(4) {
-        Thread(it, "Test2-${num2.getAndIncrement()}")
+        Thread(it, "Dispatcher2-${num2.getAndIncrement()}")
+    }.asCoroutineDispatcher()
+
+    val Single1 = Executors.newSingleThreadExecutor() {
+        Thread(it, "Single1-${num3.getAndIncrement()}")
     }.asCoroutineDispatcher()
 
 }

@@ -3,49 +3,46 @@ package com.hyh.paging3demo.fragment
 
 import android.graphics.Rect
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.*
+import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadState
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectAdapter
-import com.hyh.paging3demo.bean.ProjectBean
-import com.hyh.paging3demo.bean.ProjectCategoryBean
+import com.hyh.paging3demo.bean.ProjectChapterBean
 import com.hyh.paging3demo.utils.DisplayUtil
-import com.hyh.paging3demo.viewmodel.ProjectPagingSource
-import kotlinx.coroutines.Dispatchers
+import com.hyh.paging3demo.viewmodel.ProjectListViewModel
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
 
+@ExperimentalPagingApi
 class ProjectFragment : CommonBaseFragment() {
 
     private var mSwipeRefreshLayout: SwipeRefreshLayout? = null
 
     private var mRecyclerView: RecyclerView? = null
 
-    private var mProjectAdapter: ProjectAdapter? = null
+    private val mProjectAdapter: ProjectAdapter = ProjectAdapter()
 
-    private var mPager: Pager<Int, ProjectBean>? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        mPager = context?.let { context ->
-            val arguments = arguments!!
-            val projectCategory =
-                arguments.getParcelable<ProjectCategoryBean>("project_category")!!
-            val pager = Pager(PagingConfig(8), initialKey = 1, pagingSourceFactory = {
-                ProjectPagingSource(context.applicationContext, projectCategory.id)
-            })
-            pager
+    private val mProjectListViewModel: ProjectListViewModel? by viewModels {
+        object : AbstractSavedStateViewModelFactory(this, null) {
+            override fun <T : ViewModel?> create(
+                key: String,
+                modelClass: Class<T>,
+                handle: SavedStateHandle
+            ): T {
+                val arguments = arguments!!
+                val projectCategory =
+                    arguments.getParcelable<ProjectChapterBean>("project_chapter")!!
+                @Suppress("UNCHECKED_CAST")
+                return context?.let { ProjectListViewModel(it, projectCategory.id) } as T
+            }
         }
     }
 
@@ -57,8 +54,7 @@ class ProjectFragment : CommonBaseFragment() {
         mSwipeRefreshLayout = contentView.findViewById(R.id.swipe_refresh_layout)
         mRecyclerView = contentView.findViewById(R.id.recycler_view)
         mRecyclerView?.apply {
-            layoutManager =
-                LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
             addItemDecoration(object : RecyclerView.ItemDecoration() {
                 override fun getItemOffsets(
                     outRect: Rect,
@@ -66,44 +62,31 @@ class ProjectFragment : CommonBaseFragment() {
                     parent: RecyclerView,
                     state: RecyclerView.State
                 ) {
-                    outRect.bottom = DisplayUtil.dip2px(view.getContext(), 8F)
+                    outRect.bottom = DisplayUtil.dip2px(view.context, 8F)
                 }
             })
         }
         mSwipeRefreshLayout?.setOnRefreshListener {
-            mProjectAdapter?.refresh()
+            mProjectAdapter.refresh()
         }
-        mProjectAdapter = ProjectAdapter(object : DiffUtil.ItemCallback<ProjectBean>() {
-
-            override fun areItemsTheSame(oldItem: ProjectBean, newItem: ProjectBean): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: ProjectBean, newItem: ProjectBean): Boolean {
-                return oldItem.id == newItem.id
-            }
-        })
         mRecyclerView?.adapter = mProjectAdapter
     }
 
     override fun initData() {
-        mProjectAdapter?.addLoadStateListener { states ->
-            //mProjectAdapter?.refresh()
-            when (states.refresh) {
-                is LoadState.NotLoading -> {
-                    if (mSwipeRefreshLayout?.isRefreshing == true) {
-                        mSwipeRefreshLayout?.isRefreshing = false
-                    }
-                }
+        lifecycleScope.launchWhenCreated {
+            mProjectAdapter.loadStateFlow.collectLatest { loadStates ->
+                mSwipeRefreshLayout?.isRefreshing = loadStates.refresh is LoadState.Loading
             }
-            Log.d("ProjectFragment", "initData -> $states")
         }
-        lifecycleScope.launch(Dispatchers.IO) {
-            mPager?.flow
-                ?.flowOn(Dispatchers.Main)
-                ?.collect {
-                    mProjectAdapter?.submitData(it)
-                }
+
+        mProjectListViewModel?.projects?.asLiveData()?.observe(this) {
+            mProjectAdapter.submitData(lifecycle, it)
         }
+
+        /*lifecycleScope.launchWhenCreated {
+            mProjectListViewModel?.projects?.collect {
+                mProjectAdapter.submitData(it)
+            }
+        }*/
     }
 }
