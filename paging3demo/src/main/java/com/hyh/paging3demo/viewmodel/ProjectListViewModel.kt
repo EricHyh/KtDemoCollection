@@ -44,6 +44,6 @@ class ProjectListViewModel(
             }*/
         }
 
-    val projects = mPager.flow/*.cachedIn(viewModelScope)*/
+    val projects = mPager.flow.cachedIn(viewModelScope)
 
 }

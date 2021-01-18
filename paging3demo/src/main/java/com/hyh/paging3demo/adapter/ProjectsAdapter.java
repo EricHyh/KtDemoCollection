@@ -39,7 +39,7 @@ public class ProjectsAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getCount() {
-        return mProjects == null ? 0 : /*mProjects.size()*/1;
+        return mProjects == null ? 0 : mProjects.size();
     }
 
     @Nullable

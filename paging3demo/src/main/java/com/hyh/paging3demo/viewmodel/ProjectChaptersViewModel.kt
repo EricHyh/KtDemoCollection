@@ -10,18 +10,18 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.http.GET
 
-class ProjectCategoriesViewModel(context: Context) : ViewModel() {
+class ProjectChaptersViewModel(context: Context) : ViewModel() {
 
     val mutableLiveData: MutableLiveData<ProjectChaptersBean> = MutableLiveData()
-    private val mProjectCategoriesApi: ProjectCategoriesApi
+    private val mProjectChaptersApi: ProjectChaptersApi
 
     init {
-        mProjectCategoriesApi = RetrofitHelper.create(context, ProjectCategoriesApi::class.java)
+        mProjectChaptersApi = RetrofitHelper.create(context, ProjectChaptersApi::class.java)
     }
 
 
     fun loadData() {
-        mProjectCategoriesApi.get().enqueue(object : Callback<ProjectChaptersBean> {
+        mProjectChaptersApi.get().enqueue(object : Callback<ProjectChaptersBean> {
             override fun onResponse(
                 call: Call<ProjectChaptersBean>,
                 response: Response<ProjectChaptersBean>
@@ -34,12 +34,12 @@ class ProjectCategoriesViewModel(context: Context) : ViewModel() {
             }
 
             override fun onFailure(call: Call<ProjectChaptersBean>, t: Throwable) {
-                mutableLiveData.setValue(null)
+                mutableLiveData.value = null
             }
         })
     }
 
-    internal interface ProjectCategoriesApi {
+    internal interface ProjectChaptersApi {
 
         @GET("/project/tree/json")
         fun get(): Call<ProjectChaptersBean>

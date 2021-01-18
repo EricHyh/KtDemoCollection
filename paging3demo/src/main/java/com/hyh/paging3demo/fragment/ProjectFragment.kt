@@ -3,6 +3,7 @@ package com.hyh.paging3demo.fragment
 
 import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,8 +19,9 @@ import com.hyh.paging3demo.adapter.ProjectAdapter
 import com.hyh.paging3demo.bean.ProjectChapterBean
 import com.hyh.paging3demo.utils.DisplayUtil
 import com.hyh.paging3demo.viewmodel.ProjectListViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 @ExperimentalPagingApi
 class ProjectFragment : CommonBaseFragment() {
@@ -70,6 +72,15 @@ class ProjectFragment : CommonBaseFragment() {
             mProjectAdapter.refresh()
         }
         mRecyclerView?.adapter = mProjectAdapter
+
+        lifecycleScope.launchWhenCreated {
+            mProjectAdapter.loadStateFlow
+                // Only emit when REFRESH LoadState for RemoteMediator changes.
+                .distinctUntilChangedBy { it.refresh }
+                // Only react to cases where Remote REFRESH completes i.e., NotLoading.
+                .filter { it.refresh is LoadState.NotLoading }
+                .collect { mRecyclerView?.scrollToPosition(0) }
+        }
     }
 
     override fun initData() {
@@ -79,14 +90,14 @@ class ProjectFragment : CommonBaseFragment() {
             }
         }
 
-        mProjectListViewModel?.projects?.asLiveData()?.observe(this) {
+        /*mProjectListViewModel?.projects?.asLiveData()?.observe(this) {
             mProjectAdapter.submitData(lifecycle, it)
-        }
+        }*/
 
-        /*lifecycleScope.launchWhenCreated {
-            mProjectListViewModel?.projects?.collect {
+        lifecycleScope.launchWhenCreated {
+            mProjectListViewModel?.projects?.collectLatest {
                 mProjectAdapter.submitData(it)
             }
-        }*/
+        }
     }
 }

@@ -12,11 +12,11 @@ import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectsAdapter
 import com.hyh.paging3demo.bean.ProjectChaptersBean
 import com.hyh.paging3demo.viewmodel.ContextViewModelFactory
-import com.hyh.paging3demo.viewmodel.ProjectCategoriesViewModel
+import com.hyh.paging3demo.viewmodel.ProjectChaptersViewModel
 
 class ProjectsFragment : CommonBaseFragment() {
 
-    private var mProjectCategoriesViewModel: ProjectCategoriesViewModel? = null
+    private var mProjectChaptersViewModel: ProjectChaptersViewModel? = null
 
     private var mTabLayout: TabLayout? = null
 
@@ -25,10 +25,10 @@ class ProjectsFragment : CommonBaseFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mProjectCategoriesViewModel = ViewModelProvider(
+        mProjectChaptersViewModel = ViewModelProvider(
             this,
             ContextViewModelFactory(context!!)
-        ).get(ProjectCategoriesViewModel::class.java)
+        ).get(ProjectChaptersViewModel::class.java)
     }
 
     override fun getContentView(inflater: LayoutInflater, container: ViewGroup?): View {
@@ -41,7 +41,7 @@ class ProjectsFragment : CommonBaseFragment() {
         mViewPager!!.setAdapter(projectsAdapter)
         mViewPager!!.setOffscreenPageLimit(1)
 
-        mProjectCategoriesViewModel!!.mutableLiveData.observe(
+        mProjectChaptersViewModel!!.mutableLiveData.observe(
             this,
             Observer<ProjectChaptersBean> { projectGroupData ->
                 if (projectGroupData?.projectChapters == null) {
@@ -57,7 +57,7 @@ class ProjectsFragment : CommonBaseFragment() {
 
     override fun initData() {
         showLoadingView()
-        mProjectCategoriesViewModel!!.loadData()
+        mProjectChaptersViewModel!!.loadData()
     }
 
     private fun showLoadingView() {
