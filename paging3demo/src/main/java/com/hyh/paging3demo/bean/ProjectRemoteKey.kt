@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class ProjectRemoteKey(
     @PrimaryKey
     val chapterId: Int,
+    val prevPageIndex: Int?,
     val nextPageIndex: Int?
 )

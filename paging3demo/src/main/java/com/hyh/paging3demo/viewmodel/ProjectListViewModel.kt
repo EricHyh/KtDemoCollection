@@ -28,7 +28,8 @@ class ProjectListViewModel(
 
     private val mPager: Pager<Int, ProjectBean> =
         Pager(
-            config = PagingConfig(30, enablePlaceholders = false),
+            config = PagingConfig(10, enablePlaceholders = false),
+            /*initialKey = 16,*/
             remoteMediator = ProjectRemoteMediator(
                 context,
                 ProjectDB.get(context),
@@ -36,7 +37,7 @@ class ProjectListViewModel(
             )
         ) {
             ProjectDB.get(context).projects().getProjectsByChapterId(chapterId)
-            //ProjectPagingSource(context,chapterId)
+            //ProjectPagingSource(context, chapterId)
             /*object : PagingSource<Int, ProjectBean>() {
                 override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ProjectBean> {
                     return LoadResult.Page(emptyList(), null, null)

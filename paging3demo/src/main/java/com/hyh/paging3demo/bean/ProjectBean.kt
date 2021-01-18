@@ -78,4 +78,6 @@ data class ProjectBean(
     val title: String?,
     val userId: Int = 0,
     val zan: Int = 0
-)
+) {
+    var orderNum = Int.MIN_VALUE;
+}

@@ -44,8 +44,16 @@ class ProjectRemoteMediator(
         //return MediatorResult.Success(false)
         try {//第一步，获取请求的Key
             val pageIndex: Int = when (loadType) {
-                LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.REFRESH -> 1
+                LoadType.PREPEND -> {
+                    val remoteKey = db.withTransaction {
+                        remoteKeyDao.getRemoteKey(chapterId)
+                    }
+                    if (remoteKey.prevPageIndex == null) {
+                        return MediatorResult.Success(endOfPaginationReached = true)
+                    }
+                    remoteKey.prevPageIndex
+                }
+                LoadType.REFRESH -> 5
                 LoadType.APPEND -> {
                     // Query DB for SubredditRemoteKey for the subreddit.
                     // SubredditRemoteKey is a wrapper object we use to keep track of page keys we
@@ -65,14 +73,11 @@ class ProjectRemoteMediator(
                 }
             }
 
-            Log.d(
-                "ProjectRemoteMediator",
-                "load -> $loadType, chapterId=$chapterId, pageIndex=$pageIndex"
-            )
+            Log.d("ProjectRemoteMediator", "load -> $loadType, chapterId=$chapterId, pageIndex=$pageIndex")
 
             val projectsBean = projectApi.get(pageIndex, chapterId)
 
-            val list = projectsBean.data.projects/*?.reversed()*/
+            val list = projectsBean.data.projects
 
             Log.d("ProjectRemoteMediator", "load -> ${list?.size}")
 
@@ -83,12 +88,36 @@ class ProjectRemoteMediator(
                     MediatorResult.Error(NullPointerException())
                 }
             } else {
+                var order = if (loadType == LoadType.PREPEND) {
+                    (state.firstItemOrNull()?.orderNum ?: 0) - list.size
+                } else if (loadType == LoadType.APPEND) {
+                    (state.lastItemOrNull()?.orderNum ?: 0) + 1
+                } else {
+                    0
+                }
+                list.forEach {
+                    it.orderNum = order
+                    order++
+                }
                 db.withTransaction {
-                    if (loadType == LoadType.REFRESH) {
+                    val newRemoteKey: ProjectRemoteKey
+                    newRemoteKey = if (loadType == LoadType.REFRESH) {
+                        Log.d( "ProjectRemoteMediator", "load:$chapterId REFRESH-> ${list.size}")
                         projectDao.deleteByChapterId(chapterId)
                         remoteKeyDao.delete(chapterId)
+                        val prevPageIndex: Int? = if (pageIndex == 1) null else pageIndex - 1
+                        val nextPageIndex: Int = pageIndex + 1
+                        ProjectRemoteKey(chapterId, prevPageIndex, nextPageIndex)
+                    } else if (loadType == LoadType.PREPEND) {
+                        val remoteKey = remoteKeyDao.getRemoteKey(chapterId)
+                        val prevPageIndex: Int? = if (pageIndex == 1) null else pageIndex - 1
+                        val nextPageIndex: Int? = remoteKey.nextPageIndex
+                        ProjectRemoteKey(chapterId, prevPageIndex, nextPageIndex)
+                    } else {
+                        val remoteKey = remoteKeyDao.getRemoteKey(chapterId)
+                        ProjectRemoteKey(chapterId, remoteKey.prevPageIndex, pageIndex + 1)
                     }
-                    remoteKeyDao.insert(ProjectRemoteKey(chapterId, pageIndex + 1))
+                    remoteKeyDao.insert(newRemoteKey)
                     projectDao.insertAll(list)
                 }
                 return MediatorResult.Success(projectsBean.data.curPage == projectsBean.data.pageCount)
@@ -97,5 +126,4 @@ class ProjectRemoteMediator(
             return MediatorResult.Error(e)
         }
     }
-
 }

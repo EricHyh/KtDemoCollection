@@ -14,6 +14,7 @@ class ProjectPagingSource(context: Context, private val mCid: Int) :
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ProjectBean> {
         val pageIndex = params.key ?: 1
+        Log.d("ProjectPagingSource", "load -> ${params} - $pageIndex")
         return try {
             val projectsBean = mProjectApi.get(pageIndex, mCid)
             if (projectsBean.data.projects?.isEmpty() != false) {
