@@ -14,17 +14,22 @@ class ProjectPagingSource(context: Context, private val mCid: Int) :
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, ProjectBean> {
         val pageIndex = params.key ?: 1
-        Log.d("ProjectPagingSource", "load -> ${params} - $pageIndex")
         return try {
             val projectsBean = mProjectApi.get(pageIndex, mCid)
             if (projectsBean.data.projects?.isEmpty() != false) {
                 if (projectsBean.data.curPage == projectsBean.data.pageCount) {
-                    LoadResult.Page(emptyList(), if (pageIndex == 1) null else pageIndex - 1, null)
+                    val prevKey = if (pageIndex == 1) null else pageIndex - 1
+                    val nextKey = null
+                    LoadResult.Page(emptyList(), prevKey, nextKey)
                 } else {
                     LoadResult.Error(NullPointerException())
                 }
             } else {
-                LoadResult.Page(projectsBean.data.projects, if (pageIndex == 1) null else pageIndex - 1, pageIndex + 1)
+                val prevKey = if (pageIndex == 1) null else pageIndex - 1
+                val nextKey = if (pageIndex == 1) null else pageIndex - 1
+                LoadResult.Page(projectsBean.data.projects,
+                    prevKey,
+                    nextKey)
             }
         } catch (e: Throwable) {
             LoadResult.Error(e)
