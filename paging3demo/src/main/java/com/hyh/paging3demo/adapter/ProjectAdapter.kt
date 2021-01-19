@@ -4,12 +4,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.R
+import com.hyh.paging3demo.WebActivity
 import com.hyh.paging3demo.bean.ProjectBean
 import com.hyh.paging3demo.databinding.ItemProjectInfoBinding
 
@@ -83,7 +83,7 @@ class ProjectAdapter() :
             mDataBinding?.project = projectBean
             mDataBinding?.root
                 ?.setOnClickListener {
-                    Toast.makeText(itemView.context, "", Toast.LENGTH_SHORT).show()
+                    WebActivity.start(it.context, projectBean.link)
                 }
         }
     }

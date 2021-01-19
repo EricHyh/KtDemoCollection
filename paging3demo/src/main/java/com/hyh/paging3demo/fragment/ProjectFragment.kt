@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.ExperimentalPagingApi
@@ -16,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectAdapter
+import com.hyh.paging3demo.adapter.ProjectLoadStateAdapter
+import com.hyh.paging3demo.base.Global
 import com.hyh.paging3demo.bean.ProjectChapterBean
 import com.hyh.paging3demo.utils.DisplayUtil
 import com.hyh.paging3demo.viewmodel.ProjectListViewModel
@@ -43,7 +46,7 @@ class ProjectFragment : CommonBaseFragment() {
                 val projectCategory =
                     arguments.getParcelable<ProjectChapterBean>("project_chapter")!!
                 @Suppress("UNCHECKED_CAST")
-                return context?.let { ProjectListViewModel(it, projectCategory.id) } as T
+                return context?.let { ProjectListViewModel(it, projectCategory.id, Global.sourceType) } as T
             }
         }
     }
@@ -71,7 +74,10 @@ class ProjectFragment : CommonBaseFragment() {
         mSwipeRefreshLayout?.setOnRefreshListener {
             mProjectAdapter.refresh()
         }
-        mRecyclerView?.adapter = mProjectAdapter
+        mRecyclerView?.adapter = mProjectAdapter.withLoadStateHeaderAndFooter(
+            header = ProjectLoadStateAdapter(mProjectAdapter),
+            footer = ProjectLoadStateAdapter(mProjectAdapter)
+        )
 
         /*lifecycleScope.launchWhenCreated {
             mProjectAdapter.loadStateFlow
@@ -87,6 +93,12 @@ class ProjectFragment : CommonBaseFragment() {
         lifecycleScope.launchWhenCreated {
             mProjectAdapter.loadStateFlow.collectLatest { loadStates ->
                 mSwipeRefreshLayout?.isRefreshing = loadStates.refresh is LoadState.Loading
+                /*if (loadStates.append.endOfPaginationReached) {
+                    Toast.makeText(context, "没有下一页数据了", Toast.LENGTH_LONG).show()
+                }
+                if (loadStates.prepend.endOfPaginationReached) {
+                    Toast.makeText(context, "没有上一页数据了", Toast.LENGTH_LONG).show()
+                }*/
             }
         }
 

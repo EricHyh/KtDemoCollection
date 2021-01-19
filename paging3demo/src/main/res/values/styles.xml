@@ -13,4 +13,12 @@
         <item name="textAllCaps">true</item>
     </style>
 
+    <style name="WebToolbarTitleAppearance">
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="WebProgressBarStyle" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:progressDrawable">@drawable/web_progress_white_style</item>
+    </style>
+
 </resources>

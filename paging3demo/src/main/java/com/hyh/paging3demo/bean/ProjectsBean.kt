@@ -2,7 +2,7 @@ package com.hyh.paging3demo.bean
 
 import com.google.gson.annotations.SerializedName
 
-data class ProjectsBean(val data: DataBean)
+data class ProjectsBean(val data: DataBean?)
 
 data class DataBean(
     val curPage: Int = 0,

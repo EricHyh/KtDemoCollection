@@ -7,6 +7,7 @@ import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.room.withTransaction
 import com.hyh.paging3demo.api.ProjectApi
+import com.hyh.paging3demo.bean.DataBean
 import com.hyh.paging3demo.bean.ProjectBean
 import com.hyh.paging3demo.bean.ProjectRemoteKey
 import com.hyh.paging3demo.bean.ProjectsBean
@@ -41,7 +42,7 @@ class ProjectRemoteMediator(
         try {
             //1、从数据库中获取请求的Key，并确定是否需要请求数据
             val loadKeyAndShouldLoad: Pair<Int?, Boolean> = getLoadKeyAndShouldLoad(loadType)
-            if (loadKeyAndShouldLoad.second) return MediatorResult.Success(endOfPaginationReached = true)
+            if (!loadKeyAndShouldLoad.second) return MediatorResult.Success(endOfPaginationReached = true)
             val pageIndex: Int = loadKeyAndShouldLoad.first!!
             //2、请求数据
             val projectsBean = projectApi.get(pageIndex, chapterId)
@@ -59,9 +60,11 @@ class ProjectRemoteMediator(
                 //5、获取下一页请求参数并存储
                 remoteKeyDao.insert(ProjectRemoteKey(chapterId, null, pageIndex + 1))
                 //6、存储列表数据
-                projectDao.insertAll(projectsBean.data.projects!!)
+                if (!projectsBean.data?.projects.isNullOrEmpty()) {
+                    projectDao.insertAll(projectsBean.data?.projects!!)
+                }
             }
-            return MediatorResult.Success(projectsBean.data.curPage == projectsBean.data.pageCount)
+            return MediatorResult.Success(projectsBean.data!!.curPage >= projectsBean.data.pageCount)
 
         } catch (e: Exception) {
             return MediatorResult.Error(e)
@@ -85,8 +88,7 @@ class ProjectRemoteMediator(
     }
 
     private fun checkData(projectsBean: ProjectsBean): Exception? {
-        val list = projectsBean.data.projects
-        if (list.isNullOrEmpty()) {
+        if (projectsBean.data == null) {
             return NullPointerException()
         }
         return null

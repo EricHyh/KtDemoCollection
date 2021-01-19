@@ -76,12 +76,12 @@ class ProjectRemoteMediatorWithPrepend(
 
             val projectsBean = projectApi.get(pageIndex, chapterId)
 
-            val list = projectsBean.data.projects
+            val list = projectsBean.data?.projects
 
             Log.d("ProjectRemoteMediator", "load -> ${list?.size}")
 
             if (list.isNullOrEmpty()) {
-                return if (projectsBean.data.curPage == projectsBean.data.pageCount) {
+                return if (projectsBean.data?.curPage == projectsBean.data?.pageCount) {
                     MediatorResult.Success(endOfPaginationReached = true)
                 } else {
                     MediatorResult.Error(NullPointerException())

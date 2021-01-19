@@ -17,5 +17,4 @@ interface ProjectRemoteKeyDao {
 
     @Query("DELETE FROM remote_keys WHERE chapterId = :chapterId")
     suspend fun delete(chapterId: Int)
-
 }
