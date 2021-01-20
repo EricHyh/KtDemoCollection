@@ -89,12 +89,25 @@ class ProjectAdapter() :
     }
 
     companion object {
+
         val PROJECT_COMPARATOR = object : DiffUtil.ItemCallback<ProjectBean>() {
+            /**
+             * areItemsTheSame = true时，执行该函数，判断数据内容是否相同.
+             */
             override fun areContentsTheSame(oldItem: ProjectBean, newItem: ProjectBean): Boolean =
                 oldItem.projectId == newItem.projectId
 
+            /**
+             * 判断是否为同一条数据.
+             */
             override fun areItemsTheSame(oldItem: ProjectBean, newItem: ProjectBean): Boolean =
                 oldItem.projectId == newItem.projectId
+
+            /**
+             * areItemsTheSame = true && areContentsTheSame = false 时，执行该函数，
+             * 用于获取新旧数据变动的字段.
+             */
+            override fun getChangePayload(oldItem: ProjectBean, newItem: ProjectBean): Any? = null
         }
     }
 }

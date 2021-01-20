@@ -12,6 +12,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadState
+import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -71,13 +72,27 @@ class ProjectFragment : CommonBaseFragment() {
                 }
             })
         }
-        mSwipeRefreshLayout?.setOnRefreshListener {
-            mProjectAdapter.refresh()
-        }
-        mRecyclerView?.adapter = mProjectAdapter.withLoadStateHeaderAndFooter(
+
+        val concatAdapter: ConcatAdapter = mProjectAdapter.withLoadStateHeaderAndFooter(
             header = ProjectLoadStateAdapter(mProjectAdapter),
             footer = ProjectLoadStateAdapter(mProjectAdapter)
         )
+        mRecyclerView?.adapter = concatAdapter
+
+        mSwipeRefreshLayout?.setOnRefreshListener {
+            mProjectAdapter.refresh() //执行刷新操作
+        }
+        lifecycleScope.launchWhenCreated {
+            mProjectAdapter.loadStateFlow.collectLatest { loadStates ->
+                loadStates.refresh  //获取当前刷新状态
+                loadStates.prepend  //获取当前加载上一页状态
+                loadStates.append   //获取当前加载下一页状态
+
+                //通常来说，如果我们配合 SwipeRefreshLayout 控件实现下拉刷新，只需要添加以下代码即可
+                mSwipeRefreshLayout?.isRefreshing = loadStates.refresh is LoadState.Loading
+            }
+        }
+
 
         /*lifecycleScope.launchWhenCreated {
             mProjectAdapter.loadStateFlow
@@ -90,22 +105,9 @@ class ProjectFragment : CommonBaseFragment() {
     }
 
     override fun initData() {
-        lifecycleScope.launchWhenCreated {
-            mProjectAdapter.loadStateFlow.collectLatest { loadStates ->
-                mSwipeRefreshLayout?.isRefreshing = loadStates.refresh is LoadState.Loading
-                /*if (loadStates.append.endOfPaginationReached) {
-                    Toast.makeText(context, "没有下一页数据了", Toast.LENGTH_LONG).show()
-                }
-                if (loadStates.prepend.endOfPaginationReached) {
-                    Toast.makeText(context, "没有上一页数据了", Toast.LENGTH_LONG).show()
-                }*/
-            }
-        }
-
         /*mProjectListViewModel?.projects?.asLiveData()?.observe(this) {
             mProjectAdapter.submitData(lifecycle, it)
         }*/
-
         lifecycleScope.launchWhenCreated {
             mProjectListViewModel?.projects?.collectLatest {
                 mProjectAdapter.submitData(it)
