@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
  * @data 2021/1/26
  */
 @SuppressLint("CustomViewStyleable")
-class AutoSizeTextView : AppCompatTextView {
+class AutoSizeTextView1 : AppCompatTextView {
 
     private var autoMaxTextSizeInPx = 1f
     private var autoMinTextSizeInPx = 1f
@@ -47,36 +47,7 @@ class AutoSizeTextView : AppCompatTextView {
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val maxWidth = getMaxWith()
-        if (maxWidth <= 0 || maxWidthPercent <= 0.0f) {
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-            return
-        }
-        val widthMode = MeasureSpec.getMode(widthMeasureSpec)
-        val widthSize = MeasureSpec.getSize(widthMeasureSpec)
-        var useWidthMeasureSpec = widthMeasureSpec
-        if (widthMode != MeasureSpec.EXACTLY) {
-            val expectedMaxWidth = getExpectedMaxWidth()
-            if (expectedMaxWidth > maxWidth) {
-                useWidthMeasureSpec = MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.EXACTLY)
-            } else {
-                useWidthMeasureSpec = MeasureSpec.makeMeasureSpec(expectedMaxWidth.roundToInt(), MeasureSpec.EXACTLY)
-            }
-        } else {
-            if (widthSize > maxWidth) {
-                useWidthMeasureSpec = MeasureSpec.makeMeasureSpec(maxWidth, MeasureSpec.EXACTLY)
-            }
-        }
-        super.onMeasure(useWidthMeasureSpec, heightMeasureSpec)
-    }
-
-    fun setMaxWidthPercent(maxWidthPercent: Float) {
-        if (this.maxWidthPercent != maxWidthPercent) {
-            this.maxWidthPercent = maxWidthPercent
-            post {
-                requestLayout()
-            }
-        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -87,14 +58,21 @@ class AutoSizeTextView : AppCompatTextView {
     override fun onTextChanged(text: CharSequence?, start: Int, lengthBefore: Int, lengthAfter: Int) {
         super.onTextChanged(text, start, lengthBefore, lengthAfter)
         if (mLastText == null || mLastText?.equals(text) == false) {
-            val maxWith = getMaxWith()
+            val expectedMaxWidth = getExpectedMaxWidth()
+            if (expectedMaxWidth > measuredWidth) {
+                setTextSizeInternal(autoMaxTextSizeInPx)
+            } else {
+                setTextSizeInternal(getSuitableTextSize(measuredWidth))
+            }
+
+            /*val maxWith = getMaxWith()
             if (maxWith > 0) {
                 setTextSizeInternal(getSuitableTextSize(maxWith))
             } else if (autoMaxTextSizeInPx > 0) {
                 setTextSizeInternal(autoMaxTextSizeInPx)
             } else if (measuredWidth > 0) {
                 setTextSizeInternal(getSuitableTextSize(measuredWidth))
-            }
+            }*/
         }
         mLastText = text
     }
@@ -139,8 +117,10 @@ class AutoSizeTextView : AppCompatTextView {
         if (drawables[2] != null) {
             rightDrawableWidth = drawables[2]?.bounds?.width() ?: 0
         }
-        return getTextPaint().apply { textSize = autoMaxTextSizeInPx }.measureText(text?.toString()
-                ?: "") + this.paddingLeft + this.paddingRight + this.compoundDrawablePadding + leftDrawableWidth + rightDrawableWidth
+        return getTextPaint().apply { textSize = autoMaxTextSizeInPx }.measureText(
+            text?.toString()
+                ?: ""
+        ) + this.paddingLeft + this.paddingRight + this.compoundDrawablePadding + leftDrawableWidth + rightDrawableWidth
     }
 
     private fun getTextWidth(): Float {
@@ -166,9 +146,9 @@ class AutoSizeTextView : AppCompatTextView {
     override fun setTextSize(unit: Int, size: Float) {
         super.setTextSize(unit, size)
         Log.d("AutoSizeTextView", "setTextSize: size = $size, textSize = $textSize, measuredWidth = $measuredWidth")
-        /*post {
+        post {
             requestLayout()
-        }*/
+        }
     }
 
     private fun getTextPaint(): Paint {

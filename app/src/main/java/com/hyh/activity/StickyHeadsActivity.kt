@@ -32,7 +32,6 @@ class StickyHeadsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        com.hyh.test()
         setContentView(R.layout.activity_sticky_heads)
         recycler_view.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recycler_view.adapter = mAdapter
