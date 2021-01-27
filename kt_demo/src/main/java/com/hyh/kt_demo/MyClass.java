@@ -1,13 +1,22 @@
 package com.hyh.kt_demo;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 
 public class MyClass {
 
 
     public static void main(String[] args) {
+
+
+
+        String s = "4000.00000";
+
 
         long timeMillis = System.currentTimeMillis() + 5 * 60 * 60 * 1000;
         Date date = new Date(timeMillis);
@@ -38,10 +47,70 @@ public class MyClass {
 
     }
 
+
+    public static String formatCount(String d) {
+        try {
+            BigDecimal count = new BigDecimal(d);
+            DecimalFormat countFormat = new DecimalFormat("###,###", new DecimalFormatSymbols(Locale.CHINA));
+            return countFormat.format(count);
+        } catch (Exception e) {
+        }
+        return "";
+    }
+
+
+    public static String formatCountKeepDecimal(String d) {
+        try {
+            BigDecimal count = new BigDecimal(d);
+            BigDecimal noZeros = count.stripTrailingZeros();
+            String plainString = noZeros.toPlainString();
+            int index = plainString.indexOf('.');
+            String integer;
+            String decimal;
+            if (index > 0) {
+                integer = plainString.substring(0, index);
+                decimal = plainString.substring(index + 1);
+            } else {
+                integer = plainString;
+                decimal = null;
+            }
+            String formatInteger = formatCount(integer);
+            if (decimal != null) {
+                return formatInteger + "." + decimal;
+            } else {
+                return formatInteger;
+            }
+        } catch (Exception e) {
+        }
+        return "";
+    }
+
+
+    public static String formatCount2(String d) {
+        try {
+            BigDecimal count = new BigDecimal(d);
+            BigDecimal noZeros = count.stripTrailingZeros();
+            return noZeros.toPlainString();
+        } catch (Exception e) {
+        }
+        return "";
+    }
+
     private static Calendar getCalendar() {
         Calendar instance = Calendar.getInstance();
         instance.setTimeZone(TimeZone.getTimeZone("GMT+8"));
         return instance;
+    }
+
+    public static boolean isDigitsOnly(CharSequence str) {
+        final int len = str.length();
+        for (int cp, i = 0; i < len; i += Character.charCount(cp)) {
+            cp = Character.codePointAt(str, i);
+            if (!Character.isDigit(cp)) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

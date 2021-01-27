@@ -23,4 +23,11 @@
 
     </style>
 
+    <declare-styleable name="AutoSizeTextView">
+        <attr name="autoMaxTextSize" format="dimension" />
+        <attr name="autoMinTextSize" format="dimension" />
+        <attr name="autoTextSizeStep" format="dimension" />
+        <attr name="maxWidthPercent" format="float" />
+    </declare-styleable>
+
 </resources>
