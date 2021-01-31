@@ -39,7 +39,7 @@ class TTT : FrameLayout {
 
     private fun initView() {
         val inflate = LayoutInflater.from(context).inflate(R.layout.layout_ttt, this)
-        Log.d("TAG", "initView: ")
+        Log.d("TAG", "initView:  ")
         childAt = getChildAt(0)
     }
 
