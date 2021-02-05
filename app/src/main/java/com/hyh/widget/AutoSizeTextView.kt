@@ -1,4 +1,4 @@
-package com.hyh.widget
+package cn.futu.trade.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -26,7 +26,7 @@ class AutoSizeTextView : AppCompatTextView {
     private var autoMaxTextSizeInPx = 1f
     private var autoMinTextSizeInPx = 1f
     private var autoTextSizeStepInPx = 1f
-    private var maxWidthPercent = 1.0F
+    private var maxWidthPercent = -1.0F
 
     private var mTextPaint: Paint? = null
 
@@ -139,8 +139,10 @@ class AutoSizeTextView : AppCompatTextView {
         if (drawables[2] != null) {
             rightDrawableWidth = drawables[2]?.bounds?.width() ?: 0
         }
-        return getTextPaint().apply { textSize = autoMaxTextSizeInPx }.measureText(text?.toString()
-                ?: "") + this.paddingLeft + this.paddingRight + this.compoundDrawablePadding + leftDrawableWidth + rightDrawableWidth
+        return getTextPaint().apply { textSize = autoMaxTextSizeInPx }.measureText(
+            text?.toString()
+                ?: ""
+        ) + this.paddingLeft + this.paddingRight + this.compoundDrawablePadding + leftDrawableWidth + rightDrawableWidth
     }
 
     private fun getTextWidth(): Float {
@@ -166,9 +168,9 @@ class AutoSizeTextView : AppCompatTextView {
     override fun setTextSize(unit: Int, size: Float) {
         super.setTextSize(unit, size)
         Log.d("AutoSizeTextView", "setTextSize: size = $size, textSize = $textSize, measuredWidth = $measuredWidth")
-        /*post {
+        post {
             requestLayout()
-        }*/
+        }
     }
 
     private fun getTextPaint(): Paint {

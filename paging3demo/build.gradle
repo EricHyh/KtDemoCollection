@@ -7,7 +7,7 @@ apply plugin: 'kotlin-kapt'
 
 android {
     defaultConfig {
-        applicationId "com.hyh.paging3demo"
+        applicationId "com.hyh.paging3demo1"
     }
     buildTypes {
         release {

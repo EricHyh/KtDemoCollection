@@ -18,6 +18,20 @@ public class MyClass {
         String s = "4000.00000";
 
 
+
+        String regex1 = "(1?[0-9]{1})\\.[0-9]+";
+        String regex2 = "[2-9][0-9]+\\.[0-9]+";//大于20
+
+        //455 + 191
+
+
+        System.out.println("");
+
+
+
+
+
+
         long timeMillis = System.currentTimeMillis() + 5 * 60 * 60 * 1000;
         Date date = new Date(timeMillis);
 

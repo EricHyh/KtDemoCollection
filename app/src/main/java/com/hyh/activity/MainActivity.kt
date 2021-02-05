@@ -8,6 +8,7 @@ import android.widget.PopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -22,6 +23,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+
+
         /* AlertDialog.Builder(this)
              .setPositiveButton("",)*/
 
@@ -29,6 +32,7 @@ class MainActivity : AppCompatActivity() {
             .content()
             .eventListener(Runnable {})
             .show()*/
+
 
 
         runBlocking {
