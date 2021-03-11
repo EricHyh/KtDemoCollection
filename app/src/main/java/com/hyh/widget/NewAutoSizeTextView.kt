@@ -35,6 +35,8 @@ class NewAutoSizeTextView : AppCompatTextView {
     private var mCachedMeasureWidth = 0
     private var mMaxWidth = 0
 
+    private var mInexactTextSize = false
+
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0)
 
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle) {
@@ -49,6 +51,21 @@ class NewAutoSizeTextView : AppCompatTextView {
         setTextSizeInternal(autoMaxTextSizeInPx)
     }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val oldMeasureWidth = measuredWidth
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        val currentMeasureWidth = measuredWidth
+        if (oldMeasureWidth != currentMeasureWidth) {
+            setTextSizeInternal(getSuitableTextSize(measuredWidth))
+            if (mInexactTextSize) {
+                mInexactTextSize = false
+                post {
+                    requestLayout()
+                }
+            }
+        }
+    }
+
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (mCachedText?.equals(text) == true) {
@@ -58,31 +75,34 @@ class NewAutoSizeTextView : AppCompatTextView {
         if (cachedMeasureWidth > 0 && cachedMeasureWidth < mCachedExpectedMaxWidth) {
             mMaxWidth = mMaxWidth.coerceAtLeast(cachedMeasureWidth)
         }
-        setTextSizeInternal(getSuitableTextSize(measuredWidth))
     }
+
 
     override fun onTextChanged(text: CharSequence?, start: Int, lengthBefore: Int, lengthAfter: Int) {
         super.onTextChanged(text, start, lengthBefore, lengthAfter)
         if (mCachedText == null || mCachedText?.equals(text) == false) {
+            val oldCachedExpectedMaxWidth = mCachedExpectedMaxWidth
             mCachedMeasureWidth = 0
             mCachedText = text
-            mCachedExpectedMaxWidth = getExpectedMaxWidth();
-
+            mCachedExpectedMaxWidth = getExpectedMaxWidth()
             if (mCachedExpectedMaxWidth <= measuredWidth) {
-                setTextSizeInternal(getSuitableTextSize(measuredWidth))
+                setTextSizeInternal(autoMaxTextSizeInPx)
+            } else if (mCachedExpectedMaxWidth <= mMaxWidth) {
+                setTextSizeInternal(autoMaxTextSizeInPx)
             } else {
-                if (mMaxWidth > 0) {
-                    setTextSizeInternal(getSuitableTextSize(mMaxWidth))
-                } else {
+                if (mCachedExpectedMaxWidth > oldCachedExpectedMaxWidth) {
                     setTextSizeInternal(autoMaxTextSizeInPx)
+                    mInexactTextSize = true
+                } else {
+                    if (mMaxWidth > 0) {
+                        setTextSizeInternal(getSuitableTextSize(mMaxWidth))
+                    } else {
+                        setTextSizeInternal(autoMaxTextSizeInPx)
+                        mInexactTextSize = true
+                    }
                 }
             }
         }
-    }
-
-    override fun onDraw(canvas: Canvas?) {
-        super.onDraw(canvas)
-        Log.d("AutoSizeTextView", "onDraw: textSize = $textSize, measuredWidth = $measuredWidth")
     }
 
     private fun getSuitableTextSize(width: Int): Float {
@@ -144,13 +164,6 @@ class NewAutoSizeTextView : AppCompatTextView {
 
     private fun setTextSizeInternal(size: Float) {
         setTextSize(TypedValue.COMPLEX_UNIT_PX, size)
-    }
-
-    override fun setTextSize(unit: Int, size: Float) {
-        super.setTextSize(unit, size)
-        post {
-            requestLayout()
-        }
     }
 
     private fun getTextPaint(): Paint {

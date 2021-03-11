@@ -91,7 +91,7 @@ public class OtherActivity extends Activity {
                     }
                 });
 
-                dialog.setDismissWithAnimation(true);
+                //dialog.setDismissWithAnimation(true);
 
                 dialog.setContentView(accountListView,
                         new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

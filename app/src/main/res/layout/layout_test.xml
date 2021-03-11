@@ -17,5 +17,30 @@
         android:layout_height="30dp"
         android:layout_width="match_parent" />
 
+    <RadioGroup
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/smart"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layoutDirection="rtl"
+            android:textDirection="ltr"
+            android:button="@drawable/radio_btn"
+            android:text="智能排序"
+            android:checked="true"
+            android:background="@android:color/darker_gray"
+            android:layout_weight="1" />
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layoutDirection="rtl"
+            android:textDirection="ltr"
+            android:layout_weight="1" />
+
+    </RadioGroup>
 
 </LinearLayout>
