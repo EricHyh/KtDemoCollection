@@ -8,7 +8,11 @@ package com.hyh.toast.core
  */
 class IToast {
 
+    fun show() {
 
-    fun show() {}
+    }
 
+    fun dismiss() {
+
+    }
 }
