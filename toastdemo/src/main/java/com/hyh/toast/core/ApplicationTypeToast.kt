@@ -1,9 +1,11 @@
 package com.hyh.toast.core
 
 import android.graphics.PixelFormat
+import android.os.Build
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.annotation.StyleRes
 
 class ApplicationTypeToast(private val mWindowManager: WindowManager) : IToast {
@@ -19,7 +21,7 @@ class ApplicationTypeToast(private val mWindowManager: WindowManager) : IToast {
         flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-        gravity = Gravity.BOTTOM
+        gravity = Gravity.CENTER
     }
 
     private var mShowing = false
@@ -72,15 +74,19 @@ class ApplicationTypeToast(private val mWindowManager: WindowManager) : IToast {
     override fun setOnDismissListener(listener: () -> Unit) {
     }
 
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     override fun show(): Boolean {
         if (mShowing) {
             return true
         }
         val contentView = mContentView ?: return false
-        return mWindowManager.runCatching {
+        val result = mWindowManager.runCatching {
             mWindowManager.addView(contentView, mParams)
             mShowing = true
-        }.isSuccess
+        }
+        result.exceptionOrNull()?.printStackTrace()
+
+        return result.isSuccess
     }
 
     override fun dismiss() {

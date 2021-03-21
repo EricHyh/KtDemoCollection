@@ -1,10 +1,12 @@
 package com.hyh.toast;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.widget.PopupWindow;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.hyh.toast.api.FtToast;
@@ -28,10 +30,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void showToast(View view) {
-        /*new AlertDialog.Builder(this)
-                .setTitle("测试")
-                .show();*/
-
         FtToast.multipleToast()
                 .duration(2000)
                 .text("测试一下")
@@ -44,22 +42,31 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .show();
 
+
+
+
+
         PopupWindow popupWindow = new PopupWindow(MainActivity.this);
 
-        /*new Handler().postDelayed(new Runnable() {
+        new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                PopupWindow popupWindow = new PopupWindow(MainActivity.this);
+               /* PopupWindow popupWindow = new PopupWindow(MainActivity.this);
                 View imageView = new View(MainActivity.this);
                 imageView.setBackgroundColor(Color.RED);
                 popupWindow.setWidth(400);
                 popupWindow.setHeight(400);
                 popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
                 popupWindow.setContentView(imageView);
-                popupWindow.showAsDropDown(view);
+                popupWindow.showAsDropDown(view);*/
                 //popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
+
+
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("测试")
+                        .show();
             }
-        }, 1000);*/
+        }, 1000);
 
 
 
