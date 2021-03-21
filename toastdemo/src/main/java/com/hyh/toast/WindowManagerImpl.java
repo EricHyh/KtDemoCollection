@@ -50,7 +50,10 @@ class WindowManagerImpl implements WindowManager {
         if (params instanceof WindowManager.LayoutParams) {
             WindowManager.LayoutParams layoutParams = (LayoutParams) params;
             layoutParams.flags = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                    | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                    | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE| LayoutParams.FLAG_FULLSCREEN;
+
+            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.height = LayoutParams.MATCH_PARENT;
         }
         mWindowManager.addView(view, params);
     }
@@ -60,7 +63,12 @@ class WindowManagerImpl implements WindowManager {
         if (params instanceof WindowManager.LayoutParams) {
             WindowManager.LayoutParams layoutParams = (LayoutParams) params;
             layoutParams.flags = WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                    | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                    | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            | LayoutParams.FLAG_FULLSCREEN;
+
+
+            layoutParams.width = LayoutParams.MATCH_PARENT;
+            layoutParams.height = LayoutParams.MATCH_PARENT;
         }
         mWindowManager.updateViewLayout(view, params);
     }
