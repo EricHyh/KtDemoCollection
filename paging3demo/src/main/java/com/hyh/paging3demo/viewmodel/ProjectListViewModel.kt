@@ -41,10 +41,10 @@ class ProjectListViewModel(
     private val mPager: Pager<Int, ProjectBean> =
         Pager(
             config = PagingConfig(10, prefetchDistance = 1, enablePlaceholders = false),
-            initialKey = if (type == Global.SUPPORT_PREV_PAGE_TYPE) 5 else null,
+            initialKey = /*if (type == Global.SUPPORT_PREV_PAGE_TYPE) 20 else null*/20,
             remoteMediator =
             if (type == Global.REMOTE_MEDIATOR_TYPE) {
-                ProjectRemoteMediator(context, ProjectDB.get(context), chapterId = chapterId)
+                ProjectRemoteMediatorWithPrepend(context, ProjectDB.get(context), chapterId = chapterId)
             } else {
                 null
             },

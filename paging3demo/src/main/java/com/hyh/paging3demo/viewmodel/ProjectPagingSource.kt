@@ -3,6 +3,7 @@ package com.hyh.paging3demo.viewmodel
 import android.content.Context
 import android.util.Log
 import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import com.hyh.paging3demo.api.ProjectApi
 import com.hyh.paging3demo.bean.ProjectBean
 import com.hyh.paging3demo.net.RetrofitHelper
@@ -28,6 +29,13 @@ class ProjectPagingSource(context: Context, private val chapterId: Int) :
             )
         } catch (e: Throwable) {
             return LoadResult.Error(e)
+        }
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, ProjectBean>): Int? {
+        return state.anchorPosition?.let { anchorPosition ->
+            val anchorPage = state.closestPageToPosition(anchorPosition)
+            anchorPage?.prevKey?.plus(1) ?: anchorPage?.nextKey?.minus(1)
         }
     }
 }

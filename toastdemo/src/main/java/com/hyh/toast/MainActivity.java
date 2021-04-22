@@ -1,5 +1,6 @@
 package com.hyh.toast;
 
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
@@ -10,6 +11,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.hyh.toast.api.FtToast;
+import com.hyh.toast.utils.DisplayUtil;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function0;
@@ -22,15 +24,33 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
 
-
-
         /*FtToast.regularToast()
                 .text("测试一下")
                 .show();*/
     }
 
     public void showToast(View view) {
-        FtToast.multipleToast()
+        View test_view = findViewById(R.id.text_view);
+
+        test_view.setTranslationX(400);
+
+
+        int[] location = new int[2];
+        test_view.getLocationOnScreen(location);
+
+        Rect rect = new Rect();
+
+        boolean localVisibleRect = test_view.getGlobalVisibleRect(rect);
+
+
+        int screenWidth = DisplayUtil.INSTANCE.getScreenWidth(this);
+        int screenHeight = DisplayUtil.INSTANCE.getScreenHeight(this);
+
+
+        Toast.makeText(this, localVisibleRect + "--" + rect.toString(), Toast.LENGTH_SHORT).show();
+
+
+        /*FtToast.multipleToast()
                 .duration(2000)
                 .text("测试一下")
                 .clickAction(new Function0<Unit>() {
@@ -51,14 +71,14 @@ public class MainActivity extends AppCompatActivity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-               /* PopupWindow popupWindow = new PopupWindow(MainActivity.this);
+               *//* PopupWindow popupWindow = new PopupWindow(MainActivity.this);
                 View imageView = new View(MainActivity.this);
                 imageView.setBackgroundColor(Color.RED);
                 popupWindow.setWidth(400);
                 popupWindow.setHeight(400);
                 popupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
                 popupWindow.setContentView(imageView);
-                popupWindow.showAsDropDown(view);*/
+                popupWindow.showAsDropDown(view);*//*
                 //popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
 
 
@@ -66,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                         .setTitle("测试")
                         .show();
             }
-        }, 1000);
+        }, 1000);*/
 
 
 
