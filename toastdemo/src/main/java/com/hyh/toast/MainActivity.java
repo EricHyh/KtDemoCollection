@@ -10,7 +10,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.hyh.toast.api.FtToast;
 import com.hyh.toast.utils.DisplayUtil;
 
 import kotlin.Unit;
@@ -52,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         /*FtToast.multipleToast()
                 .duration(2000)
+                .anchorView(view)
                 .text("测试一下")
                 .clickAction(new Function0<Unit>() {
                     @Override
@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
 
         PopupWindow popupWindow = new PopupWindow(MainActivity.this);
 
-        new Handler().postDelayed(new Runnable() {
+        /*new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
                *//* PopupWindow popupWindow = new PopupWindow(MainActivity.this);
