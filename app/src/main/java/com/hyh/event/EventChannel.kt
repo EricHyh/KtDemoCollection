@@ -1,5 +1,6 @@
 package com.hyh.event
 
+import android.annotation.SuppressLint
 import androidx.lifecycle.LifecycleOwner
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
@@ -41,9 +42,17 @@ interface IEventChannel {
         }
     }
 
+    // region receive as observable
+
     fun <T : IEvent> getObservable(eventType: Class<T>): Observable<T>
     fun getObservable(vararg eventTypes: Class<*>): Observable<IEvent>
     fun getObservable(): Observable<IEvent>
+
+    // endregion
+
+    fun getFlow(): Flow<IEvent>
+
+
     fun send(event: IEvent)
 }
 
@@ -78,6 +87,10 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
         return mEventSource
     }
 
+    override fun getFlow(): Flow<IEvent> {
+
+    }
+
     private fun IEvent.isInstanceOf(vararg eventTypes: Class<*>): Boolean {
         if (eventTypes.isEmpty()) return false
         eventTypes.forEach {
@@ -87,6 +100,11 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
         }
         return false
     }
+}
+
+@Suppress("UNCHECKED_CAST")
+fun IEventChannel.getDataWrapperEventObservable(): Observable<IEvent> {
+    return getObservable(DataWrapperEvent::class.java) as Observable<IEvent>
 }
 
 inline fun <reified T : IEvent> IEventChannel.getObservable(): Observable<T> {
