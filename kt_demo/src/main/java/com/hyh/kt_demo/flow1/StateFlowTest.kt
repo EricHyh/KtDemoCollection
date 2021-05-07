@@ -1,18 +1,12 @@
 package com.hyh.kt_demo.flow1
 
 import jdk.nashorn.internal.objects.Global
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.channels.TickerMode
-import kotlinx.coroutines.channels.consume
-import kotlinx.coroutines.channels.consumeEach
-import kotlinx.coroutines.channels.ticker
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 fun main() {
-    runBlocking {
+    /*runBlocking {
         launch(Dispatchers.Default) {
             StateFlowTest1
                 .state
@@ -29,23 +23,56 @@ fun main() {
                 delayMillis = 100,
                 initialDelayMillis = 0, mode = TickerMode.FIXED_PERIOD
             )
-            /*tickerChannel.consumeEach {
+            *//*tickerChannel.consumeEach {
                 log("consumeEach")
-            }*/
+            }*//*
             tickerChannel
                 .consumeAsFlow()
                 .collect {
-                    //log("tickerChannel collect")
+                    log("tickerChannel collect")
                     StateFlowTest1.state.value = StateFlowTest1.state.value + 1
                 }
 
             log("launch 2")
         }
+    }*/
+
+
+    runBlocking {
+
+
+        launch(Dispatchers.IO) {
+            log("launch2")
+            StateFlowTest1
+                .state
+                .asSharedFlow()
+                .onStart {
+                    log("onStart")
+                }
+                .collect {
+                    log("collect:$it")
+                }
+        }
+
+        launch (Dispatchers.IO){
+            log("launch1")
+            for (num in 0..1000) {
+                val tryEmit = StateFlowTest1.state.emit(num)
+                log("for $num - tryEmit = $tryEmit")
+            }
+        }
+
     }
+
+
+
+
+
+
 }
 
 object StateFlowTest1 {
 
-    val state: MutableStateFlow<Int> = MutableStateFlow(0)
+    val state: MutableSharedFlow <Int> = MutableSharedFlow ()
 
 }

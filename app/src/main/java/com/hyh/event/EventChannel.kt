@@ -8,6 +8,8 @@ import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.PublishSubject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import java.io.Closeable
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
@@ -68,8 +70,11 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
 
     private val mEventSource = PublishSubject.create<IEvent>()
 
+    private val mEventFlow = MutableSharedFlow<IEvent>()
+
     override fun send(event: IEvent) {
         mEventSource.onNext(event)
+        mEventFlow.tryEmit(value = event)
     }
 
     override fun <T : IEvent> getObservable(eventType: Class<T>): Observable<T> {
@@ -88,7 +93,7 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
     }
 
     override fun getFlow(): Flow<IEvent> {
-
+        return mEventFlow.asSharedFlow()
     }
 
     private fun IEvent.isInstanceOf(vararg eventTypes: Class<*>): Boolean {
