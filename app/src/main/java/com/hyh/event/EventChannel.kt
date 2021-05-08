@@ -2,6 +2,7 @@ package com.hyh.event
 
 import android.annotation.SuppressLint
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
@@ -10,6 +11,7 @@ import io.reactivex.subjects.PublishSubject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import java.io.Closeable
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
@@ -74,7 +76,11 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
 
     override fun send(event: IEvent) {
         mEventSource.onNext(event)
-        mEventFlow.tryEmit(value = event)
+        mLifecycleOwner
+            .lifecycleScope
+            .launch {
+                mEventFlow.emit(value = event)
+            }
     }
 
     override fun <T : IEvent> getObservable(eventType: Class<T>): Observable<T> {
