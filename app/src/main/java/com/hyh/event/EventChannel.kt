@@ -1,27 +1,40 @@
 package com.hyh.event
 
-import android.annotation.SuppressLint
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
-import io.reactivex.BackpressureStrategy
-import io.reactivex.Flowable
+import androidx.lifecycle.*
 import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
-import java.io.Closeable
-import java.lang.reflect.InvocationHandler
-import java.lang.reflect.Method
-import java.lang.reflect.Proxy
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.CoroutineContext
 
 
 interface IEvent {
-    fun Any.asEvent(): IEvent {
-        return DataWrapperEvent.create(this)
+    companion object {
+        fun Any.asEvent(): IEvent {
+            return DataWrapperEvent.create(this)
+        }
+
+        inline fun <reified T : IEvent> IEventChannel.getObservable(): Observable<T> {
+            return getObservable(T::class.java)
+        }
+
+        inline fun <reified T> IEvent.isDataWrapperEvent(): Boolean {
+            if (this !is DataWrapperEvent) {
+                return false
+            }
+            val data = this.getData()
+            return T::class.java.isInstance(data)
+        }
+
+        inline fun <reified T> IEvent.unwrapData(): T? {
+            if (isDataWrapperEvent<T>()) {
+                return (this as DataWrapperEvent).getData() as T
+            }
+            return null
+        }
     }
 }
 
@@ -60,11 +73,17 @@ interface IEventChannel {
     fun send(event: IEvent)
 }
 
-class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
+class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, LifecycleObserver {
 
     companion object {
+
         fun create(owner: LifecycleOwner): IEventChannel {
             return EventChannel(owner)
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        fun IEventChannel.getDataWrapperEventObservable(): Observable<IEvent> {
+            return getObservable(DataWrapperEvent::class.java) as Observable<IEvent>
         }
     }
 
@@ -74,19 +93,31 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
 
     private val mEventFlow = MutableSharedFlow<IEvent>()
 
+    private val mLifecycleScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        FtLifecycleCoroutineScopeImpl(owner.lifecycle, SupervisorJob() + Dispatchers.Main.immediate).apply {
+            register()
+        }
+    }
+
+    init {
+        mLifecycleOwner.lifecycle.addObserver(this)
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onD() {
+        mEventSource.onComplete()
+    }
+
     override fun send(event: IEvent) {
         mEventSource.onNext(event)
-        mLifecycleOwner
-            .lifecycleScope
-            .launch {
-                mEventFlow.emit(value = event)
-            }
+        mLifecycleScope.launch {
+            mEventFlow.emit(value = event)
+        }
     }
 
     override fun <T : IEvent> getObservable(eventType: Class<T>): Observable<T> {
         return mEventSource.ofType(eventType)
     }
-
 
     override fun getObservable(vararg eventTypes: Class<*>): Observable<IEvent> {
         return mEventSource.filter {
@@ -96,6 +127,35 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
 
     override fun getObservable(): Observable<IEvent> {
         return mEventSource
+        /*mEventSource.compose()
+
+
+        return mEventSource.compose { upstream ->
+
+
+            val observableSource = ObservableSource<IEvent> {
+
+            }
+            upstream.subscribe(object : Observer<IEvent> {
+                override fun onComplete() {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onSubscribe(d: Disposable) {
+
+                }
+
+                override fun onNext(t: IEvent) {
+                    TODO("Not yet implemented")
+                }
+
+                override fun onError(e: Throwable) {
+                    TODO("Not yet implemented")
+                }
+
+            })
+            observableSource
+        }*/
     }
 
     override fun getFlow(): Flow<IEvent> {
@@ -111,31 +171,53 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel {
         }
         return false
     }
-}
 
-@Suppress("UNCHECKED_CAST")
-fun IEventChannel.getDataWrapperEventObservable(): Observable<IEvent> {
-    return getObservable(DataWrapperEvent::class.java) as Observable<IEvent>
-}
 
-inline fun <reified T : IEvent> IEventChannel.getObservable(): Observable<T> {
-    return getObservable(T::class.java)
-}
+    class FtLifecycleCoroutineScopeImpl(
+        val lifecycle: Lifecycle,
+        override val coroutineContext: CoroutineContext
+    ) : CoroutineScope, LifecycleEventObserver {
 
-inline fun <reified T> IEvent.isDataWrapperEvent(): Boolean {
-    if (this !is DataWrapperEvent) {
-        return false
+        init {
+            // in case we are initialized on a non-main thread, make a best effort check before
+            // we return the scope. This is not sync but if developer is launching on a non-main
+            // dispatcher, they cannot be 100% sure anyways.
+            if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
+                coroutineContext.cancel()
+            }
+        }
+
+        fun register() {
+            launch(Dispatchers.Main.immediate) {
+                if (lifecycle.currentState >= Lifecycle.State.INITIALIZED) {
+                    lifecycle.addObserver(this@FtLifecycleCoroutineScopeImpl)
+                } else {
+                    coroutineContext.cancel()
+                }
+            }
+        }
+
+        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+            if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
+                lifecycle.removeObserver(this)
+                coroutineContext.cancel()
+            }
+        }
     }
-    val data = this.getData()
-    return T::class.java.isInstance(data)
 }
 
-inline fun <reified T> IEvent.unwrapData(): T? {
-    if (isDataWrapperEvent<T>()) {
-        return (this as DataWrapperEvent).getData() as T
+object EventLifecycleHelper {
+
+    fun <T> Observable<T>.bindToLifecycle(owner: LifecycleOwner): Observable<T> {
+
+
+
+
+        return this
     }
-    return null
+
 }
+
 
 sealed class TestListEvent : IEvent {
 
@@ -159,3 +241,4 @@ class Test {
 
     }
 }
+

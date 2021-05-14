@@ -3,6 +3,7 @@ package com.hyh.paging3demo.fragment
 
 import android.graphics.Rect
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -92,7 +93,7 @@ class ProjectFragment : CommonBaseFragment() {
                 mSwipeRefreshLayout?.isRefreshing = loadStates.refresh is LoadState.Loading
             }
         }
-
+        // FIXME: 2021/5/10  
 
         /*lifecycleScope.launchWhenCreated {
             mProjectAdapter.loadStateFlow
@@ -113,5 +114,12 @@ class ProjectFragment : CommonBaseFragment() {
                 mProjectAdapter.submitData(it)
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Handler().postDelayed({
+            Log.d("ProjectFragment", "onDestroy: $context")
+        },5000)
     }
 }

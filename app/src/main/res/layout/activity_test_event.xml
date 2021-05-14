@@ -8,8 +8,13 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="test"
-        android:text="测试按钮" />
+        android:onClick="test1"
+        android:text="测试按钮1" />
 
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="test2"
+        android:text="测试按钮2" />
 
 </LinearLayout>
