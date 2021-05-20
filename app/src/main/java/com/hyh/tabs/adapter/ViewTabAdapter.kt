@@ -4,6 +4,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.viewpager.widget.PagerAdapter
 import com.hyh.tabs.AbsViewTab
 
@@ -14,7 +16,7 @@ import com.hyh.tabs.AbsViewTab
  * @data 2021/5/20
  */
 
-class ViewTabAdapter<Key : Any> : PagerAdapter() {
+class ViewTabAdapter<Key : Any>(private val lifecycleOwner: LifecycleOwner) : PagerAdapter() {
 
     private val tabDataHandler: TabDataHandler<Key, AbsViewTab> = TabDataHandler()
 
@@ -22,7 +24,9 @@ class ViewTabAdapter<Key : Any> : PagerAdapter() {
 
     private val mCurrentPrimaryItem: AbsViewTab? = null
 
-    override fun getCount(): Int = tabDataHandler.tabCount
+    override fun getCount(): Int =
+        if (lifecycleOwner.lifecycle.currentState <= Lifecycle.State.DESTROYED) 0 else tabDataHandler.tabCount
+
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val tab = tabDataHandler.getTab(position)
@@ -40,14 +44,19 @@ class ViewTabAdapter<Key : Any> : PagerAdapter() {
     }
 
     override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
-
+        val absViewTab = `object` as? AbsViewTab
+        absViewTab?.view?.let {
+            val parent = it.parent as? ViewGroup
+            parent?.removeView(it)
+        }
+        absViewTab?.performDestroyView()
     }
 
     override fun getPageTitle(position: Int): CharSequence? =
         tabDataHandler.getTab(position).getTabTitle()
 
     override fun isViewFromObject(view: View, `object`: Any): Boolean {
-        TODO("Not yet implemented")
+        return (`object` as? AbsViewTab)?.view == view
     }
 
     override fun getItemPosition(`object`: Any): Int {

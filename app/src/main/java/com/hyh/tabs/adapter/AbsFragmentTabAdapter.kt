@@ -20,6 +20,8 @@ class AbsFragmentTabAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
     override fun getItem(position: Int): Fragment {
         TODO("Not yet implemented")
+        val fm: FragmentManager = null
+        fm.beginTransaction().commitAllowingStateLoss()
     }
 
     override fun getCount(): Int {

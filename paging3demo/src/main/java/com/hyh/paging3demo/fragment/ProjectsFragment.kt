@@ -34,6 +34,7 @@ class ProjectsFragment : CommonBaseFragment() {
     }
 
     override fun getContentView(inflater: LayoutInflater, container: ViewGroup?): View {
+        setRetainInstance
         return inflater.inflate(R.layout.fragment_projects, container, false)
     }
 

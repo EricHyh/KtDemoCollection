@@ -14,7 +14,9 @@ import kotlin.coroutines.CoroutineContext
  * @author eriche
  * @data 2021/5/20
  */
-abstract class AbsViewTab(val parentFragment: Fragment) :
+abstract class AbsViewTab(
+    val parentViewModelStoreOwner: ViewModelStoreOwner
+) :
     ITab,
     LifecycleOwner,
     ViewModelStoreOwner {
@@ -79,6 +81,7 @@ abstract class AbsViewTab(val parentFragment: Fragment) :
     }
 
     fun performDestroy() {
+        viewModelStore.clear()
         onDestroy()
     }
 
