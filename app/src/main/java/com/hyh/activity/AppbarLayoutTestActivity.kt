@@ -30,7 +30,6 @@ class AppbarLayoutTestActivity : AppCompatActivity() {
         findViewById<RecyclerView>(R.id.bottom_list)
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.appbarlayout_test)

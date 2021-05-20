@@ -1,4 +1,4 @@
-package cn.futu.trade.widget
+package com.hyh.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -32,6 +32,10 @@ class AutoSizeTextView : AppCompatTextView {
 
     private var mLastText: CharSequence? = null
 
+    constructor(context: Context) : super(context) {
+        init(context, null)
+    }
+
     constructor(context: Context, attrs: AttributeSet) : this(context, attrs, 0)
 
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle) {
@@ -44,6 +48,10 @@ class AutoSizeTextView : AppCompatTextView {
         getTextPaint().textSize = autoMaxTextSizeInPx
 
         setTextSizeInternal(autoMaxTextSizeInPx)
+    }
+
+    private fun init(context: Context, attrs: AttributeSet?) {
+
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
