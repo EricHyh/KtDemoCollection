@@ -1,8 +1,7 @@
 package com.hyh.tabs.adapter
 
-import androidx.viewpager.widget.PagerAdapter
-import com.hyh.tabs.AbsFragmentTab
 import com.hyh.tabs.ITab
+import com.hyh.tabs.ITabProvider
 import com.hyh.tabs.internal.TabData
 import com.hyh.tabs.internal.UiReceiver
 
@@ -21,6 +20,10 @@ class TabDataHandler<Key : Any, Value : ITab> {
 
 
     fun getTab(position: Int): Value {
+        TODO()
+    }
+
+    fun getTabFactory(): ITabProvider<Value> {
         TODO()
     }
 

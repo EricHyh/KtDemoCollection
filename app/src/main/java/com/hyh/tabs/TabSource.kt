@@ -1,5 +1,9 @@
 package com.hyh.tabs
 
+import com.hyh.tabs.internal.TabData
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+
 
 /**
  * Tab源
@@ -7,34 +11,27 @@ package com.hyh.tabs
  * @author eriche
  * @data 2021/5/20
  */
-abstract class TabSource<Key : Any, Value : ITab> {
+abstract class TabSource<Param : Any, Tab : ITab> {
 
     companion object {
         private const val TAG = "TabSource"
     }
 
-    abstract suspend fun load(params: Key): LoadResult<Value>
+    val flow: Flow<TabData<Param, Tab>> = flow {
 
-    public sealed class LoadResult<Value : ITab> {
+    }
 
-        public data class Error<Value : ITab>(
+    abstract suspend fun load(params: Param): LoadResult<Tab>
+
+    sealed class LoadResult<Tab : ITab> {
+
+        data class Error<Tab : ITab>(
             val throwable: Throwable
-        ) : TabSource.LoadResult<Value>()
+        ) : TabSource.LoadResult<Tab>()
 
-        public data class TabResult<Value : ITab> constructor(
-            val data: List<Value>
-        ) : LoadResult<Value>() {
-
-            public companion object {
-                public const val COUNT_UNDEFINED: Int = Int.MIN_VALUE
-
-                @Suppress("MemberVisibilityCanBePrivate") // Prevent synthetic accessor generation.
-                internal val EMPTY = TabResult(emptyList())
-
-                @Suppress("UNCHECKED_CAST") // Can safely ignore, since the list is empty.
-                internal fun <Value : ITab> empty() = EMPTY as TabResult<Value>
-            }
-
-        }
+        data class TabResult<Tab : ITab> constructor(
+            val tabChanged: Boolean,
+            val tabProvider: ITabProvider<Tab>
+        ) : LoadResult<Tab>()
     }
 }

@@ -3,8 +3,8 @@ package com.hyh.tabs
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
+import com.hyh.fragment.BaseFragment
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
@@ -14,9 +14,7 @@ import kotlin.coroutines.CoroutineContext
  * @author eriche
  * @data 2021/5/20
  */
-abstract class AbsViewTab(
-    val parentViewModelStoreOwner: ViewModelStoreOwner
-) :
+abstract class AbsViewTab() :
     ITab,
     LifecycleOwner,
     ViewModelStoreOwner {
@@ -27,14 +25,23 @@ abstract class AbsViewTab(
 
     private val viewModelStore: ViewModelStore = ViewModelStore()
 
+    private val lifecycle: LifecycleRegistry by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        LifecycleRegistry(this)
+    }
+
     private val viewLifecycle: LifecycleRegistry by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         LifecycleRegistry(this)
     }
 
+    private val viewLifecycleOwner: LifecycleOwner by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        LifecycleOwner {
+            viewLifecycle
+        }
+    }
+
     val coroutineScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         LifecycleCoroutineScopeImpl(
-            viewLifecycle,
-            SupervisorJob() + Dispatchers.Main.immediate
+            lifecycle, SupervisorJob() + Dispatchers.Main.immediate
         ).apply {
             register()
         }
@@ -44,18 +51,24 @@ abstract class AbsViewTab(
 
     var view: View? = null
 
-    override fun getLifecycle(): Lifecycle = viewLifecycle
+    override fun getLifecycle(): Lifecycle = lifecycle
 
     override fun getViewModelStore(): ViewModelStore = viewModelStore
 
+    fun getViewLifecycle(): Lifecycle = viewLifecycle
+
+    @JvmName("_getViewLifecycleOwner")
+    fun getViewLifecycleOwner(): LifecycleOwner = viewLifecycleOwner
+
     fun performCreate() {
         onCreate()
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
 
     fun performCreateView(inflater: LayoutInflater, parent: ViewGroup): View {
-        viewLifecycle.currentState = Lifecycle.State.STARTED
         val view = onCreateView(inflater, parent)
         this.view = view
+        viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         return view
     }
 
@@ -64,23 +77,34 @@ abstract class AbsViewTab(
     }
 
     fun performTabVisible() {
-        viewLifecycle.currentState = Lifecycle.State.RESUMED
+        viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
         isVisible = true
         onTabVisible()
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
+        viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
     }
 
     fun performTabInvisible() {
-        viewLifecycle.currentState = Lifecycle.State.STARTED
+        viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         isVisible = false
         onTabInvisible()
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
     }
 
     fun performDestroyView() {
-        viewLifecycle.currentState = Lifecycle.State.DESTROYED
+
+        if (view != null) {
+            viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+        }
+
         onDestroyView()
     }
 
     fun performDestroy() {
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         viewModelStore.clear()
         onDestroy()
     }

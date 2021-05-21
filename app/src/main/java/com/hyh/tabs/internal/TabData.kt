@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
  * @author eriche
  * @data 2021/5/20
  */
-class TabData<Key : Any, Value : ITab>(
-    val flow: Flow<TabSource.LoadResult<Value>>,
-    val receiver: UiReceiver<Key>
+class TabData<Param : Any, Tab : ITab>(
+    val flow: Flow<TabSource.LoadResult<Tab>>,
+    val receiver: UiReceiver<Param>
 )
