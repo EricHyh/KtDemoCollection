@@ -5,6 +5,9 @@ import android.os.Handler
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.hyh.demo.R
+import com.hyh.tabs.AbsViewTab
+import com.hyh.tabs.adapter.ITabAdapter
+import com.hyh.tabs.adapter.ViewTabAdapter
 import com.hyh.toast.HToast
 
 class ToastActivity : AppCompatActivity() {
@@ -18,6 +21,5 @@ class ToastActivity : AppCompatActivity() {
         Handler().postDelayed({
             HToast.show(this)
         }, 2000)
-
     }
 }

@@ -1,3 +1,4 @@
+include ':lib_tabs'
 include ':toastdemo'
 include ':app', ':kt_demo', ':pagingdemo', ':paging3demo'
 rootProject.name='KtDemoCollection'

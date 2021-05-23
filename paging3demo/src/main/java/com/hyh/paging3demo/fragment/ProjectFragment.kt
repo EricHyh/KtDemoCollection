@@ -28,7 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-@ExperimentalPagingApi
+
 class ProjectFragment : CommonBaseFragment() {
 
     private var mSwipeRefreshLayout: SwipeRefreshLayout? = null
@@ -37,6 +37,7 @@ class ProjectFragment : CommonBaseFragment() {
 
     private val mProjectAdapter: ProjectAdapter = ProjectAdapter()
 
+    @ExperimentalPagingApi
     private val mProjectListViewModel: ProjectListViewModel? by viewModels {
         object : AbstractSavedStateViewModelFactory(this, null) {
             override fun <T : ViewModel?> create(
@@ -105,6 +106,7 @@ class ProjectFragment : CommonBaseFragment() {
         }*/
     }
 
+    @ExperimentalPagingApi
     override fun initData() {
         /*mProjectListViewModel?.projects?.asLiveData()?.observe(this) {
             mProjectAdapter.submitData(lifecycle, it)

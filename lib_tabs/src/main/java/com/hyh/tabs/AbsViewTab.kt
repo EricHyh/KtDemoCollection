@@ -14,7 +14,7 @@ import kotlin.coroutines.CoroutineContext
  * @author eriche
  * @data 2021/5/20
  */
-abstract class AbsViewTab() :
+abstract class AbsViewTab :
     ITab,
     LifecycleOwner,
     ViewModelStoreOwner {
@@ -60,23 +60,23 @@ abstract class AbsViewTab() :
     @JvmName("_getViewLifecycleOwner")
     fun getViewLifecycleOwner(): LifecycleOwner = viewLifecycleOwner
 
-    fun performCreate() {
+    internal fun performCreate() {
         onCreate()
         lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
     }
 
-    fun performCreateView(inflater: LayoutInflater, parent: ViewGroup): View {
+    internal fun performCreateView(inflater: LayoutInflater, parent: ViewGroup): View {
         val view = onCreateView(inflater, parent)
         this.view = view
         viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         return view
     }
 
-    fun performViewCreated(view: View) {
+    internal fun performViewCreated(view: View) {
         onViewCreated(view)
     }
 
-    fun performTabVisible() {
+    internal fun performTabVisible() {
         viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
         isVisible = true
@@ -85,7 +85,7 @@ abstract class AbsViewTab() :
         viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
     }
 
-    fun performTabInvisible() {
+    internal fun performTabInvisible() {
         viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
         isVisible = false
@@ -94,7 +94,7 @@ abstract class AbsViewTab() :
         viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
     }
 
-    fun performDestroyView() {
+    internal fun performDestroyView() {
 
         if (view != null) {
             viewLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -103,7 +103,7 @@ abstract class AbsViewTab() :
         onDestroyView()
     }
 
-    fun performDestroy() {
+    internal fun performDestroy() {
         lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         viewModelStore.clear()
         onDestroy()
@@ -171,3 +171,26 @@ abstract class AbsViewTab() :
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

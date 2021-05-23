@@ -30,7 +30,6 @@ class ProjectListViewModel(private val context: Context, private val chapterId: 
 
 }*/
 
-
 @ExperimentalPagingApi
 class ProjectListViewModel(
     private val context: Context,
@@ -41,7 +40,7 @@ class ProjectListViewModel(
     private val mPager: Pager<Int, ProjectBean> =
         Pager(
             config = PagingConfig(10, prefetchDistance = 1, enablePlaceholders = false),
-            initialKey = /*if (type == Global.SUPPORT_PREV_PAGE_TYPE) 20 else null*/20,
+            initialKey = 0,
             remoteMediator =
             if (type == Global.REMOTE_MEDIATOR_TYPE) {
                 ProjectRemoteMediatorWithPrepend(context, ProjectDB.get(context), chapterId = chapterId)
@@ -57,6 +56,6 @@ class ProjectListViewModel(
             }
         )
 
-    val projects = mPager.flow.cachedIn(viewModelScope)
+    val projects = mPager.flow/*.cachedIn(viewModelScope)*/
 
 }

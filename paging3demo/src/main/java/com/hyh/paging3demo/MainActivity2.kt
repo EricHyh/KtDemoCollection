@@ -9,9 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 import com.huawei.facerecognition.FaceManager
 import com.huawei.facerecognition.HwFaceManagerFactory
 import com.hyh.paging3demo.base.Global
-import com.hyh.paging3demo.fragment.ProjectsFragment
+import com.hyh.paging3demo.fragment.ProjectsFragment2
 
-class MainActivity : AppCompatActivity() {
+class MainActivity2 : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         Global.sourceType = type
         supportFragmentManager
             .beginTransaction()
-            .add(android.R.id.content, ProjectsFragment::class.java, Bundle())
+            .add(android.R.id.content, ProjectsFragment2::class.java, Bundle())
             .addToBackStack(null)
             .commitAllowingStateLoss()
     }

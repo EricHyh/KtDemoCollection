@@ -10,6 +10,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.viewpager.widget.PagerAdapter
 import com.hyh.fragment.BaseFragment
 import com.hyh.tabs.AbsViewTab
+import com.hyh.tabs.LoadState
+import com.hyh.tabs.TabInfo
+import com.hyh.tabs.internal.TabData
+import kotlinx.coroutines.flow.Flow
+import java.lang.NullPointerException
 import kotlin.collections.set
 
 /**
@@ -19,7 +24,18 @@ import kotlin.collections.set
  * @data 2021/5/20
  */
 
-class ViewTabAdapter<Param : Any> : PagerAdapter {
+class ViewTabAdapter<Param : Any> :
+    PagerAdapter,
+    ITabAdapter<Param, AbsViewTab> {
+
+    private val baseBaseTabAdapter: BaseTabAdapter<Param, AbsViewTab> = object : BaseTabAdapter<Param, AbsViewTab>() {
+        override fun notifyDataSetChanged() {
+            this@ViewTabAdapter.notifyDataSetChanged()
+        }
+
+        override val currentPrimaryItem: AbsViewTab?
+            get() = this@ViewTabAdapter.currentPrimaryItem
+    }
 
     private val parentLifecycleOwner: LifecycleOwner
 
@@ -27,13 +43,21 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
         ParentFragmentLifecycleObserver()
     }
 
-    private val tabDataHandler: TabDataHandler<Param, AbsViewTab> = TabDataHandler()
-
     private val attachedTabs: MutableList<TabRecord> = mutableListOf()
 
-    private val tabCacheMap: MutableMap<Any, TabRecord> = mutableMapOf()
+    private val tabCacheMap: MutableMap<TabInfo<AbsViewTab>, TabRecord> = mutableMapOf()
 
-    private var currentPrimaryItem: AbsViewTab? = null
+    private var _currentPrimaryItem: AbsViewTab? = null
+    override val currentPrimaryItem: AbsViewTab?
+        get() = _currentPrimaryItem
+    override val tabCount: Int
+        get() = baseBaseTabAdapter.tabCount
+    override val tabTokens: List<Any>?
+        get() = baseBaseTabAdapter.tabTokens
+    override val tabTitles: List<CharSequence>?
+        get() = baseBaseTabAdapter.tabTitles
+    override val loadStateFlow: Flow<LoadState>
+        get() = baseBaseTabAdapter.loadStateFlow
 
     constructor(parentFragment: BaseFragment) {
         this.parentLifecycleOwner = parentFragment
@@ -43,24 +67,32 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
         this.parentLifecycleOwner = parentTab
     }
 
+    override suspend fun submitData(data: TabData<Param, AbsViewTab>) {
+        baseBaseTabAdapter.submitData(data)
+    }
+
+    override fun refresh(param: Param) {
+        baseBaseTabAdapter.refresh(param)
+    }
+
     override fun getCount(): Int =
-        if (parentLifecycleOwner.lifecycle.currentState <= Lifecycle.State.DESTROYED) 0 else tabDataHandler.tabCount
+        if (parentLifecycleOwner.lifecycle.currentState <= Lifecycle.State.DESTROYED) 0 else baseBaseTabAdapter.tabCount
 
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
         bindParentFragmentLifeCycle()
 
-        val tabToken = tabDataHandler.getTabFactory().getTabToken(position)
+        val tabInfo = baseBaseTabAdapter.getTabInfo(position) ?: throw NullPointerException()
 
         //使用缓存
-        var tabRecord = tabCacheMap.remove(tabToken)
+        var tabRecord = tabCacheMap.remove(tabInfo)
         if (tabRecord != null) {
             val cacheTab = tabRecord.tab
-            val needCache = tabDataHandler.getTabFactory().isTabNeedCache(position)
-            tabRecord = TabRecord(tabToken, position, needCache, cacheTab)
+            val needCache = tabInfo.isTabNeedCache
+            tabRecord = TabRecord(tabInfo, position, needCache, cacheTab)
 
             if (needCache) {
-                tabCacheMap[tabToken] = tabRecord
+                tabCacheMap[tabInfo] = tabRecord
             }
 
             val view = cacheTab.performCreateView(LayoutInflater.from(container.context), container)
@@ -73,12 +105,12 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
         }
 
         //新建Tab
-        val tab = tabDataHandler.getTabFactory().createTab(position)
-        val needCache = tabDataHandler.getTabFactory().isTabNeedCache(position)
-        tabRecord = TabRecord(tabToken, position, needCache, tab)
+        val tab = tabInfo.lazyTab.value
+        val needCache = tabInfo.isTabNeedCache
+        tabRecord = TabRecord(tabInfo, position, needCache, tab)
 
         if (needCache) {
-            tabCacheMap[tabToken] = tabRecord
+            tabCacheMap[tabInfo] = tabRecord
         }
 
         tab.performCreate()
@@ -95,7 +127,7 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
         val tabRecord = `object` as? TabRecord
         val absViewTab = tabRecord?.tab
 
-        val tempCurrentPrimaryItem = currentPrimaryItem
+        val tempCurrentPrimaryItem = _currentPrimaryItem
         if (absViewTab != tempCurrentPrimaryItem) {
 
             if (tempCurrentPrimaryItem != null) {
@@ -110,7 +142,7 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
                 }
             }
 
-            currentPrimaryItem = absViewTab
+            _currentPrimaryItem = absViewTab
         }
     }
 
@@ -128,13 +160,12 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
             absViewTab?.performDestroy()
         }
 
-        if (absViewTab == currentPrimaryItem) {
-            currentPrimaryItem = null
+        if (absViewTab == _currentPrimaryItem) {
+            _currentPrimaryItem = null
         }
     }
 
-    override fun getPageTitle(position: Int): CharSequence? =
-        tabDataHandler.getTabFactory().getTabTitle(position)
+    override fun getPageTitle(position: Int): CharSequence? = baseBaseTabAdapter.getTabInfo(position)?.tabTitle
 
     override fun isViewFromObject(view: View, `object`: Any): Boolean {
         return (`object` as? TabRecord)?.tab?.view == view
@@ -142,8 +173,8 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
 
     override fun getItemPosition(`object`: Any): Int {
         val tabRecord = `object` as? TabRecord ?: return POSITION_NONE
-        val currentPosition = tabDataHandler.getTabFactory().getCurrentPosition(tabRecord.tabToken)
-        if (currentPosition < 0 || currentPosition >= tabDataHandler.tabCount) {
+        val currentPosition = baseBaseTabAdapter.indexOf(tabRecord.tabInfo)
+        if (currentPosition < 0 || currentPosition >= baseBaseTabAdapter.tabCount) {
             return POSITION_NONE
         }
         return currentPosition
@@ -159,7 +190,7 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
         parentLifecycleOwner.lifecycle.addObserver(parentLifecycleObserver.value)
     }
 
-    inner class ParentFragmentLifecycleObserver : LifecycleEventObserver {
+    private inner class ParentFragmentLifecycleObserver : LifecycleEventObserver {
 
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
             when (event) {
@@ -172,17 +203,17 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
         }
 
         private fun dispatchOnTabVisible() {
-            currentPrimaryItem?.let {
+            _currentPrimaryItem?.let {
                 if (!it.isVisible) {
-                    currentPrimaryItem?.performTabVisible()
+                    it.performTabVisible()
                 }
             }
         }
 
         private fun dispatchOnTabInvisible() {
-            currentPrimaryItem?.let {
+            _currentPrimaryItem?.let {
                 if (it.isVisible) {
-                    currentPrimaryItem?.performTabInvisible()
+                    it.performTabInvisible()
                 }
             }
         }
@@ -207,7 +238,7 @@ class ViewTabAdapter<Param : Any> : PagerAdapter {
     }
 
     data class TabRecord(
-        val tabToken: Any,
+        val tabInfo: TabInfo<AbsViewTab>,
         val position: Int,
         val cached: Boolean,
         val tab: AbsViewTab

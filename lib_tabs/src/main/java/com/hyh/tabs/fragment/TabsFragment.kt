@@ -1,12 +1,13 @@
-package com.hyh.tabs
+package com.hyh.tabs.fragment
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.viewpager.widget.ViewPager
+import com.hyh.tabs.AbsViewTab
+import com.hyh.tabs.TabInfo
 
 /**
  * 多 Tab Fragment
@@ -26,6 +27,18 @@ abstract class TabsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        TabInfo(
+            lazyTab = lazy {
+                object : AbsViewTab() {
+                    override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup): View {
+                        TODO("Not yet implemented")
+                    }
+                }
+            },
+            tabToken = "",
+            tabTitle = "",
+        )
     }
 
     abstract fun getViewPager(): ViewPager

@@ -1,6 +1,7 @@
 package com.hyh.event
 
-import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.*
+import com.hyh.tabs.AbsViewTab
 import java.lang.reflect.Type
 
 /**
@@ -10,6 +11,13 @@ import java.lang.reflect.Type
  * @data 2021/4/28
  */
 class PageContext(owner: LifecycleOwner) {
+
+    companion object {
+        fun ViewModelStoreOwner.getPageContext(owner: LifecycleOwner): PageContext {
+            val viewModel = ViewModelProvider(this).get(PageContextViewModel::class.java)
+            return viewModel.getPageContext(owner)
+        }
+    }
 
     private val mMap = mutableMapOf<Type, Any>()
     private val mEventChannel: IEventChannel by lazy {
@@ -35,5 +43,29 @@ class PageContext(owner: LifecycleOwner) {
 
     fun getEventChannel(): IEventChannel {
         return mEventChannel
+    }
+}
+
+private class PageContextViewModel() : ViewModel() {
+
+    private val pageContextMap: MutableMap<Lifecycle, PageContext> = mutableMapOf()
+
+    fun getPageContext(owner: LifecycleOwner): PageContext {
+        val pageContext = pageContextMap[owner.lifecycle]
+        if (pageContext != null) {
+            return pageContext
+        }
+        synchronized(pageContextMap) {
+            return PageContext(owner).apply {
+                pageContextMap[owner.lifecycle] = this
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        synchronized(pageContextMap) {
+            pageContextMap.clear()
+        }
     }
 }
