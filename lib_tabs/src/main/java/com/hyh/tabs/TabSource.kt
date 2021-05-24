@@ -1,5 +1,6 @@
 package com.hyh.tabs
 
+import com.hyh.page.PageContext
 import com.hyh.tabs.internal.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +12,9 @@ import kotlinx.coroutines.flow.Flow
  * @author eriche
  * @data 2021/5/20
  */
-abstract class TabSource<Param : Any, Tab : ITab>(initialParam: Param) {
+abstract class TabSource<Param : Any, Tab : ITab>(
+    initialParam: Param
+) {
 
     private val tabFetcher: TabFetcher<Param, Tab> = object : TabFetcher<Param, Tab>(initialParam) {
         override suspend fun load(param: Param): LoadResult<Tab> = this@TabSource.load(param)

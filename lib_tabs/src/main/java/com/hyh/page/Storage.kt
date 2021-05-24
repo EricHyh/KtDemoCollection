@@ -1,51 +1,7 @@
-package com.hyh.event
+package com.hyh.page
 
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
-import com.hyh.event.PageContext.Companion.getPageContext
-import io.reactivex.Observable
-
-/**
- * 页面上下文
- *
- * @author eriche
- * @data 2021/4/28
- */
-class PageContext(owner: LifecycleOwner) {
-
-    companion object {
-        fun ViewModelStoreOwner.getPageContext(owner: LifecycleOwner): PageContext {
-            val viewModel = ViewModelProvider(this).get(PageContextViewModel::class.java)
-            return viewModel.getPageContext(owner)
-        }
-    }
-
-    val eventChannel: IEventChannel by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        IEventChannel.Factory.create(owner)
-    }
-
-    val storage: IStorage by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        IStorage.Factory.create(owner)
-    }
-
-    /*val storage: IStorage = object : IStorage {
-        override fun store(any: Any) {
-            map[any.javaClass] = any
-        }
-
-        @Suppress("UNCHECKED_CAST")
-        override fun <T> get(cls: Class<T>): T? {
-            val any = map[cls] ?: return null
-            if (cls.isInstance(any)) {
-                return any as T
-            }
-            return null
-        }
-    }
-
-    private val map = mutableMapOf<Type, Any>()*/
-}
-
+import java.util.concurrent.atomic.AtomicBoolean
 
 interface IStorage {
 
@@ -68,7 +24,7 @@ interface IStorage {
 }
 
 
-class StorageImpl private constructor(owner: LifecycleOwner) : IStorage {
+class StorageImpl private constructor(private val owner: LifecycleOwner) : IStorage, LifecycleObserver {
 
     companion object {
         fun create(owner: LifecycleOwner): IStorage {
@@ -76,9 +32,12 @@ class StorageImpl private constructor(owner: LifecycleOwner) : IStorage {
         }
     }
 
+    private val isBoundLifeCycle: AtomicBoolean = AtomicBoolean(false)
     private val storeMap: MutableMap<Class<out IStore<*>>, MutableLiveData<Any?>> = mutableMapOf()
 
     override fun store(store: IStore<*>) {
+        bindLifeCycle()
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val value = store.value
         val cls: Class<out IStore<*>> = store::class.java
         val mutableLiveData = storeMap[cls]
@@ -90,6 +49,8 @@ class StorageImpl private constructor(owner: LifecycleOwner) : IStorage {
     }
 
     override fun postStore(store: IStore<*>) {
+        bindLifeCycle()
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val value = store.value
         val cls: Class<out IStore<*>> = store::class.java
         val mutableLiveData = storeMap[cls]
@@ -102,11 +63,13 @@ class StorageImpl private constructor(owner: LifecycleOwner) : IStorage {
 
     @Suppress("UNCHECKED_CAST")
     override fun <Value> get(cls: Class<out IStore<Value>>): Value? {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val mutableLiveData = storeMap[cls] ?: return null
         return mutableLiveData.value as? Value
     }
 
     override fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit) {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val liveData = prepareLiveData(cls)
         liveData.observeForever {
             onChanged(it)
@@ -114,10 +77,17 @@ class StorageImpl private constructor(owner: LifecycleOwner) : IStorage {
     }
 
     override fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit) {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val liveData = prepareLiveData(cls)
         liveData.observe(owner, onChanged)
     }
 
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy() {
+        synchronized(storeMap) {
+            storeMap.clear()
+        }
+    }
 
     private fun <Value> prepareLiveData(cls: Class<out IStore<Value>>): MutableLiveData<Value> {
         val mutableLiveData = getTypedLiveData(cls)
@@ -158,44 +128,17 @@ class StorageImpl private constructor(owner: LifecycleOwner) : IStorage {
         return mutableLiveData as MutableLiveData<Value>
     }
 
+    private fun bindLifeCycle() {
+        if (isBoundLifeCycle.get()) return
+        synchronized(isBoundLifeCycle) {
+            if (isBoundLifeCycle.get()) return
+            isBoundLifeCycle.set(true)
+            owner.lifecycle.addObserver(this)
+        }
+    }
 }
 
 
 interface IStore<Value> {
     val value: Value
 }
-
-
-sealed class TestStore<Value> : IStore<Value> {
-
-    data class God<Int>(override val value: Int) : TestStore<Int>()
-
-}
-
-
-class PageContextViewModel : ViewModel() {
-
-    private val pageContextMap: MutableMap<Lifecycle, PageContext> = mutableMapOf()
-
-    fun getPageContext(owner: LifecycleOwner): PageContext {
-        val pageContext = pageContextMap[owner.lifecycle]
-        if (pageContext != null) {
-            return pageContext
-        }
-        synchronized(pageContextMap) {
-            return PageContext(owner).apply {
-                pageContextMap[owner.lifecycle] = this
-            }
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        synchronized(pageContextMap) {
-            pageContextMap.clear()
-        }
-    }
-}
-
-val Fragment.pageContext: PageContext
-    get() = this.getPageContext(this)

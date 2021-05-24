@@ -1,4 +1,4 @@
-package com.hyh.event
+package com.hyh.page
 
 import androidx.lifecycle.*
 import io.reactivex.Observable
@@ -102,11 +102,6 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
         lifecycleOwner.lifecycle.addObserver(this)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    fun onDestroy() {
-        eventSource.onComplete()
-    }
-
     override fun send(event: IEvent) {
         eventSource.onNext(event)
         lifecycleScope.launch {
@@ -130,6 +125,11 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
 
     override fun getFlow(): Flow<IEvent> {
         return eventFlow.asSharedFlow()
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    fun onDestroy() {
+        eventSource.onComplete()
     }
 
     private fun IEvent.isInstanceOf(vararg eventTypes: Class<*>): Boolean {

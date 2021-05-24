@@ -8,7 +8,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.*
 import androidx.paging.ExperimentalPagingApi
@@ -17,10 +16,8 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.hyh.event.IEvent.Companion.unwrapData
-import com.hyh.event.IStorage
-import com.hyh.event.IStore
-import com.hyh.event.pageContext
+import com.hyh.page.IEvent.Companion.unwrapData
+import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectAdapter
 import com.hyh.paging3demo.adapter.ProjectLoadStateAdapter
@@ -28,7 +25,6 @@ import com.hyh.paging3demo.base.Global
 import com.hyh.paging3demo.bean.ProjectChapterBean
 import com.hyh.paging3demo.utils.DisplayUtil
 import com.hyh.paging3demo.viewmodel.ProjectListViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -75,6 +71,12 @@ class ProjectFragment : CommonBaseFragment() {
                 }
         }
 
+        parentFragment
+            ?.pageContext
+            ?.storage
+            ?.observe(this, ProjectStore.Num::class.java) {
+                Log.d(TAG, "storage: $it")
+            }
 
 
     }

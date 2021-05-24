@@ -28,7 +28,7 @@ abstract class TabsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        TabInfo(
+        /*TabInfo(
             lazyTab = lazy {
                 object : AbsViewTab() {
                     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup): View {
@@ -38,7 +38,7 @@ abstract class TabsFragment : Fragment() {
             },
             tabToken = "",
             tabTitle = "",
-        )
+        )*/
     }
 
     abstract fun getViewPager(): ViewPager

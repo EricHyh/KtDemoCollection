@@ -5,24 +5,16 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewStub
 import android.widget.Button
-import android.widget.TextView
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
-import com.hyh.event.IEvent.Companion.asEvent
-import com.hyh.event.IStore
-import com.hyh.event.PageContext.Companion.getPageContext
-import com.hyh.event.get
-import com.hyh.event.pageContext
+import com.hyh.page.IEvent.Companion.asEvent
+import com.hyh.page.IStore
+import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
-import com.hyh.paging3demo.adapter.ProjectsAdapter
-import com.hyh.paging3demo.bean.ProjectChaptersBean
 import com.hyh.paging3demo.viewmodel.ContextViewModelFactory
-import com.hyh.paging3demo.viewmodel.ProjectChaptersViewModel
 import com.hyh.paging3demo.viewmodel.ProjectChaptersViewModel2
 import com.hyh.tabs.adapter.FragmentTabAdapter
 import kotlinx.coroutines.flow.collect
@@ -79,6 +71,8 @@ class ProjectsFragment2 : CommonBaseFragment() {
                 pageContext
                     .eventChannel
                     .send((num++).asEvent())
+
+                pageContext.storage.store(ProjectStore.Num(num))
             }
 
 

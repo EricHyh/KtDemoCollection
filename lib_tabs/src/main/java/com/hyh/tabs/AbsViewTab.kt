@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.*
 import com.hyh.fragment.BaseFragment
+import com.hyh.page.PageContext
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
@@ -14,10 +15,13 @@ import kotlin.coroutines.CoroutineContext
  * @author eriche
  * @data 2021/5/20
  */
-abstract class AbsViewTab :
+abstract class AbsViewTab(
+    @Suppress("unused")
+    val parentPageContext: PageContext
+) :
     ITab,
-    LifecycleOwner,
-    ViewModelStoreOwner {
+    ViewModelStoreOwner,
+    LifecycleOwner {
 
     companion object {
         private const val TAG = "AbsViewTab"
@@ -39,12 +43,18 @@ abstract class AbsViewTab :
         }
     }
 
+    @Suppress("unused")
     val coroutineScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         LifecycleCoroutineScopeImpl(
             lifecycle, SupervisorJob() + Dispatchers.Main.immediate
         ).apply {
             register()
         }
+    }
+
+    @Suppress("unused")
+    val pageContext: PageContext by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        PageContext.get(this, this)
     }
 
     var isVisible: Boolean = false
@@ -55,8 +65,10 @@ abstract class AbsViewTab :
 
     override fun getViewModelStore(): ViewModelStore = viewModelStore
 
+    @Suppress("unused")
     fun getViewLifecycle(): Lifecycle = viewLifecycle
 
+    @Suppress("unused")
     @JvmName("_getViewLifecycleOwner")
     fun getViewLifecycleOwner(): LifecycleOwner = viewLifecycleOwner
 
@@ -122,12 +134,10 @@ abstract class AbsViewTab :
 
     @Suppress
     protected fun onTabVisible() {
-
     }
 
     @Suppress
     protected fun onTabInvisible() {
-
     }
 
     @Suppress
