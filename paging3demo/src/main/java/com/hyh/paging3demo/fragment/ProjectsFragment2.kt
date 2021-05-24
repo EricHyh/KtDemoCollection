@@ -1,6 +1,7 @@
 package com.hyh.paging3demo.fragment
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.tabs.TabLayout
+import com.hyh.event.IEvent.Companion.asEvent
+import com.hyh.event.IStore
+import com.hyh.event.PageContext.Companion.getPageContext
+import com.hyh.event.get
+import com.hyh.event.pageContext
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectsAdapter
 import com.hyh.paging3demo.bean.ProjectChaptersBean
@@ -24,6 +30,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ProjectsFragment2 : CommonBaseFragment() {
+
+    private val TAG = "ProjectsFragment2"
 
     private var mProjectChaptersViewModel: ProjectChaptersViewModel2? = null
 
@@ -42,6 +50,10 @@ class ProjectsFragment2 : CommonBaseFragment() {
         ).get(ProjectChaptersViewModel2::class.java)
 
         mFragmentTabAdapter = FragmentTabAdapter<Unit>(childFragmentManager)
+
+
+        pageContext.storage.store(ProjectStore.Num(100))
+
     }
 
     override fun getContentView(inflater: LayoutInflater, container: ViewGroup?): View {
@@ -52,13 +64,21 @@ class ProjectsFragment2 : CommonBaseFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+
     }
 
+    var num: Int = 0
 
     override fun initView(contentView: View) {
         contentView.findViewById<Button>(R.id.btn_refresh)
             .setOnClickListener {
+                /*mFragmentTabAdapter?.refresh(Unit)
                 mFragmentTabAdapter?.refresh(Unit)
+                mFragmentTabAdapter?.refresh(Unit)*/
+
+                pageContext
+                    .eventChannel
+                    .send((num++).asEvent())
             }
 
 
@@ -71,6 +91,15 @@ class ProjectsFragment2 : CommonBaseFragment() {
 
         mTabLayout = contentView.findViewById(R.id.tab_layout)
         mTabLayout?.setupWithViewPager(mViewPager)
+
+
+
+        lifecycleScope.launch {
+            mFragmentTabAdapter?.loadStateFlow?.collect {
+                Log.d(TAG, "loadStateFlow: $it")
+            }
+        }
+
 
         /*mProjectChaptersViewModel!!.mutableLiveData.observe(
             this,
@@ -107,3 +136,10 @@ class ProjectsFragment2 : CommonBaseFragment() {
 
     }
 }
+
+sealed class ProjectStore<Value> : IStore<Value> {
+
+    data class Num(override val value: Int) : ProjectStore<Int>()
+
+}
+

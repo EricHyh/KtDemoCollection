@@ -17,6 +17,10 @@ import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.hyh.event.IEvent.Companion.unwrapData
+import com.hyh.event.IStorage
+import com.hyh.event.IStore
+import com.hyh.event.pageContext
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.adapter.ProjectAdapter
 import com.hyh.paging3demo.adapter.ProjectLoadStateAdapter
@@ -30,6 +34,10 @@ import kotlinx.coroutines.launch
 
 
 class ProjectFragment : CommonBaseFragment() {
+
+    companion object {
+        private const val TAG = "ProjectFragment"
+    }
 
     private var mSwipeRefreshLayout: SwipeRefreshLayout? = null
 
@@ -53,6 +61,24 @@ class ProjectFragment : CommonBaseFragment() {
             }
         }
     }
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        lifecycleScope.launch {
+            parentFragment
+                ?.pageContext
+                ?.eventChannel
+                ?.getFlow()
+                ?.collect {
+                    Log.d(TAG, "collect: ${it.unwrapData<Int>()}")
+                }
+        }
+
+
+
+    }
+
 
     override fun getContentView(inflater: LayoutInflater, container: ViewGroup?): View {
         return inflater.inflate(R.layout.fragment_project, container, false)
@@ -122,6 +148,15 @@ class ProjectFragment : CommonBaseFragment() {
         super.onDestroy()
         Handler().postDelayed({
             Log.d("ProjectFragment", "onDestroy: $context")
-        },5000)
+        }, 5000)
     }
 }
+
+
+
+
+
+
+
+
+

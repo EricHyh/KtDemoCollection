@@ -2,11 +2,13 @@ package com.hyh.tabs.internal
 
 import com.hyh.tabs.ITab
 import com.hyh.tabs.TabSource
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param) {
 
@@ -29,7 +31,7 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
             }
             .simpleScan(null) { previousSnapshot: TabFetcherSnapshot<Param, Tab>?, param: Param ->
                 previousSnapshot?.close()
-                TabFetcherSnapshot(param, getLoader())
+                TabFetcherSnapshot(param, getLoader(), getFetchDispatcher(param))
             }
             .filterNotNull()
             .simpleMapLatest { snapshot ->
@@ -44,12 +46,15 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
     private fun getLoader(): TabLoader<Param, Tab> = ::load
 
     abstract suspend fun load(param: Param): TabSource.LoadResult<Tab>
+
+    abstract fun getFetchDispatcher(param: Param): CoroutineDispatcher
 }
 
 
 internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
     private val param: Param,
     private val loader: TabLoader<Param, Tab>,
+    private val fetchDispatcher: CoroutineDispatcher
 ) {
     private val pageEventChannelFlowJob = Job()
     private val pageEventCh = Channel<TabEvent<Tab>>(Channel.BUFFERED)
@@ -69,7 +74,12 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
 
         pageEventCh.send(TabEvent.Loading())
 
-        when (val result: TabSource.LoadResult<Tab> = loader.invoke(param)) {
+        val result: TabSource.LoadResult<Tab>
+        withContext(fetchDispatcher) {
+            result = loader.invoke(param)
+        }
+
+        when (result) {
             is TabSource.LoadResult.Success<Tab> -> {
                 val event = TabEvent.Success(result.tabs)
                 pageEventCh.send(event)
