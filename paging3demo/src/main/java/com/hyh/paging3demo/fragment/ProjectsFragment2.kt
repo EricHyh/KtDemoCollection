@@ -55,8 +55,6 @@ class ProjectsFragment2 : CommonBaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-
     }
 
     var num: Int = 0
@@ -64,9 +62,9 @@ class ProjectsFragment2 : CommonBaseFragment() {
     override fun initView(contentView: View) {
         contentView.findViewById<Button>(R.id.btn_refresh)
             .setOnClickListener {
-                /*mFragmentTabAdapter?.refresh(Unit)
                 mFragmentTabAdapter?.refresh(Unit)
-                mFragmentTabAdapter?.refresh(Unit)*/
+                mFragmentTabAdapter?.refresh(Unit)
+                mFragmentTabAdapter?.refresh(Unit)
 
                 pageContext
                     .eventChannel

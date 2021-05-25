@@ -1,5 +1,6 @@
 package com.hyh.tabs.adapter
 
+import android.util.Log
 import com.hyh.tabs.ITab
 import com.hyh.tabs.LoadState
 import com.hyh.tabs.TabInfo
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.*
-import kotlin.collections.AbstractList
 
 /**
  * TabAdapter 基类
@@ -22,6 +22,7 @@ import kotlin.collections.AbstractList
  * @data 2021/5/20
  */
 internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<Param, Tab> {
+
 
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
@@ -61,11 +62,20 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
+                        is TabEvent.UsingCache<Tab> -> {
+                            val oldTabs = tabs
+                            val newTabs = event.tabs
+                            tabs = newTabs
+                            if (!Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())) {
+                                notifyDataSetChanged()
+                            }
+                            _loadStateFlow.value = LoadState.UsingCache(newTabs.size)
+                        }
                         is TabEvent.Loading<Tab> -> {
                             _loadStateFlow.value = LoadState.Loading
                         }
                         is TabEvent.Error<Tab> -> {
-                            _loadStateFlow.value = LoadState.Error(event.error)
+                            _loadStateFlow.value = LoadState.Error(event.error, event.usingCache)
                         }
                         is TabEvent.Success<Tab> -> {
                             val oldTabs = tabs

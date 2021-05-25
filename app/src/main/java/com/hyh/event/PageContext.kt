@@ -1,7 +1,6 @@
 package com.hyh.event
 
 import androidx.lifecycle.*
-import com.hyh.tabs.AbsViewTab
 import java.lang.reflect.Type
 
 /**

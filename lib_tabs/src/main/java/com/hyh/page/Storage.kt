@@ -2,6 +2,7 @@ package com.hyh.page
 
 import androidx.lifecycle.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.reflect.KClass
 
 interface IStorage {
 
@@ -16,11 +17,27 @@ interface IStorage {
     fun postStore(store: IStore<*>)
 
     fun <Value> get(cls: Class<out IStore<Value>>): Value?
+    fun <Value> get(cls: KClass<out IStore<Value>>): Value? = get(cls.java)
 
-    fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit)
+    fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>?
+    fun <Value> observeForever(cls: KClass<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? =
+        observeForever(cls.java, onChanged)
 
-    fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit)
+    fun <Value> observeForever(cls: Class<out IStore<Value>>, observer: Observer<Value>)
+    fun <Value> observeForever(cls: KClass<out IStore<Value>>, observer: Observer<Value>) =
+        observeForever(cls.java, observer)
 
+    fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>?
+    fun <Value> observe(owner: LifecycleOwner, cls: KClass<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? =
+        observe(owner, cls.java, onChanged)
+
+    fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, observer: Observer<Value>)
+    fun <Value> observe(owner: LifecycleOwner, cls: KClass<out IStore<Value>>, observer: Observer<Value>) =
+        observe(owner, cls.java, observer)
+
+    fun <Value> removeObserver(cls: Class<out IStore<Value>>, observer: Observer<Value>)
+    fun <Value> removeObserver(cls: KClass<out IStore<Value>>, observer: Observer<Value>) =
+        removeObserver(cls.java, observer)
 }
 
 
@@ -68,18 +85,36 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
         return mutableLiveData.value as? Value
     }
 
-    override fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit) {
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+    override fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val liveData = prepareLiveData(cls)
-        liveData.observeForever {
-            onChanged(it)
-        }
+        val wrappedObserver = Observer<Value> { value -> onChanged.invoke(value) }
+        liveData.observeForever(wrappedObserver)
+        return wrappedObserver
     }
 
-    override fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit) {
+    override fun <Value> observeForever(cls: Class<out IStore<Value>>, observer: Observer<Value>) {
         if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val liveData = prepareLiveData(cls)
-        liveData.observe(owner, onChanged)
+        liveData.observeForever(observer)
+    }
+
+    override fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return null
+        val liveData = prepareLiveData(cls)
+        return liveData.observe(owner, onChanged)
+    }
+
+    override fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, observer: Observer<Value>) {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+        val liveData = prepareLiveData(cls)
+        liveData.observe(owner, observer)
+    }
+
+    override fun <Value> removeObserver(cls: Class<out IStore<Value>>, observer: Observer<Value>) {
+        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+        val liveData = getTypedLiveData(cls) ?: return
+        liveData.removeObserver(observer)
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)

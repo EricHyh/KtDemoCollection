@@ -1,13 +1,13 @@
 package com.hyh.page
 
+import android.util.Log
 import androidx.lifecycle.*
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.*
 import kotlin.coroutines.CoroutineContext
+import kotlin.reflect.KClass
 
 
 interface IEvent {
@@ -61,13 +61,26 @@ interface IEventChannel {
     // region receive as observable
 
     fun <T : IEvent> getObservable(eventType: Class<T>): Observable<T>
-    fun getObservable(vararg eventTypes: Class<*>): Observable<IEvent>
+    fun <T : IEvent> getObservable(eventType: KClass<T>): Observable<T> = getObservable(eventType.java)
+
+    fun getObservable(vararg eventTypes: Class<out IEvent>): Observable<IEvent>
+    fun getObservable(vararg eventTypes: KClass<out IEvent>): Observable<IEvent> = getObservable(*eventTypes.map { it.java }.toTypedArray())
+
     fun getObservable(): Observable<IEvent>
 
     // endregion
 
+    // region receive as flow
+
+    fun <T : IEvent> getFlow(eventType: Class<T>): Flow<T>
+    fun <T : IEvent> getFlow(eventType: KClass<T>): Flow<T> = getFlow(eventType.java)
+
+    fun getFlow(vararg eventTypes: Class<out IEvent>): Flow<IEvent>
+    fun getFlow(vararg eventTypes: KClass<out IEvent>): Flow<IEvent> = getFlow(*eventTypes.map { it.java }.toTypedArray())
+
     fun getFlow(): Flow<IEvent>
 
+    // endregion
 
     fun send(event: IEvent)
 }
@@ -113,7 +126,7 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
         return eventSource.ofType(eventType)
     }
 
-    override fun getObservable(vararg eventTypes: Class<*>): Observable<IEvent> {
+    override fun getObservable(vararg eventTypes: Class<out IEvent>): Observable<IEvent> {
         return eventSource.filter {
             it.isInstanceOf(*eventTypes)
         }
@@ -121,6 +134,21 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
 
     override fun getObservable(): Observable<IEvent> {
         return eventSource
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : IEvent> getFlow(eventType: Class<T>): Flow<T> {
+        return eventFlow.asSharedFlow().filter {
+            eventType.isInstance(it)
+        }.map {
+            it as T
+        }
+    }
+
+    override fun getFlow(vararg eventTypes: Class<out IEvent>): Flow<IEvent> {
+        return eventFlow.asSharedFlow().filter {
+            it.isInstanceOf(*eventTypes)
+        }
     }
 
     override fun getFlow(): Flow<IEvent> {
@@ -175,37 +203,80 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
     }
 }
 
-object EventLifecycleHelper {
 
-    fun <T> Observable<T>.bindToLifecycle(owner: LifecycleOwner): Observable<T> {
+sealed class Inner : IEvent {
+
+    data class First(val num: Int) : Inner()
+    data class Second(val num: Int) : Inner()
+
+}
+
+sealed class Outer : IEvent {
+    data class First(val num: Int) : Outer()
+    data class Second(val num: Int) : Outer()
+}
 
 
-        return this
+fun text(eventChannel: IEventChannel, storage: IStorage) {
+
+    GlobalScope.launch {
+
+        eventChannel
+            .getFlow(ItemEvent::class)
+            .collect {
+                when (it) {
+                    is ItemEvent.ItemClick -> {
+                        val itemData = it.itemData
+                    }
+                    is ItemEvent.ItemRemove -> {
+                        val itemData = it.itemData
+                    }
+                }
+            }
+
+
+        eventChannel
+            .getFlow(ListEvent::class)
+            .collect {
+                when (it) {
+                    is ListEvent.Scroll -> {
+                        val offset = it.offset
+                    }
+                    is ListEvent.ScrollStateChanged -> {
+                        val state = it.state
+                    }
+                }
+            }
+    }
+
+
+    storage.store(HistoryOrderStore.SelectedAccountId(100L))
+
+    val selectedAccountId: Long? = storage.get(HistoryOrderStore.SelectedAccountId::class)
+
+    storage.observeForever(HistoryOrderStore.SelectedAccountId::class) {
+        val accountId = it
     }
 
 }
 
 
-sealed class TestListEvent : IEvent {
+sealed class ItemEvent : IEvent {
+    data class ItemClick(val itemData: Any) : ItemEvent()
+    data class ItemRemove(val itemData: Any) : ItemEvent()
+}
 
-    object ListEvent1 : TestListEvent()
+sealed class ListEvent : IEvent {
+    data class Scroll(val offset: Float) : ListEvent()
+    data class ScrollStateChanged(val state: Int) : ListEvent()
+}
 
-    data class ListEvent2(val url: String?) : TestListEvent()
+
+sealed class HistoryOrderStore<V> : IStore<V> {
+
+    data class SelectedAccountId(override val value: Long) : HistoryOrderStore<Long>()
 
 }
 
-sealed class TestItemEvent : IEvent {
 
-    object InEvent1 : TestItemEvent()
-
-    data class InEvent2(val url: String?) : TestItemEvent()
-
-}
-
-class Test {
-
-    fun test() {
-
-    }
-}
 

@@ -1,6 +1,5 @@
 package com.hyh.tabs
 
-import com.hyh.page.PageContext
 import com.hyh.tabs.internal.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -17,15 +16,18 @@ abstract class TabSource<Param : Any, Tab : ITab>(
 ) {
 
     private val tabFetcher: TabFetcher<Param, Tab> = object : TabFetcher<Param, Tab>(initialParam) {
+        override suspend fun getCache(param: Param, completeTimes: Int): CacheResult<Tab> = this@TabSource.getCache(param, completeTimes)
         override suspend fun load(param: Param): LoadResult<Tab> = this@TabSource.load(param)
         override fun getFetchDispatcher(param: Param): CoroutineDispatcher = this@TabSource.getFetchDispatcher(param)
     }
 
     val flow: Flow<TabData<Param, Tab>> = tabFetcher.flow
 
+    protected open suspend fun getCache(param: Param, completeTimes: Int): CacheResult<Tab> = CacheResult.Unused()
+
     protected abstract suspend fun load(param: Param): LoadResult<Tab>
 
-    protected fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
+    protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
     sealed class LoadResult<Tab : ITab> {
 
@@ -36,5 +38,14 @@ abstract class TabSource<Param : Any, Tab : ITab>(
         data class Success<Tab : ITab> constructor(
             val tabs: List<TabInfo<Tab>>
         ) : LoadResult<Tab>()
+    }
+
+    sealed class CacheResult<Tab : ITab> {
+
+        class Unused<Tab : ITab> : CacheResult<Tab>()
+
+        data class Success<Tab : ITab> constructor(
+            val tabs: List<TabInfo<Tab>>
+        ) : CacheResult<Tab>()
     }
 }

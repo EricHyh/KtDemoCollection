@@ -121,33 +121,19 @@ abstract class AbsViewTab(
         onDestroy()
     }
 
-    @Suppress
-    protected fun onCreate() {
-    }
+    protected open fun onCreate() {}
 
-    @Suppress
     protected abstract fun onCreateView(inflater: LayoutInflater, parent: ViewGroup): View
 
-    @Suppress
-    protected fun onViewCreated(view: View) {
-    }
+    protected open fun onViewCreated(view: View) {}
 
-    @Suppress
-    protected fun onTabVisible() {
-    }
+    protected open fun onTabVisible() {}
 
-    @Suppress
-    protected fun onTabInvisible() {
-    }
+    protected open fun onTabInvisible() {}
 
-    @Suppress
-    protected fun onDestroyView() {
-    }
+    protected open fun onDestroyView() {}
 
-    @Suppress
-    protected fun onDestroy() {
-    }
-
+    protected open fun onDestroy() {}
 
     class LifecycleCoroutineScopeImpl(
         private val lifecycle: Lifecycle,

@@ -12,8 +12,10 @@ sealed class LoadState {
 
     object Loading : LoadState()
 
-    class Success(val tabCount: Int) : LoadState()
+    data class UsingCache(val tabCount: Int) : LoadState()
 
-    class Error(val error: Throwable) : LoadState()
+    data class Success(val tabCount: Int) : LoadState()
+
+    data class Error(val error: Throwable, val usingCache: Boolean) : LoadState()
 
 }
