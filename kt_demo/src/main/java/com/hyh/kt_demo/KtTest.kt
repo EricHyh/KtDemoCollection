@@ -32,7 +32,7 @@ abstract class TextView {
 
 fun main() {
     val create = create<IListEvent>()
-    print("" + create)
+    print("main ${3/2}")
 }
 
 interface IEvent

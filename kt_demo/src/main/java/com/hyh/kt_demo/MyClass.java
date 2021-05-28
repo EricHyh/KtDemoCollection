@@ -25,7 +25,8 @@ public class MyClass {
         //455 + 191
 
 
-        System.out.println("");
+
+        System.out.println("()");
 
 
 
