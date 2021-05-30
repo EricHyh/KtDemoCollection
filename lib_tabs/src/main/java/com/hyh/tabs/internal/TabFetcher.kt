@@ -14,13 +14,13 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
-abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param) {
+abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param?) {
 
     private val uiReceiver = object : UiReceiver<Param> {
 
         private val state = MutableStateFlow(Pair<Long, Param?>(0, null))
 
-        val flow = state.mapNotNull { it.second }
+        val flow = state.map { it.second }
 
         override fun refresh(param: Param) {
             state.value = Pair(state.value.first + 1, param)
@@ -33,10 +33,15 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
             .onStart {
                 emit(initialParam)
             }
-            .simpleScan(null) { previousSnapshot: TabFetcherSnapshot<Param, Tab>?, param: Param ->
+            .simpleScan(null) { previousSnapshot: TabFetcherSnapshot<Param, Tab>?, param: Param? ->
                 previousSnapshot?.close()
                 val completeTimes = (previousSnapshot?.completeTimes ?: 0) + (if (previousSnapshot?.getCacheComplete == true) 1 else 0)
-                TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), getFetchDispatcher(param))
+                val snapshot: TabFetcherSnapshot<Param, Tab> = if (param == null) {
+                    TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), null)
+                } else {
+                    TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), getFetchDispatcher(param))
+                }
+                snapshot
             }
             .filterNotNull()
             .simpleMapLatest { snapshot ->
@@ -61,11 +66,11 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
 
 
 internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
-    private val param: Param,
+    private val param: Param?,
     val completeTimes: Int,
     private val cacheLoader: CacheTabLoader<Param, Tab>,
     private val loader: TabLoader<Param, Tab>,
-    private val fetchDispatcher: CoroutineDispatcher,
+    private val fetchDispatcher: CoroutineDispatcher?,
 ) {
     private val pageEventChannelFlowJob = Job()
     private val pageEventCh = Channel<TabEvent<Tab>>(Channel.BUFFERED)
@@ -85,6 +90,10 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
             }
         }
 
+        if (param == null) {
+            return@cancelableChannelFlow
+        }
+
         pageEventCh.send(TabEvent.Loading())
 
         val cacheResult = cacheLoader.invoke(param, completeTimes)
@@ -97,8 +106,12 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
         }
 
         val loadResult: TabSource.LoadResult<Tab>
-        withContext(fetchDispatcher) {
+        if (fetchDispatcher == null) {
             loadResult = loader.invoke(param)
+        } else {
+            withContext(fetchDispatcher) {
+                loadResult = loader.invoke(param)
+            }
         }
 
         when (loadResult) {

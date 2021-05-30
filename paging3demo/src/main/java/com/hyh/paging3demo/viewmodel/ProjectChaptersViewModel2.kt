@@ -30,7 +30,7 @@ class ProjectChaptersViewModel2(context: Context) : ViewModel() {
 
     val flow = projectTabSource.flow
 
-    class ProjectTabSource(private val context: Context) : TabSource<Unit, FragmentTab>(Unit) {
+    class ProjectTabSource(private val context: Context) : TabSource<Unit, FragmentTab>() {
 
         private val TAG = "ProjectTabSource"
 

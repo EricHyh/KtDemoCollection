@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
  * @data 2021/5/20
  */
 abstract class TabSource<Param : Any, Tab : ITab>(
-    initialParam: Param
+    initialParam: Param? = null
 ) {
 
     private val tabFetcher: TabFetcher<Param, Tab> = object : TabFetcher<Param, Tab>(initialParam) {
@@ -29,6 +29,15 @@ abstract class TabSource<Param : Any, Tab : ITab>(
 
     protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
+    sealed class CacheResult<Tab : ITab> {
+
+        class Unused<Tab : ITab> : CacheResult<Tab>()
+
+        data class Success<Tab : ITab> constructor(
+            val tabs: List<TabInfo<Tab>>
+        ) : CacheResult<Tab>()
+    }
+
     sealed class LoadResult<Tab : ITab> {
 
         data class Error<Tab : ITab>(
@@ -38,14 +47,5 @@ abstract class TabSource<Param : Any, Tab : ITab>(
         data class Success<Tab : ITab> constructor(
             val tabs: List<TabInfo<Tab>>
         ) : LoadResult<Tab>()
-    }
-
-    sealed class CacheResult<Tab : ITab> {
-
-        class Unused<Tab : ITab> : CacheResult<Tab>()
-
-        data class Success<Tab : ITab> constructor(
-            val tabs: List<TabInfo<Tab>>
-        ) : CacheResult<Tab>()
     }
 }
