@@ -1,30 +1,31 @@
 package com.hyh.list
 
-interface IItemSource<Param : Any, Data : IItemData> {
+interface IItemSource<Param : Any> {
 
     fun getSourceToken(): Any
 
-    suspend fun gePreShow(param: Param): CacheResult<Data>
+    suspend fun gePreShow(param: Param): CacheResult
 
-    suspend fun load(param: Param): LoadResult<Data>
+    suspend fun load(param: Param): LoadResult
 
-    sealed class CacheResult<Data : IItemData> {
+    sealed class CacheResult {
 
-        class Unused<Data : IItemData> : CacheResult<Data>()
+        object Unused : CacheResult()
 
-        data class Success<Data : IItemData> constructor(
-            val tabs: List<Data>
-        ) : CacheResult<Data>()
+        data class Success constructor(
+            val tabs: List<ItemData>
+        ) : CacheResult()
     }
 
-    sealed class LoadResult<Data : IItemData> {
+    sealed class LoadResult {
 
-        data class Error<Data : IItemData>(
+        data class Error(
             val error: Throwable
-        ) : LoadResult<Data>()
+        ) : LoadResult()
 
-        data class Success<Data : IItemData> constructor(
-            val tabs: List<Data>
-        ) : LoadResult<Data>()
+        data class Success constructor(
+            val tabs: List<ItemData>
+        ) : LoadResult()
     }
+
 }
