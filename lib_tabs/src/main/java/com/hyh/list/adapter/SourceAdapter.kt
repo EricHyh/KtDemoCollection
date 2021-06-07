@@ -63,7 +63,7 @@ interface ISourceAdapter {
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-internal class SourceAdapter(
+class SourceAdapter(
     private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -196,7 +196,6 @@ internal class SourceAdapter(
             viewHolderFactoryMap.clear()
         }
     }
-
 
     class DiffUtilCallback(private val oldItems: List<ItemData>, private val newItems: List<ItemData>) : DiffUtil.Callback() {
 
