@@ -32,8 +32,44 @@ abstract class TextView {
 
 fun main() {
     val create = create<IListEvent>()
-    print("main ${3/2}")
+    print("main ${3 / 2}")
+
+
+    listOf<ITest3>(ITest21(), ITest22(), ITest23())
+        .forEach {
+            val iTest2 = it as ITest2<ITest1>
+            print("")
+        }
 }
+
+
+interface ITest1
+interface ITest2<T : ITest1> {
+    fun t(t: T)
+}
+typealias ITest3 = ITest2<out ITest1>
+
+
+class ITest11 : ITest1
+class ITest12 : ITest1
+class ITest13 : ITest1
+
+
+class ITest21 : ITest2<ITest11> {
+    override fun t(t: ITest11) {
+    }
+}
+
+class ITest22 : ITest2<ITest12> {
+    override fun t(t: ITest12) {
+    }
+}
+
+class ITest23 : ITest2<ITest13> {
+    override fun t(t: ITest13) {
+    }
+}
+
 
 interface IEvent
 

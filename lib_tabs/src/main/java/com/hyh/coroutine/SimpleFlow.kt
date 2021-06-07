@@ -1,4 +1,4 @@
-package com.hyh.tabs.internal
+package com.hyh.coroutine
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel

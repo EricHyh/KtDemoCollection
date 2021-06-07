@@ -11,7 +11,7 @@ abstract class ItemSourceRepository {
         object Unused : CacheResult()
 
         class Success(
-            val sources: List<IItemSource<out Any, out IItemData>>,
+            val sources: List<IItemSource<out Any>>,
         ) : CacheResult()
     }
 
@@ -20,7 +20,7 @@ abstract class ItemSourceRepository {
         class Error(error: Throwable) : LoadResult()
 
         class Success(
-            val sources: List<IItemSource<out Any, out IItemData>>,
+            val sources: List<IItemSource<out Any>>,
         ) : LoadResult()
     }
 }

@@ -31,6 +31,6 @@ sealed class SourceLoadState {
 
     data class Success(val itemCount: Int) : SourceLoadState()
 
-    data class Error(val error: Throwable, val preShow: Boolean) : SourceLoadState()
+    data class Error(val error: Throwable, val preShowing: Boolean) : SourceLoadState()
 
 }

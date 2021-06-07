@@ -1,6 +1,9 @@
 package com.hyh.tabs.internal
 
-import android.util.Log
+import com.hyh.coroutine.cancelableChannelFlow
+import com.hyh.coroutine.simpleChannelFlow
+import com.hyh.coroutine.simpleMapLatest
+import com.hyh.coroutine.simpleScan
 import com.hyh.tabs.ITab
 import com.hyh.tabs.TabInfo
 import com.hyh.tabs.TabSource
@@ -11,8 +14,6 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicLong
 
 abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param?) {
 
