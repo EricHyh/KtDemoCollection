@@ -289,6 +289,10 @@ class MultiSourceAdapter(
     }
 
     private fun countItemsBefore(wrapper: SourceAdapterWrapper): Int {
+        return countItemsBefore(wrapper, wrappers)
+    }
+
+    private fun countItemsBefore(wrapper: SourceAdapterWrapper, wrappers: List<SourceAdapterWrapper>): Int {
         var count = 0
         for (item in wrappers) {
             count += if (item !== wrapper) {
@@ -382,26 +386,49 @@ class MultiSourceAdapter(
     // region inner class
 
 
-    private inner class SourceTokensUpdateCallback : ListUpdateCallback {
+    private inner class SourceTokensUpdateCallback(
+        private val oldWrappers: List<SourceAdapterWrapper>,
+        private val newWrappers: List<SourceAdapterWrapper>
+    ) : ListUpdateCallback {
 
         override fun onChanged(position: Int, count: Int, payload: Any?) {
 
         }
 
         override fun onMoved(fromPosition: Int, toPosition: Int) {
+            val wrapper = oldWrappers[fromPosition]
+            if (wrapper.cachedItemCount > 0) {
+                val oldOffset = countItemsBefore(wrapper, oldWrappers)
+                notifyItemRangeRemoved(oldOffset, wrapper.cachedItemCount)
 
+                val newOffset = countItemsBefore(wrapper, newWrappers)
+                notifyItemRangeInserted(newOffset, wrapper.cachedItemCount)
+            }
         }
 
         override fun onInserted(position: Int, count: Int) {
-
+            val wrapper = newWrappers[position]
+            val offset = countItemsBefore(wrapper, newWrappers)
+            var totalItemCount = wrapper.cachedItemCount
+            for (index in (position + 1) until (position + count)) {
+                totalItemCount += newWrappers[index].cachedItemCount
+            }
+            notifyItemRangeInserted(offset, totalItemCount)
         }
 
         override fun onRemoved(position: Int, count: Int) {
-
+            val wrapper = oldWrappers[position]
+            if (wrapper.cachedItemCount > 0) {
+                val offset = countItemsBefore(wrapper, oldWrappers)
+                notifyItemRangeRemoved(offset, wrapper.cachedItemCount)
+            }
         }
     }
 
-    private class DiffUtilCallback(private val oldSourceTokens: List<Any>, private val newSourceTokens: List<Any>) : DiffUtil.Callback() {
+    private class DiffUtilCallback(
+        private val oldSourceTokens: List<Any>,
+        private val newSourceTokens: List<Any>
+    ) : DiffUtil.Callback() {
 
         override fun getOldListSize(): Int {
             return oldSourceTokens.size

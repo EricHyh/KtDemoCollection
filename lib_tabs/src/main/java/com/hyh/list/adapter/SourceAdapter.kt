@@ -125,8 +125,8 @@ class SourceAdapter(
 
     suspend fun submitData(data: SourceData<out Any>) {
         collectFromRunner.runInIsolation {
-            receiver = data.receiver as UiReceiverForSource<Any>
-            data.flow.collect { event ->
+            receiver = data.lazyReceiver.value as UiReceiverForSource<Any>
+            data.lazyFlow.value.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
                         is SourceEvent.PreShowing -> {
