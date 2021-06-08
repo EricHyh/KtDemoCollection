@@ -10,8 +10,8 @@ data class RepoData(
 
 data class SourceData<Param : Any>(
     val sourceToken: Any,
-    val flow: Flow<SourceEvent>,
-    val receiver: UiReceiverForSource<Param>
+    val lazyFlow: Lazy<Flow<SourceEvent>>,
+    val lazyReceiver: Lazy<UiReceiverForSource<Param>>
 )
 
 
