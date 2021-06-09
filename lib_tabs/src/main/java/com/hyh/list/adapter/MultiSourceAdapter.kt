@@ -40,6 +40,9 @@ class MultiSourceAdapter(
 
     private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
 
+
+
+
     suspend fun submitData(data: RepoData) {
         collectFromRunner.runInIsolation {
             receiver = data.receiver
@@ -47,71 +50,47 @@ class MultiSourceAdapter(
                 withContext(mainDispatcher) {
                     when (event) {
                         is RepoEvent.UsingCache -> {
-                            val oldWrappers = wrappers
-                            val oldSourceTokens = oldWrappers.map { it.sourceToken }
-
-                            val sources = event.sources
-                            val newSourceTokens = mutableListOf<Any>()
-                            val newWrappers = mutableListOf<SourceAdapterWrapper>()
-                            sources.forEach {
-                                newSourceTokens.add(it.sourceToken)
-                                val oldWrapper = oldWrappers.findWrapper(it.sourceToken)
-                                if (oldWrapper != null) {
-                                    newWrappers.add(oldWrapper)
-                                } else {
-                                    newWrappers.add(createWrapper(it))
-                                }
-                            }
-
-
-                            val diffResult = DiffUtil.calculateDiff(DiffUtilCallback(oldSourceTokens, newSourceTokens))
-
-
-
-
-                            diffResult.dispatchUpdatesTo()
-
-
-                            /*val newItems = event.items
-                            if (oldItems.isNullOrEmpty() || newItems.isNullOrEmpty()) {
-                                items = newItems
-                                viewTypeStorage.clear()
-                                notifyDataSetChanged()
-                            } else {
-                                val diffResult = withContext(workerDispatcher) {
-                                    DiffUtil.calculateDiff(SourceAdapter.DiffUtilCallback(oldItems, newItems))
-                                }
-                                items = newItems
-                                viewTypeStorage.clear()
-                                diffResult.dispatchUpdatesTo(this@SourceAdapter)
-                            }
-                            _loadStateFlow.value = SourceLoadState.PreShow(newItems.size)*/
+                            val newWrappers = updateWrappers(event.sources)
+                            _loadStateFlow.value = RepoLoadState.UsingCache(newWrappers.size)
                         }
                         is RepoEvent.Loading -> {
-                            _loadStateFlow.value = SourceLoadState.Loading
+                            _loadStateFlow.value = RepoLoadState.Loading
                         }
                         is RepoEvent.Error -> {
-                            _loadStateFlow.value = SourceLoadState.Error(event.error, event.preShowing)
+                            _loadStateFlow.value = RepoLoadState.Error(event.error, event.usingCache)
                         }
                         is RepoEvent.Success -> {
-                            val oldItems = items
-                            val newItems = event.items
-                            if (oldItems.isNullOrEmpty() || newItems.isNullOrEmpty()) {
-                                items = newItems
-                                notifyDataSetChanged()
-                            } else {
-                                val diffResult = withContext(workerDispatcher) {
-                                    DiffUtil.calculateDiff(SourceAdapter.DiffUtilCallback(oldItems, newItems))
-                                }
-                                items = newItems
-                                diffResult.dispatchUpdatesTo(this@SourceAdapter)
-                            }
-                            _loadStateFlow.value = SourceLoadState.Success(newItems.size)
+                            val newWrappers = updateWrappers(event.sources)
+                            _loadStateFlow.value = RepoLoadState.Success(newWrappers.size)
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun updateWrappers(sources: List<SourceData<out Any>>): MutableList<SourceAdapterWrapper> {
+        val oldWrappers = wrappers
+        val oldSourceTokens = oldWrappers.map { it.sourceToken }
+        val newSourceTokens = mutableListOf<Any>()
+        val newWrappers = mutableListOf<SourceAdapterWrapper>()
+        sources.forEach {
+            newSourceTokens.add(it.sourceToken)
+            val oldWrapper = oldWrappers.findWrapper(it.sourceToken)
+            if (oldWrapper != null) {
+                newWrappers.add(oldWrapper)
+            } else {
+                newWrappers.add(createWrapper(it))
+            }
+        }
+        wrappers = newWrappers
+        if (oldWrappers.isEmpty() || newWrappers.isEmpty()) {
+            notifyDataSetChanged()
+        } else {
+            val diffResult = DiffUtil.calculateDiff(DiffUtilCallback(oldSourceTokens, newSourceTokens))
+            diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(oldWrappers, newWrappers))
+        }
+        return newWrappers
     }
 
     override fun getItemId(position: Int): Long {
@@ -386,13 +365,19 @@ class MultiSourceAdapter(
     // region inner class
 
 
-    private inner class SourceTokensUpdateCallback(
+    private inner class SourceWrappersUpdateCallback(
         private val oldWrappers: List<SourceAdapterWrapper>,
         private val newWrappers: List<SourceAdapterWrapper>
     ) : ListUpdateCallback {
 
         override fun onChanged(position: Int, count: Int, payload: Any?) {
-
+            val wrapper = newWrappers[position]
+            val offset = countItemsBefore(wrapper, newWrappers)
+            var totalItemCount = wrapper.cachedItemCount
+            for (index in (position + 1) until (position + count)) {
+                totalItemCount += newWrappers[index].cachedItemCount
+            }
+            notifyItemRangeChanged(offset, totalItemCount)
         }
 
         override fun onMoved(fromPosition: Int, toPosition: Int) {
@@ -478,6 +463,8 @@ class SourceAdapterWrapper(
     val callback: Callback
 ) {
 
+    var initialized = false
+
     private var _cachedItemCount = 0
     val cachedItemCount
         get() = _cachedItemCount
@@ -552,6 +539,15 @@ class SourceAdapterWrapper(
             }
         })
     }
+
+
+
+    fun
+
+
+
+
+
 
     interface Callback {
 
