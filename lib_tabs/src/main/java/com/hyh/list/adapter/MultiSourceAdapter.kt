@@ -1,6 +1,7 @@
 package com.hyh.list.adapter
 
 import android.view.ViewGroup
+import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
@@ -35,16 +36,20 @@ class MultiSourceAdapter(
     private var wrappers = mutableListOf<SourceAdapterWrapper>()
     private var reusableHolder: WrapperAndLocalPosition = WrapperAndLocalPosition()
     private val binderLookup = IdentityHashMap<RecyclerView.ViewHolder, SourceAdapterWrapper>()
-
     private var receiver: UiReceiverForRepo? = null
-
     private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
 
+    fun submitData(lifecycle: Lifecycle, data: RepoData) {
 
-
+    }
 
     suspend fun submitData(data: RepoData) {
         collectFromRunner.runInIsolation {
+
+
+
+
+
             receiver = data.receiver
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
@@ -52,6 +57,7 @@ class MultiSourceAdapter(
                         is RepoEvent.UsingCache -> {
                             val newWrappers = updateWrappers(event.sources)
                             _loadStateFlow.value = RepoLoadState.UsingCache(newWrappers.size)
+
                         }
                         is RepoEvent.Loading -> {
                             _loadStateFlow.value = RepoLoadState.Loading
@@ -539,15 +545,6 @@ class SourceAdapterWrapper(
             }
         })
     }
-
-
-
-    fun
-
-
-
-
-
 
     interface Callback {
 
