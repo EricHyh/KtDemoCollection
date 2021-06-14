@@ -1,7 +1,9 @@
 package com.hyh.list
 
-interface IParamProvider {
+interface IParamProvider<Param : Any> {
+    suspend fun getParam(): Param
+}
 
-    suspend fun getParam(sourceToken: Any): Any
-
+object EmptyParamProvider : IParamProvider<Unit> {
+    override suspend fun getParam() = Unit
 }

@@ -96,8 +96,7 @@ class SourceAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        if (viewType == 0) return object : RecyclerView.ViewHolder(View(parent.context)) {}
-        return viewTypeStorage.get(viewType)!!.invoke(parent)
+        return viewTypeStorage.get(viewType)?.invoke(parent) ?: object : RecyclerView.ViewHolder(View(parent.context)) {}
     }
 
     override fun getItemCount(): Int {
@@ -125,8 +124,8 @@ class SourceAdapter(
 
     suspend fun submitData(data: SourceData<out Any>) {
         collectFromRunner.runInIsolation {
-            receiver = data.lazyReceiver.value as UiReceiverForSource<Any>
-            data.lazyFlow.value.collect { event ->
+            receiver = data.receiver as UiReceiverForSource<Any>
+            data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
                         is SourceEvent.PreShowing -> {

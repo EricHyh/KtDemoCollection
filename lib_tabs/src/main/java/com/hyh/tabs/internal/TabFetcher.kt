@@ -7,13 +7,10 @@ import com.hyh.coroutine.simpleScan
 import com.hyh.tabs.ITab
 import com.hyh.tabs.TabInfo
 import com.hyh.tabs.TabSource
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param?) {
 
@@ -38,7 +35,7 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
                 previousSnapshot?.close()
                 val completeTimes = (previousSnapshot?.completeTimes ?: 0) + (if (previousSnapshot?.getCacheComplete == true) 1 else 0)
                 val snapshot: TabFetcherSnapshot<Param, Tab> = if (param == null) {
-                    TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), null)
+                    TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), Dispatchers.Unconfined)
                 } else {
                     TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), getFetchDispatcher(param))
                 }
@@ -101,7 +98,7 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
         var usingCache = false
         if (cacheResult is TabSource.CacheResult.Success) {
             usingCache = true
-            val event = TabEvent.UsingCache(ArrayList<TabInfo<Tab>>())
+            val event = TabEvent.UsingCache(ArrayList(cacheResult.tabs))
             pageEventCh.send(event)
             getCacheComplete = true
         }
@@ -117,7 +114,7 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
 
         when (loadResult) {
             is TabSource.LoadResult.Success<Tab> -> {
-                val event = TabEvent.Success(loadResult.tabs)
+                val event = TabEvent.Success(ArrayList(loadResult.tabs))
                 pageEventCh.send(event)
             }
             is TabSource.LoadResult.Error<Tab> -> {

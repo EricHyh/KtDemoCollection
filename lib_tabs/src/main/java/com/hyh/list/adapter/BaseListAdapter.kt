@@ -3,6 +3,7 @@ package com.hyh.list.adapter
 import com.hyh.list.RepoLoadState
 import kotlinx.coroutines.flow.Flow
 
+/*
 class BaseListAdapter : IListAdapter {
 
     override val repoLoadStateFlow: Flow<RepoLoadState>
@@ -24,4 +25,4 @@ class BaseListAdapter : IListAdapter {
         TODO("Not yet implemented")
     }
 
-}
+}*/

@@ -8,9 +8,9 @@ import com.hyh.list.ItemData
  * @author eriche
  * @data 2021/5/20
  */
-interface UiReceiverForRepo {
+interface UiReceiverForRepo<Param: Any> {
 
-    fun refresh()
+    fun refresh(param: Param)
 
 }
 

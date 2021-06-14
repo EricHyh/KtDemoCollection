@@ -7,10 +7,16 @@
     android:orientation="vertical">
 
     <Button
-        android:id="@+id/btn_refresh"
+        android:id="@+id/btn_refresh1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="刷新" />
+        android:text="刷新1" />
+
+    <Button
+        android:id="@+id/btn_refresh2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="刷新2" />
 
     <com.google.android.material.tabs.TabLayout
         android:id="@+id/tab_layout"

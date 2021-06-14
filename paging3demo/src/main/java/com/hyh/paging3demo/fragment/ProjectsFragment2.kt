@@ -60,7 +60,7 @@ class ProjectsFragment2 : CommonBaseFragment() {
     var num: Int = 0
 
     override fun initView(contentView: View) {
-        contentView.findViewById<Button>(R.id.btn_refresh)
+        contentView.findViewById<Button>(R.id.btn_refresh1)
             .setOnClickListener {
                 mFragmentTabAdapter?.refresh(Unit)
                 mFragmentTabAdapter?.refresh(Unit)
@@ -70,6 +70,15 @@ class ProjectsFragment2 : CommonBaseFragment() {
                     .eventChannel
                     .send((num++).asEvent())
 
+                pageContext.storage.store(ProjectStore.Num(num))
+            }
+
+
+        contentView.findViewById<Button>(R.id.btn_refresh2)
+            .setOnClickListener {
+                pageContext
+                    .eventChannel
+                    .send((num++).asEvent())
                 pageContext.storage.store(ProjectStore.Num(num))
             }
 

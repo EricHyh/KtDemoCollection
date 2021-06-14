@@ -25,14 +25,16 @@ import com.hyh.paging3demo.base.Global
 import com.hyh.paging3demo.bean.ProjectChapterBean
 import com.hyh.paging3demo.utils.DisplayUtil
 import com.hyh.paging3demo.viewmodel.ProjectListViewModel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 
 
 class ProjectFragment : CommonBaseFragment() {
 
     companion object {
         private const val TAG = "ProjectFragment"
+
+        private var _num = 0
     }
 
     private var mSwipeRefreshLayout: SwipeRefreshLayout? = null
@@ -59,17 +61,44 @@ class ProjectFragment : CommonBaseFragment() {
     }
 
 
+    private var num = _num++
+
+    val job = SupervisorJob() + Dispatchers.Main.immediate
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
+        Log.d(TAG, "onDestroy: $num cancel")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        lifecycleScope.launch {
+
+        GlobalScope.launch(job) {
             parentFragment
                 ?.pageContext
                 ?.eventChannel
                 ?.getFlow()
                 ?.collect {
-                    Log.d(TAG, "collect: ${it.unwrapData<Int>()}")
+                    Log.d(TAG, "collect $num : ${it.unwrapData<Int>()}")
                 }
         }
+
+        if (num == 0) {
+            job.cancel()
+            Log.d(TAG, "onCreate: $num cancel")
+
+        }
+
+
+        /*lifecycleScope.launch {
+
+        }*/
 
         parentFragment
             ?.pageContext
@@ -144,13 +173,6 @@ class ProjectFragment : CommonBaseFragment() {
                 mProjectAdapter.submitData(it)
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Handler().postDelayed({
-            Log.d("ProjectFragment", "onDestroy: $context")
-        }, 5000)
     }
 }
 

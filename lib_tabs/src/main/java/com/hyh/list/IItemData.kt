@@ -12,7 +12,7 @@ interface IItemData<VH : RecyclerView.ViewHolder> {
 
     fun onBindViewHolder(viewHolder: VH)
 
-    fun onBindViewHolder(viewHolder: VH, payloads: MutableList<Any>)
+    fun onBindViewHolder(viewHolder: VH, payloads: MutableList<Any>) = onBindViewHolder(viewHolder)
 
     /**
      * 判断是否为同一条数据.

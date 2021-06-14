@@ -1,20 +1,23 @@
 package com.hyh.list
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+
 interface IItemSource<Param : Any> {
 
-    fun getSourceToken(): Any
+    suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
 
-    suspend fun gePreShow(param: Param): CacheResult
+    suspend fun load(params: LoadParams<Param>): LoadResult
 
-    suspend fun load(param: Param): LoadResult
+    fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
-    sealed class CacheResult {
+    sealed class PreShowResult {
 
-        object Unused : CacheResult()
+        object Unused : PreShowResult()
 
         data class Success constructor(
-            val tabs: List<ItemData>
-        ) : CacheResult()
+            val items: List<ItemData>
+        ) : PreShowResult()
     }
 
     sealed class LoadResult {
@@ -24,8 +27,20 @@ interface IItemSource<Param : Any> {
         ) : LoadResult()
 
         data class Success constructor(
-            val tabs: List<ItemData>
+            val items: List<ItemData>
         ) : LoadResult()
     }
-
 }
+
+class PreShowParams<Param : Any>(
+    val param: Param,
+    val lastPreShowResult: IItemSource.PreShowResult?,
+    val lastLoadResult: IItemSource.LoadResult?
+)
+
+class LoadParams<Param : Any>(
+    val param: Param,
+    val lastPreShowResult: IItemSource.PreShowResult?,
+    val lastLoadResult: IItemSource.LoadResult?
+)
+
