@@ -36,13 +36,21 @@ class ListTestActivity : AppCompatActivity() {
         }, 2000)
 
         val tvTypes = findViewById<TextView>(R.id.tv_types)
-
         ListConfig.typesLiveData.observe(this, Observer<List<String>> { list ->
             var str = ""
-            list.forEach {
+            list?.forEach {
                 str += it
             }
             tvTypes.text = str
+        })
+
+        val lastTvTypes = findViewById<TextView>(R.id.last_tv_types)
+        ListConfig.lastTypesLiveData.observe(this, Observer<List<String>> { list ->
+            var str = ""
+            list?.forEach {
+                str += it
+            }
+            lastTvTypes.text = str
         })
 
     }

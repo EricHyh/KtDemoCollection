@@ -11,6 +11,15 @@
         android:text="刷新" />
 
     <TextView
+        android:id="@+id/last_tv_types"
+        android:layout_width="match_parent"
+        android:textSize="16sp"
+        android:textColor="#000"
+        android:background="#FFF"
+        android:padding="20dp"
+        android:layout_height="wrap_content"/>
+
+    <TextView
         android:id="@+id/tv_types"
         android:layout_width="match_parent"
         android:textSize="16sp"

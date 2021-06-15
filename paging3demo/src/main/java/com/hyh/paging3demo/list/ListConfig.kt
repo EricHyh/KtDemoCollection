@@ -1,10 +1,12 @@
 package com.hyh.paging3demo.list
 
 import androidx.lifecycle.MutableLiveData
+import kotlin.math.abs
 import kotlin.random.Random
 
 object ListConfig {
 
+    val lastTypesLiveData = MutableLiveData<List<String>>()
     val typesLiveData = MutableLiveData<List<String>>()
 
     private val typesMap = mapOf(
@@ -30,9 +32,20 @@ object ListConfig {
     )
 
 
+    private val types = listOf("A", "B", "C", "D", "E")
+
+    private var index: Int = 0
+
+    private val typesMap1 = mapOf(
+        Pair(0, listOf("G", "C", "E", "D", "F", "I", "H", "J")),
+        Pair(1, listOf("B", "G", "H", "I", "F", "J", "A", "D", "E", "C")),
+    )
+
     fun randomTypes(): List<String> {
         val random = Random(System.currentTimeMillis())
-        val types = typesMap[Math.abs(random.nextInt() % 18)]
+        //val types = typesMap1[(index++ % 2)]
+        val types = typesMap[abs(random.nextInt() % 18)]
+        //val types = types
         val newTypes = types!!.map {
             Pair(it, random.nextInt())
         }.sortedBy {
@@ -40,6 +53,8 @@ object ListConfig {
         }.map {
             it.first
         }
+        //val newTypes = types!!
+        lastTypesLiveData.postValue(typesLiveData.value)
         typesLiveData.postValue(newTypes)
         return newTypes
     }
