@@ -2,6 +2,7 @@ package com.hyh.paging3demo.list
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.os.SystemClock
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.TextView
@@ -16,7 +17,7 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
     override suspend fun load(param: Unit): IItemSource.LoadResult {
         val items = mutableListOf<ItemData>()
-        for (index in 0 until 10) {
+        for (index in 0 until 6) {
             items.add(NumItemData(type, index))
         }
         return IItemSource.LoadResult.Success(items)
@@ -35,6 +36,7 @@ class NumItemData(
 
     override fun getViewHolderFactory(): ViewHolderFactory {
         return {
+            SystemClock.sleep(10)
             val textView = TextView(it.context)
             textView.setTextColor(Color.BLACK)
             textView.setBackgroundColor(Color.WHITE)
@@ -56,6 +58,7 @@ class NumItemData(
 
     @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder) {
+        SystemClock.sleep(10)
         (viewHolder.itemView as TextView).text = "$type:$num"
     }
 }

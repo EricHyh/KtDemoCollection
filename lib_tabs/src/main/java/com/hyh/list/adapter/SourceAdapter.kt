@@ -1,5 +1,6 @@
 package com.hyh.list.adapter
 
+import android.util.Log
 import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
+import java.lang.ref.WeakReference
 
 
 interface ISourceAdapter {
@@ -84,7 +86,7 @@ class SourceAdapter(
             if (position in it.indices) {
                 val itemData = it[position]
                 val itemViewType = itemData.getItemViewType()
-                if (viewTypeStorage.get(itemViewType) == null) {
+                if (viewTypeStorage.get(itemViewType, false) == null) {
                     val viewHolderFactory = itemData.getViewHolderFactory()
                     viewTypeStorage.put(itemViewType, viewHolderFactory)
                 }
@@ -96,7 +98,11 @@ class SourceAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        return viewTypeStorage.get(viewType)?.invoke(parent) ?: object : RecyclerView.ViewHolder(View(parent.context)) {}
+        val viewHolderFactory = viewTypeStorage.get(viewType)
+        if (viewHolderFactory == null) {
+            Log.d(TAG, "onCreateViewHolder: $viewHolderFactory")
+        }
+        return viewHolderFactory?.invoke(parent) ?: object : RecyclerView.ViewHolder(View(parent.context)) {}
     }
 
     override fun getItemCount(): Int {
@@ -133,14 +139,12 @@ class SourceAdapter(
                             val newItems = event.items
                             if (oldItems.isNullOrEmpty() || newItems.isNullOrEmpty()) {
                                 items = newItems
-                                viewTypeStorage.clear()
                                 notifyDataSetChanged()
                             } else {
                                 val diffResult = withContext(workerDispatcher) {
                                     DiffUtil.calculateDiff(DiffUtilCallback(oldItems, newItems))
                                 }
                                 items = newItems
-                                viewTypeStorage.clear()
                                 diffResult.dispatchUpdatesTo(this@SourceAdapter)
                             }
                             _loadStateFlow.value = SourceLoadState.PreShow(newItems.size)
@@ -176,23 +180,42 @@ class SourceAdapter(
         receiver?.refresh(param)
     }
 
-    class ViewTypeStorage {
+    inner class ViewTypeStorage {
 
-        private val viewHolderFactoryMap: SparseArray<ViewHolderFactory> = SparseArray()
+        private val viewHolderFactoryMap: MutableMap<Int, WeakReference<ViewHolderFactory>> = mutableMapOf()
 
         fun put(viewType: Int, viewHolderFactory: ViewHolderFactory) {
-            if (viewHolderFactoryMap[viewType] != null) {
-                return
+            viewHolderFactoryMap[viewType] = WeakReference(viewHolderFactory)
+        }
+
+        fun get(viewType: Int, findOnNull: Boolean = true): ViewHolderFactory? {
+            val weakReference = viewHolderFactoryMap[viewType]
+            var viewHolderFactory = weakReference?.get()
+            if (viewHolderFactory != null) {
+                return viewHolderFactory
             }
-            viewHolderFactoryMap[viewType] = viewHolderFactory
+            if (findOnNull) {
+                viewHolderFactory = findViewHolderFactory(viewType)
+            }
+            if (viewHolderFactory == null) {
+                viewHolderFactoryMap.remove(viewType)
+            } else {
+                viewHolderFactoryMap[viewType] = WeakReference(viewHolderFactory)
+            }
+            return viewHolderFactory
         }
 
-        fun get(viewType: Int): ViewHolderFactory? {
-            return viewHolderFactoryMap[viewType]
-        }
-
-        fun clear() {
-            viewHolderFactoryMap.clear()
+        private fun findViewHolderFactory(viewType: Int): ViewHolderFactory? {
+            val items = this@SourceAdapter.items
+            if (items.isNullOrEmpty()) return null
+            val itemsSnapshot = mutableListOf<ItemData>()
+            itemsSnapshot.addAll(items)
+            itemsSnapshot.forEach {
+                if (it.getItemViewType() == viewType) {
+                    return it.getViewHolderFactory()
+                }
+            }
+            return null
         }
     }
 

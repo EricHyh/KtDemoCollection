@@ -36,7 +36,7 @@ class MultiSourceAdapter<Param : Any>(
     private var wrappers = mutableListOf<SourceAdapterWrapper>()
     private var receiver: UiReceiverForRepo<Param>? = null
     private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
-    private val invokeEventCh = Channel<List<Invoke>>(Channel.BUFFERED)
+    private val invokeEventCh = Channel<List<SuspendInvoke>>(Channel.BUFFERED)
 
     private var reusableHolder: WrapperAndLocalPosition = WrapperAndLocalPosition()
     private val binderLookup = IdentityHashMap<RecyclerView.ViewHolder, SourceAdapterWrapper>()
@@ -97,7 +97,7 @@ class MultiSourceAdapter<Param : Any>(
 
     @Suppress("UNCHECKED_CAST")
     private fun updateWrappers(sources: List<LazySourceData<out Any>>): UpdateWrappersResult {
-        val invokes: MutableList<Invoke> = mutableListOf()
+        val invokes: MutableList<SuspendInvoke> = mutableListOf()
         val oldWrappers = wrappers
         val oldSourceTokens = oldWrappers.map { it.sourceToken }
         val newSourceTokens = mutableListOf<Any>()
@@ -131,10 +131,19 @@ class MultiSourceAdapter<Param : Any>(
             notifyDataSetChanged()
         } else {
             val diffResult = DiffUtil.calculateDiff(DiffUtilCallback(oldSourceTokens, newSourceTokens))
-            diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(oldWrappers, newWrappers, removedWrappers))
+            val updateOperates: MutableList<UpdateOperate> = mutableListOf()
+            diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(updateOperates))
+            DispatchUpdatesHelper.dispatch(
+                updateOperates,
+                ArrayList(oldWrappers),
+                newWrappers,
+                removedWrappers
+            ).forEach {
+                it.invoke(this)
+            }
         }
 
-        val destroyInvokes: List<Invoke> = removedWrappers.map { wrapper ->
+        val destroyInvokes: List<SuspendInvoke> = removedWrappers.map { wrapper ->
             suspend {
                 wrapper.destroy()
             }
@@ -255,7 +264,6 @@ class MultiSourceAdapter<Param : Any>(
         )
     }
 
-
     private fun List<SourceAdapterWrapper>.findWrapper(sourceToken: Any): SourceAdapterWrapper? {
         forEach {
             if (it.sourceToken == sourceToken) {
@@ -355,7 +363,7 @@ class MultiSourceAdapter<Param : Any>(
 
     class UpdateWrappersResult(
         val newWrappers: List<SourceAdapterWrapper>,
-        val invokes: List<Invoke>
+        val invokes: List<SuspendInvoke>
     )
 
     inner class SourceAdapterCallback : SourceAdapterWrapper.Callback {
@@ -414,75 +422,6 @@ class MultiSourceAdapter<Param : Any>(
 
     // region inner class
 
-
-    private inner class SourceWrappersUpdateCallback(
-        oldWrappers: List<SourceAdapterWrapper>,
-        private val newWrappers: List<SourceAdapterWrapper>,
-        private val removedWrappers: MutableList<SourceAdapterWrapper>,
-    ) : ListUpdateCallback {
-
-        private val oldWrappers: MutableList<SourceAdapterWrapper> = ArrayList(oldWrappers)
-
-        override fun onChanged(position: Int, count: Int, payload: Any?) {
-            val wrapper = oldWrappers[position]
-            val offset = countItemsBefore(wrapper, oldWrappers)
-            var totalItemCount = wrapper.cachedItemCount
-            for (index in (position + 1) until (position + count)) {
-                totalItemCount += oldWrappers[index].cachedItemCount
-            }
-            notifyItemRangeChanged(offset, totalItemCount)
-        }
-
-        override fun onMoved(fromPosition: Int, toPosition: Int) {
-            val wrapper = oldWrappers[fromPosition]
-            val oldOffset = countItemsBefore(wrapper, oldWrappers)
-            move(oldWrappers, fromPosition, toPosition)
-
-            if (wrapper.cachedItemCount == 0) return
-
-            val newOffset = countItemsBefore(wrapper, oldWrappers)
-            notifyItemRangeRemoved(oldOffset, wrapper.cachedItemCount)
-            notifyItemRangeInserted(newOffset, wrapper.cachedItemCount)
-        }
-
-        override fun onInserted(position: Int, count: Int) {
-            val offset = countItemsBefore(position, oldWrappers)
-
-            var totalItemCount = 0
-            for (index in position until (position + count)) {
-                val wrapper = newWrappers[index]
-                totalItemCount += wrapper.cachedItemCount
-                oldWrappers.add(index, wrapper)
-            }
-
-            notifyItemRangeInserted(offset, totalItemCount)
-        }
-
-        override fun onRemoved(position: Int, count: Int) {
-            val offset = countItemsBefore(position, oldWrappers)
-            var totalItemCount = 0
-            for (index in position until (position + count)) {
-                val wrapper = oldWrappers[index]
-                totalItemCount += wrapper.cachedItemCount
-                removedWrappers.add(wrapper)
-            }
-
-            oldWrappers.removeAll(removedWrappers)
-            notifyItemRangeRemoved(offset, totalItemCount)
-        }
-
-        private fun <T> move(list: MutableList<T>, sourceIndex: Int, targetIndex: Int): Boolean {
-            if (list.isNullOrEmpty()) return false
-            val size = list.size
-            if (size <= sourceIndex || size <= targetIndex) return false
-            if (sourceIndex == targetIndex) {
-                return true
-            }
-            list.add(targetIndex, list.removeAt(sourceIndex))
-            return true
-        }
-    }
-
     private class DiffUtilCallback(
         private val oldSourceTokens: List<Any>,
         private val newSourceTokens: List<Any>
@@ -530,7 +469,7 @@ class MultiSourceAdapter<Param : Any>(
     // endregion
 }
 
-typealias Invoke = (suspend () -> Unit)
+typealias SuspendInvoke = (suspend () -> Unit)
 
 class SourceAdapterWrapper(
     val sourceToken: Any,
@@ -750,4 +689,315 @@ interface ViewTypeStorage {
             }
         }
     }
+}
+
+
+sealed class UpdateOperate {
+
+    data class OnChanged(val position: Int, val count: Int) : UpdateOperate()
+    data class OnMoved(val fromPosition: Int, val toPosition: Int) : UpdateOperate()
+    data class OnInserted(val position: Int, val count: Int) : UpdateOperate()
+    data class OnRemoved(val position: Int, val count: Int) : UpdateOperate()
+
+}
+
+class SourceWrappersUpdateCallback(
+    private val updateOperates: MutableList<UpdateOperate>,
+) : ListUpdateCallback {
+
+    override fun onChanged(position: Int, count: Int, payload: Any?) {
+        updateOperates.add(UpdateOperate.OnChanged(position, count))
+    }
+
+    override fun onMoved(fromPosition: Int, toPosition: Int) {
+        updateOperates.add(UpdateOperate.OnMoved(fromPosition, toPosition))
+    }
+
+    override fun onInserted(position: Int, count: Int) {
+        updateOperates.add(UpdateOperate.OnInserted(position, count))
+    }
+
+    override fun onRemoved(position: Int, count: Int) {
+        updateOperates.add(UpdateOperate.OnRemoved(position, count))
+    }
+
+    private fun <T> move(list: MutableList<T>, sourceIndex: Int, targetIndex: Int): Boolean {
+        if (list.isNullOrEmpty()) return false
+        val size = list.size
+        if (size <= sourceIndex || size <= targetIndex) return false
+        if (sourceIndex == targetIndex) {
+            return true
+        }
+        list.add(targetIndex, list.removeAt(sourceIndex))
+        return true
+    }
+}
+
+object DispatchUpdatesHelper {
+
+    fun dispatch(
+        updateOperates: List<UpdateOperate>,
+        oldWrappers: List<SourceAdapterWrapper>,
+        newWrappers: List<SourceAdapterWrapper>,
+        removedWrappers: MutableList<SourceAdapterWrapper>
+    ): List<RecyclerView.Adapter<*>.() -> Unit> {
+        val operateInvokes = mutableListOf<RecyclerView.Adapter<*>.() -> Unit>()
+
+        val wrapperStubs = mutableListOf<WrapperStub>()
+        wrapperStubs.addAll(oldWrappers.map { WrapperStub(wrapper = it) })
+
+        updateOperates.forEach { operate ->
+            when (operate) {
+                is UpdateOperate.OnChanged -> {
+                    onChanged(operate, wrapperStubs, newWrappers, operateInvokes)
+                }
+                is UpdateOperate.OnMoved -> {
+                    onMoved(operate, wrapperStubs, newWrappers, operateInvokes)
+                }
+                is UpdateOperate.OnInserted -> {
+                    onInserted(operate, wrapperStubs, newWrappers, operateInvokes)
+                }
+                is UpdateOperate.OnRemoved -> {
+                    onRemoved(operate, wrapperStubs, newWrappers, removedWrappers, operateInvokes)
+                }
+            }
+        }
+        return operateInvokes
+    }
+
+    private fun onChanged(
+        operate: UpdateOperate.OnChanged,
+        wrapperStubs: MutableList<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>,
+        operateInvokes: MutableList<RecyclerView.Adapter<*>.() -> Unit>
+    ) {
+        val wrapperStubsSnapshot = mutableListOf<WrapperStub>()
+        wrapperStubsSnapshot.addAll(wrapperStubs)
+        val invoke: RecyclerView.Adapter<*>.() -> Unit = {
+            val offset = countItemsBefore(
+                operate.position,
+                wrapperStubsSnapshot,
+                wrapperStubs,
+                newWrappers
+            )
+            val totalItemCount = countTotalItemCount(
+                operate.position,
+                operate.count,
+                wrapperStubsSnapshot,
+                wrapperStubs,
+                newWrappers
+            )
+            notifyItemRangeChanged(offset, totalItemCount)
+        }
+        operateInvokes.add(invoke)
+    }
+
+
+    private fun onMoved(
+        operate: UpdateOperate.OnMoved,
+        wrapperStubs: MutableList<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>,
+        operateInvokes: MutableList<RecyclerView.Adapter<*>.() -> Unit>
+    ) {
+        val beforeMoveWrapperStubs = mutableListOf<WrapperStub>()
+        beforeMoveWrapperStubs.addAll(wrapperStubs)
+        move(wrapperStubs, operate.fromPosition, operate.toPosition)
+        val afterMoveWrapperStubs = mutableListOf<WrapperStub>()
+        afterMoveWrapperStubs.addAll(wrapperStubs)
+        val invoke: RecyclerView.Adapter<*>.() -> Unit = {
+            val cachedItemCount = getWrapper(
+                operate.fromPosition,
+                beforeMoveWrapperStubs,
+                wrapperStubs,
+                newWrappers
+            )?.cachedItemCount ?: 0
+            if (cachedItemCount > 0) {
+                val oldOffset = countItemsBefore(operate.fromPosition, beforeMoveWrapperStubs, wrapperStubs, newWrappers)
+                val newOffset = countItemsBefore(operate.toPosition, afterMoveWrapperStubs, wrapperStubs, newWrappers)
+                notifyItemRangeRemoved(oldOffset, cachedItemCount)
+                notifyItemRangeInserted(newOffset, cachedItemCount)
+            }
+        }
+        operateInvokes.add(invoke)
+    }
+
+
+    private fun onInserted(
+        operate: UpdateOperate.OnInserted,
+        wrapperStubs: MutableList<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>,
+        operateInvokes: MutableList<RecyclerView.Adapter<*>.() -> Unit>
+    ) {
+        for (index in operate.position until (operate.position + operate.count)) {
+            val wrapperStub = WrapperStub()
+            wrapperStubs.add(index, wrapperStub)
+        }
+        val afterInsertedWrapperStubs = mutableListOf<WrapperStub>()
+        afterInsertedWrapperStubs.addAll(wrapperStubs)
+        val invoke: RecyclerView.Adapter<*>.() -> Unit = {
+            val offset = countItemsBefore(
+                operate.position,
+                afterInsertedWrapperStubs,
+                wrapperStubs,
+                newWrappers
+            )
+            val totalItemCount = countTotalItemCount(
+                operate.position,
+                operate.count,
+                afterInsertedWrapperStubs,
+                wrapperStubs,
+                newWrappers
+            )
+            notifyItemRangeInserted(offset, totalItemCount)
+        }
+        operateInvokes.add(invoke)
+    }
+
+
+    private fun countItemsBefore(
+        wrapperStub: WrapperStub,
+        wrapperStubsSnapshot: List<WrapperStub>,
+        wrapperStubs: List<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>
+    ): Int {
+        var count = 0
+        for (item in wrapperStubsSnapshot) {
+            count += if (item !== wrapperStub) {
+                val wrapper = item.wrapper
+                if (wrapper != null) {
+                    wrapper.cachedItemCount
+                } else {
+                    val index = wrapperStubs.indexOf(wrapperStub)
+                    if (index in newWrappers.indices) {
+                        newWrappers[index].cachedItemCount
+                    } else {
+                        0
+                    }
+                }
+            } else {
+                break
+            }
+        }
+        return count
+    }
+
+    private fun onRemoved(
+        operate: UpdateOperate.OnRemoved,
+        wrapperStubs: MutableList<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>,
+        removedWrappers: MutableList<SourceAdapterWrapper>,
+        operateInvokes: MutableList<RecyclerView.Adapter<*>.() -> Unit>
+    ) {
+        val removed = mutableListOf<WrapperStub>()
+        for (index in operate.position until (operate.position + operate.count)) {
+            val wrapperStub = wrapperStubs[index]
+            removed.add(wrapperStub)
+        }
+        wrapperStubs.removeAll(removed)
+        removedWrappers.addAll(removed.mapNotNull { it.wrapper })
+
+        val wrapperStubsSnapshot = mutableListOf<WrapperStub>()
+        wrapperStubsSnapshot.addAll(wrapperStubs)
+        val invoke: RecyclerView.Adapter<*>.() -> Unit = {
+            var offset = 0
+            for (index in 0 until operate.position) {
+                val wrapperStub = wrapperStubsSnapshot[index]
+                val wrapper = wrapperStub.wrapper
+                if (wrapper != null) {
+                    offset += wrapper.cachedItemCount
+                } else {
+                    val curIndex = wrapperStubsSnapshot.indexOf(wrapperStub)
+                    if (curIndex in newWrappers.indices) {
+                        offset += newWrappers[index].cachedItemCount
+                    }
+                }
+            }
+
+            var totalItemCount = 0
+            removed.forEach {
+                val wrapper = it.wrapper
+                if (wrapper != null) {
+                    totalItemCount += wrapper.cachedItemCount
+                } else {
+                    val index = wrapperStubs.indexOf(it)
+                    if (index in newWrappers.indices) {
+                        totalItemCount += newWrappers[index].cachedItemCount
+                    }
+                }
+            }
+
+            notifyItemRangeRemoved(offset, totalItemCount)
+        }
+
+        operateInvokes.add(invoke)
+    }
+
+    private fun countItemsBefore(
+        position: Int,
+        wrapperStubsSnapshot: List<WrapperStub>,
+        wrapperStubs: List<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>
+    ): Int {
+        return countItemsBefore(
+            wrapperStubsSnapshot[position],
+            wrapperStubsSnapshot,
+            wrapperStubs,
+            newWrappers
+        )
+    }
+
+
+    private fun countTotalItemCount(
+        position: Int,
+        wrapperCount: Int,
+        wrapperStubsSnapshot: List<WrapperStub>,
+        wrapperStubs: List<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>
+    ): Int {
+        var count = 0
+        for (index in position until (position + wrapperCount)) {
+            val wrapperStub = wrapperStubsSnapshot[index]
+            val wrapper = wrapperStub.wrapper
+            if (wrapper != null) {
+                count += wrapper.cachedItemCount
+            } else {
+                val curIndex = wrapperStubs.indexOf(wrapperStub)
+                if (curIndex in newWrappers.indices) {
+                    count += newWrappers[curIndex].cachedItemCount
+                }
+            }
+        }
+        return count
+    }
+
+    private fun getWrapper(
+        position: Int,
+        wrapperStubsSnapshot: List<WrapperStub>,
+        wrapperStubs: List<WrapperStub>,
+        newWrappers: List<SourceAdapterWrapper>
+    ): SourceAdapterWrapper? {
+        val wrapperStub = wrapperStubsSnapshot[position]
+        val wrapper = wrapperStub.wrapper
+        if (wrapper != null) return wrapper
+        val index = wrapperStubs.indexOf(wrapperStub)
+        if (index in newWrappers.indices) {
+            return newWrappers[index]
+        }
+        return null
+    }
+
+    private fun <T> move(list: MutableList<T>, sourceIndex: Int, targetIndex: Int): Boolean {
+        if (list.isNullOrEmpty()) return false
+        val size = list.size
+        if (size <= sourceIndex || size <= targetIndex) return false
+        if (sourceIndex == targetIndex) {
+            return true
+        }
+        list.add(targetIndex, list.removeAt(sourceIndex))
+        return true
+    }
+
+    class WrapperStub(
+        var wrapper: SourceAdapterWrapper? = null
+    )
 }
