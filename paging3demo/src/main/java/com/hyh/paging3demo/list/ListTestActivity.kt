@@ -58,8 +58,8 @@ class ListTestActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        //multiSourceAdapter.refresh(Unit)
-        val handler = Handler()
+        multiSourceAdapter.refresh(Unit)
+        /*val handler = Handler()
         val runnable = object : Runnable {
             override fun run() {
                 //testAdapter.refresh()
@@ -67,7 +67,7 @@ class ListTestActivity : AppCompatActivity() {
                 handler.post(this)
             }
         }
-        handler.post(runnable)
+        handler.post(runnable)*/
         //testAdapter.refresh()
         //testAdapter.refresh()
         //testAdapter.refresh()

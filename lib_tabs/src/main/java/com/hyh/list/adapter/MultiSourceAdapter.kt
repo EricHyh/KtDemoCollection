@@ -3,6 +3,7 @@ package com.hyh.list.adapter
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.SystemClock
+import android.util.Log
 import android.util.SparseArray
 import android.view.Gravity
 import android.view.ViewGroup
@@ -49,6 +50,7 @@ class MultiSourceAdapter<Param : Any>(
 
     suspend fun submitData(data: RepoData<Param>) {
         collectFromRunner.runInIsolation {
+
             GlobalScope.launch(mainDispatcher) {
                 invokeEventCh
                     .receiveAsFlow()
@@ -121,7 +123,7 @@ class MultiSourceAdapter<Param : Any>(
                 val wrapper = createWrapper(it)
                 newWrappers.add(wrapper)
                 invokes.add {
-                    //submitData(wrapper, it.lazyFlow.await())
+                    submitData(wrapper, it.lazyFlow.await())
                 }
             }
         }
@@ -287,13 +289,13 @@ class MultiSourceAdapter<Param : Any>(
             SourceAdapter(workerDispatcher),
             viewTypeStorage,
             sourceAdapterCallback
-        ).apply {
+        )/*.apply {
             val items = mutableListOf<ItemData>()
             for (index in 0 until 6) {
                 items.add(NumItemData(sourceData.sourceToken.toString(), index))
             }
             adapter.setData(items)
-        }
+        }*/
     }
 
 
@@ -319,12 +321,12 @@ class MultiSourceAdapter<Param : Any>(
         }
 
         override fun areItemsTheSame(other: ItemData): Boolean {
-            if(other !is NumItemData)return false
+            if (other !is NumItemData) return false
             return this.type == other.type && this.num == other.num
         }
 
         override fun areContentsTheSame(other: ItemData): Boolean {
-            if(other !is NumItemData)return false
+            if (other !is NumItemData) return false
             return this.type == other.type && this.num == other.num
         }
 
@@ -368,6 +370,8 @@ class MultiSourceAdapter<Param : Any>(
     }
 
     private fun countItemsBefore(wrapper: SourceAdapterWrapper, wrappers: List<SourceAdapterWrapper>): Int {
+        val index = wrappers.indexOf(wrapper)
+        Log.d(TAG, "countItemsBefore: wrapper index = $index")
         var count = 0
         for (item in wrappers) {
             count += if (item !== wrapper) {
@@ -533,11 +537,14 @@ class SourceAdapterWrapper(
 
     var initialized = false
     var submitDataJob: Job? = null
-    private var _cachedItemCount = adapter.itemCount
-    /*val cachedItemCount
-        get() = _cachedItemCount*/
+
+    private var _cachedItemCount = 0
     val cachedItemCount
-        get() = adapter.itemCount
+        get() = _cachedItemCount
+
+    /*private var _cachedItemCount = adapter.itemCount
+    val cachedItemCount
+        get() = adapter.itemCount*/
 
     private val viewTypeLookup: ViewTypeStorage.ViewTypeLookup = viewTypeStorage.createViewTypeWrapper(this)
     private val adapterObserver = object : RecyclerView.AdapterDataObserver() {
@@ -885,10 +892,7 @@ object DispatchUpdatesHelper {
             )?.cachedItemCount ?: 0
             if (cachedItemCount > 0) {
                 val oldOffset = countItemsBefore(operate.fromPosition, beforeMoveWrapperStubs, wrapperStubs, newWrappers)
-
                 notifyItemRangeRemoved(oldOffset, cachedItemCount)
-
-
                 val newOffset = countItemsBefore(operate.toPosition, afterMoveWrapperStubs, wrapperStubs, newWrappers)
                 notifyItemRangeInserted(newOffset, cachedItemCount)
             }
@@ -983,7 +987,7 @@ object DispatchUpdatesHelper {
                 if (wrapper != null) {
                     wrapper.cachedItemCount
                 } else {
-                    val index = wrapperStubs.indexOf(wrapperStub)
+                    val index = wrapperStubs.indexOf(item)
                     if (index in newWrappers.indices) {
                         newWrappers[index].cachedItemCount
                     } else {

@@ -41,19 +41,27 @@ object ListConfig {
         Pair(1, listOf("B", "G", "H", "I", "F", "J", "A", "D", "E", "C")),
     )
 
+
+    private val typesMap2 = mapOf(
+        Pair(0, listOf("H", "C", "B", "D", "G", "F", "E", "A", "I")),
+        //Pair(1, listOf("E", "D", "J", "I", "G", "F", "H")),
+        Pair(1, listOf("D", "J", "I", "G", "F", "H", "E")),
+        //Pair(1, listOf("H", "D", "J", "I", "G", "F", "E")),
+    )
+
     fun randomTypes(): List<String> {
-        val random = Random(System.currentTimeMillis())
-        //val types = typesMap1[(index++ % 2)]
-        val types = typesMap[abs(random.nextInt() % 18)]
+        //val random = Random(System.currentTimeMillis())
+        val types = typesMap2[(index++ % 2)]
+        //val types = typesMap[abs(random.nextInt() % 18)]
         //val types = types
-        val newTypes = types!!.map {
+        /*val newTypes = types!!.map {
             Pair(it, random.nextInt())
         }.sortedBy {
             it.second
         }.map {
             it.first
-        }
-        //val newTypes = types!!
+        }*/
+        val newTypes = types!!
         lastTypesLiveData.postValue(typesLiveData.value)
         typesLiveData.postValue(newTypes)
         return newTypes
