@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 class ListTestActivity : AppCompatActivity() {
 
     val multiSourceAdapter = MultiSourceAdapter<Unit>()
+    //val testAdapter = TestAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +32,7 @@ class ListTestActivity : AppCompatActivity() {
                     .flow
                     .collectLatest {
                         multiSourceAdapter.submitData(it)
+                        //testAdapter.refresh()
                     }
             }
         }, 2000)
@@ -56,7 +58,20 @@ class ListTestActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        multiSourceAdapter.refresh(Unit)
+        //multiSourceAdapter.refresh(Unit)
+        val handler = Handler()
+        val runnable = object : Runnable {
+            override fun run() {
+                //testAdapter.refresh()
+                multiSourceAdapter.refresh(Unit)
+                handler.post(this)
+            }
+        }
+        handler.post(runnable)
+        //testAdapter.refresh()
+        //testAdapter.refresh()
+        //testAdapter.refresh()
+        //testAdapter.refresh()
     }
 
 }

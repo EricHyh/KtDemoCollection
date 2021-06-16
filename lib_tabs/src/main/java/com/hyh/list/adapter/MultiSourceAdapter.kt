@@ -1,13 +1,18 @@
 package com.hyh.list.adapter
 
+import android.annotation.SuppressLint
+import android.graphics.Color
+import android.os.SystemClock
 import android.util.SparseArray
+import android.view.Gravity
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SingleRunner
-import com.hyh.list.IParamProvider
-import com.hyh.list.RepoLoadState
+import com.hyh.list.*
 import com.hyh.list.internal.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -86,7 +91,7 @@ class MultiSourceAdapter<Param : Any>(
 
     private suspend fun submitData(wrapper: SourceAdapterWrapper, flow: Flow<SourceData<out Any>>) {
         val context: CoroutineContext = SupervisorJob() + mainDispatcher
-        val job = GlobalScope.launch(context) {
+        val job = CloseableCoroutineScope(context).launch {
             flow.collectLatest {
                 wrapper.adapter.submitData(it)
             }
@@ -116,7 +121,7 @@ class MultiSourceAdapter<Param : Any>(
                 val wrapper = createWrapper(it)
                 newWrappers.add(wrapper)
                 invokes.add {
-                    submitData(wrapper, it.lazyFlow.await())
+                    //submitData(wrapper, it.lazyFlow.await())
                 }
             }
         }
@@ -282,7 +287,52 @@ class MultiSourceAdapter<Param : Any>(
             SourceAdapter(workerDispatcher),
             viewTypeStorage,
             sourceAdapterCallback
-        )
+        ).apply {
+            val items = mutableListOf<ItemData>()
+            for (index in 0 until 6) {
+                items.add(NumItemData(sourceData.sourceToken.toString(), index))
+            }
+            adapter.setData(items)
+        }
+    }
+
+
+    class NumItemData(
+        private val type: String,
+        private val num: Int
+    ) : IItemData<RecyclerView.ViewHolder> {
+
+        override fun getItemViewType(): Int {
+            return 0
+        }
+
+        override fun getViewHolderFactory(): ViewHolderFactory {
+            return {
+                SystemClock.sleep(10)
+                val textView = TextView(it.context)
+                textView.setTextColor(Color.BLACK)
+                textView.setBackgroundColor(Color.WHITE)
+                textView.gravity = Gravity.CENTER
+                textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100)
+                object : RecyclerView.ViewHolder(textView) {}
+            }
+        }
+
+        override fun areItemsTheSame(other: ItemData): Boolean {
+            if(other !is NumItemData)return false
+            return this.type == other.type && this.num == other.num
+        }
+
+        override fun areContentsTheSame(other: ItemData): Boolean {
+            if(other !is NumItemData)return false
+            return this.type == other.type && this.num == other.num
+        }
+
+        @SuppressLint("SetTextI18n")
+        override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder) {
+            SystemClock.sleep(10)
+            (viewHolder.itemView as TextView).text = "$type:$num"
+        }
     }
 
     private fun findWrapperAndLocalPosition(globalPosition: Int): WrapperAndLocalPosition {
@@ -483,9 +533,11 @@ class SourceAdapterWrapper(
 
     var initialized = false
     var submitDataJob: Job? = null
-    private var _cachedItemCount = 0
+    private var _cachedItemCount = adapter.itemCount
+    /*val cachedItemCount
+        get() = _cachedItemCount*/
     val cachedItemCount
-        get() = _cachedItemCount
+        get() = adapter.itemCount
 
     private val viewTypeLookup: ViewTypeStorage.ViewTypeLookup = viewTypeStorage.createViewTypeWrapper(this)
     private val adapterObserver = object : RecyclerView.AdapterDataObserver() {

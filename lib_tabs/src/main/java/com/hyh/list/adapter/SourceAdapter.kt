@@ -128,6 +128,10 @@ class SourceAdapter(
         }
     }
 
+    fun setData(items: List<ItemData>) {
+        this.items = items
+    }
+
     suspend fun submitData(data: SourceData<out Any>) {
         collectFromRunner.runInIsolation {
             receiver = data.receiver as UiReceiverForSource<Any>
