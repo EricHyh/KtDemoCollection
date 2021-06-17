@@ -17,7 +17,7 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
     private var lastNums: List<Int> = emptyList()
 
-    override suspend fun getPreShowJustFirstTime(param: Unit): IItemSource.PreShowResult {
+    override suspend fun getPreShowWhenTheFirstTime(param: Unit): IItemSource.PreShowResult {
         return IItemSource.PreShowResult.Unused
     }
 

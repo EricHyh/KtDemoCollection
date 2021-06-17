@@ -16,16 +16,22 @@ abstract class TabSource<Param : Any, Tab : ITab>(
 ) {
 
     private val tabFetcher: TabFetcher<Param, Tab> = object : TabFetcher<Param, Tab>(initialParam) {
-        override suspend fun getCache(param: Param, completeTimes: Int): CacheResult<Tab> = this@TabSource.getCache(param, completeTimes)
-        override suspend fun load(param: Param): LoadResult<Tab> = this@TabSource.load(param)
+        override suspend fun getCache(params: CacheParams<Param, Tab>): CacheResult<Tab> = this@TabSource.getCache(params)
+        override suspend fun onCacheResult(params: CacheParams<Param, Tab>, result: CacheResult<Tab>) = this@TabSource.onCacheResult(params, result)
+        override suspend fun load(params: LoadParams<Param, Tab>): LoadResult<Tab> = this@TabSource.load(params)
+        override suspend fun onLoadResult(params: LoadParams<Param, Tab>, result: LoadResult<Tab>) = this@TabSource.onLoadResult(params, result)
         override fun getFetchDispatcher(param: Param): CoroutineDispatcher = this@TabSource.getFetchDispatcher(param)
     }
 
     val flow: Flow<TabData<Param, Tab>> = tabFetcher.flow
 
-    protected open suspend fun getCache(param: Param, completeTimes: Int): CacheResult<Tab> = CacheResult.Unused()
+    protected abstract suspend fun getCache(params: CacheParams<Param, Tab>): CacheResult<Tab>
 
-    protected abstract suspend fun load(param: Param): LoadResult<Tab>
+    protected open suspend fun onCacheResult(params: CacheParams<Param, Tab>, result: CacheResult<Tab>) {}
+
+    protected abstract suspend fun load(params: LoadParams<Param, Tab>): LoadResult<Tab>
+
+    protected open suspend fun onLoadResult(params: LoadParams<Param, Tab>, result: LoadResult<Tab>) {}
 
     protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
@@ -48,4 +54,16 @@ abstract class TabSource<Param : Any, Tab : ITab>(
             val tabs: List<TabInfo<Tab>>
         ) : LoadResult<Tab>()
     }
+
+    class CacheParams<Param : Any, Tab : ITab>(
+        val param: Param,
+        val lastCacheResult: CacheResult<Tab>?,
+        val lastLoadResult: LoadResult<Tab>?
+    )
+
+    class LoadParams<Param : Any, Tab : ITab>(
+        val param: Param,
+        val lastCacheResult: CacheResult<Tab>?,
+        val lastLoadResult: LoadResult<Tab>?
+    )
 }

@@ -5,8 +5,6 @@ import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
 import com.hyh.list.IItemSource
-import com.hyh.list.LoadParams
-import com.hyh.list.PreShowParams
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -47,7 +45,9 @@ class ItemFetcher<Param : Any>(
                     lastPreShowResult = previousSnapshot?.preShowResult,
                     lastLoadResult = previousSnapshot?.loadResult,
                     preShowLoader = getPreShowLoader(),
+                    onPreShowResult = getOnPreShowResult(),
                     loader = getLoader(),
+                    onItemLoadResult = getOnLoadResult(),
                     fetchDispatcher = getFetchDispatcher(param)
                 )
             }
@@ -62,15 +62,26 @@ class ItemFetcher<Param : Any>(
     }.buffer(Channel.BUFFERED)
 
     private fun getPreShowLoader(): PreShowLoader<Param> = ::getPreShow
+    private fun getOnPreShowResult(): OnPreShowResult<Param> = ::onPreShowResult
 
     private fun getLoader(): ItemLoader<Param> = ::load
+    private fun getOnLoadResult(): OnItemLoadResult<Param> = ::onLoadResult
 
-    private suspend fun getPreShow(params: PreShowParams<Param>): IItemSource.PreShowResult {
+
+    private suspend fun getPreShow(params: IItemSource.PreShowParams<Param>): IItemSource.PreShowResult {
         return itemSource.getPreShow(params)
     }
 
-    private suspend fun load(params: LoadParams<Param>): IItemSource.LoadResult {
+    private suspend fun onPreShowResult(params: IItemSource.PreShowParams<Param>, preShowResult: IItemSource.PreShowResult) {
+        itemSource.onPreShowResult(params, preShowResult)
+    }
+
+    private suspend fun load(params: IItemSource.LoadParams<Param>): IItemSource.LoadResult {
         return itemSource.load(params)
+    }
+
+    private suspend fun onLoadResult(params: IItemSource.LoadParams<Param>, loadResult: IItemSource.LoadResult) {
+        itemSource.onLoadResult(params, loadResult)
     }
 
     private fun getFetchDispatcher(param: Param): CoroutineDispatcher {
@@ -84,7 +95,9 @@ class ItemFetcherSnapshot<Param : Any>(
     private val lastPreShowResult: IItemSource.PreShowResult? = null,
     private val lastLoadResult: IItemSource.LoadResult? = null,
     private val preShowLoader: PreShowLoader<Param>,
+    private val onPreShowResult: OnPreShowResult<Param>,
     private val loader: ItemLoader<Param>,
+    private val onItemLoadResult: OnItemLoadResult<Param>,
     private val fetchDispatcher: CoroutineDispatcher?,
 ) {
 
@@ -109,7 +122,8 @@ class ItemFetcherSnapshot<Param : Any>(
 
         sourceEventCh.send(SourceEvent.Loading)
 
-        val preShowResult = preShowLoader.invoke(PreShowParams(param, lastPreShowResult, lastLoadResult))
+        val preShowParams = IItemSource.PreShowParams(param, lastPreShowResult, lastLoadResult)
+        val preShowResult = preShowLoader.invoke(preShowParams)
         this@ItemFetcherSnapshot.preShowResult = preShowResult
 
         var preShowing = false
@@ -118,13 +132,15 @@ class ItemFetcherSnapshot<Param : Any>(
             val event = SourceEvent.PreShowing(ArrayList(preShowResult.items))
             sourceEventCh.send(event)
         }
+        onPreShowResult(preShowParams, preShowResult)
 
+        val loadParams = IItemSource.LoadParams(param, lastPreShowResult, lastLoadResult)
         val loadResult: IItemSource.LoadResult
         if (fetchDispatcher == null) {
-            loadResult = loader.invoke(LoadParams(param, lastPreShowResult, lastLoadResult))
+            loadResult = loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {
-                loadResult = loader.invoke(LoadParams(param, lastPreShowResult, lastLoadResult))
+                loadResult = loader.invoke(loadParams)
             }
         }
         this@ItemFetcherSnapshot.loadResult = loadResult
@@ -139,6 +155,7 @@ class ItemFetcherSnapshot<Param : Any>(
                 sourceEventCh.send(event)
             }
         }
+        onItemLoadResult(loadParams, loadResult)
     }
 
     fun close() {
@@ -146,5 +163,7 @@ class ItemFetcherSnapshot<Param : Any>(
     }
 }
 
-internal typealias PreShowLoader<Param> = (suspend (params: PreShowParams<Param>) -> IItemSource.PreShowResult)
-internal typealias ItemLoader<Param> = (suspend (param: LoadParams<Param>) -> IItemSource.LoadResult)
+internal typealias PreShowLoader<Param> = (suspend (params: IItemSource.PreShowParams<Param>) -> IItemSource.PreShowResult)
+internal typealias OnPreShowResult<Param> = (suspend (IItemSource.PreShowParams<Param>, IItemSource.PreShowResult) -> Unit)
+internal typealias ItemLoader<Param> = (suspend (param: IItemSource.LoadParams<Param>) -> IItemSource.LoadResult)
+internal typealias OnItemLoadResult<Param> = (suspend (IItemSource.LoadParams<Param>, IItemSource.LoadResult) -> Unit)

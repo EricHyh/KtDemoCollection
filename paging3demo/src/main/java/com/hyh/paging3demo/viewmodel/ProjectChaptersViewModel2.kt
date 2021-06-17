@@ -2,23 +2,17 @@ package com.hyh.paging3demo.viewmodel
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.paging.ExperimentalPagingApi
-import androidx.paging.cachedIn
-import com.hyh.paging3demo.bean.ProjectChapterBean
 import com.hyh.paging3demo.bean.ProjectChaptersBean
 import com.hyh.paging3demo.fragment.ProjectFragment
 import com.hyh.paging3demo.net.RetrofitHelper
 import com.hyh.tabs.FragmentTab
+import com.hyh.tabs.SimpleTabSource
 import com.hyh.tabs.TabInfo
-import com.hyh.tabs.TabSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.HttpException
 import retrofit2.http.GET
@@ -30,7 +24,7 @@ class ProjectChaptersViewModel2(context: Context) : ViewModel() {
 
     val flow = projectTabSource.flow
 
-    class ProjectTabSource(private val context: Context) : TabSource<Unit, FragmentTab>() {
+    class ProjectTabSource(private val context: Context) : SimpleTabSource<Unit, FragmentTab>() {
 
         private val TAG = "ProjectTabSource"
 
@@ -41,6 +35,11 @@ class ProjectChaptersViewModel2(context: Context) : ViewModel() {
         }
 
         var num = 0
+
+
+        override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult<FragmentTab> {
+            return CacheResult.Unused()
+        }
 
         override suspend fun load(param: Unit): LoadResult<FragmentTab> {
             val result = kotlin.runCatching {

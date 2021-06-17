@@ -22,15 +22,16 @@
         <activity
             android:name=".MainActivity"
             android:screenOrientation="portrait">
-            <!--<intent-filter>
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>-->
+            </intent-filter>
         </activity>
 
         <activity android:name=".list.ListTestActivity"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:label="@string/list_demo">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -40,12 +41,13 @@
 
         <activity
             android:name=".MainActivity2"
-            android:screenOrientation="portrait">
-            <!--<intent-filter>
+            android:screenOrientation="portrait"
+            android:label="@string/tab_demo">
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>-->
+            </intent-filter>
         </activity>
 
         <activity

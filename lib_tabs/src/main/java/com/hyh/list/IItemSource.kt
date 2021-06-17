@@ -6,9 +6,9 @@ import kotlinx.coroutines.Dispatchers
 interface IItemSource<Param : Any> {
 
     suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
-
+    suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
     suspend fun load(params: LoadParams<Param>): LoadResult
-
+    suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
     fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
     sealed class PreShowResult {
@@ -30,17 +30,16 @@ interface IItemSource<Param : Any> {
             val items: List<ItemData>
         ) : LoadResult()
     }
+
+    class PreShowParams<Param : Any>(
+        val param: Param,
+        val lastPreShowResult: PreShowResult?,
+        val lastLoadResult: LoadResult?
+    )
+
+    class LoadParams<Param : Any>(
+        val param: Param,
+        val lastPreShowResult: PreShowResult?,
+        val lastLoadResult: LoadResult?
+    )
 }
-
-class PreShowParams<Param : Any>(
-    val param: Param,
-    val lastPreShowResult: IItemSource.PreShowResult?,
-    val lastLoadResult: IItemSource.LoadResult?
-)
-
-class LoadParams<Param : Any>(
-    val param: Param,
-    val lastPreShowResult: IItemSource.PreShowResult?,
-    val lastLoadResult: IItemSource.LoadResult?
-)
-

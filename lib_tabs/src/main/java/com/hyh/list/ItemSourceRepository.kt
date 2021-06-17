@@ -10,11 +10,17 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
 
     private val itemSourceFetcher = object : ItemSourceFetcher<Param>(initialParam) {
 
-        override suspend fun getCache(param: Param, completeTimes: Int): CacheResult =
-            this@ItemSourceRepository.getCache(param, completeTimes)
+        override suspend fun getCache(params: CacheParams<Param>): CacheResult =
+            this@ItemSourceRepository.getCache(params)
 
-        override suspend fun load(param: Param): LoadResult =
-            this@ItemSourceRepository.load(param)
+        override suspend fun onCacheResult(params: CacheParams<Param>, cacheResult: CacheResult) =
+            this@ItemSourceRepository.onCacheResult(params, cacheResult)
+
+        override suspend fun load(params: LoadParams<Param>): LoadResult =
+            this@ItemSourceRepository.load(params)
+
+        override suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) =
+            this@ItemSourceRepository.onLoadResult(params, loadResult)
 
         override fun getFetchDispatcher(param: Param): CoroutineDispatcher =
             this@ItemSourceRepository.getFetchDispatcher(param)
@@ -23,9 +29,13 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
 
     val flow: Flow<RepoData<Param>> = itemSourceFetcher.flow
 
-    protected abstract suspend fun getCache(param: Param, completeTimes: Int): CacheResult
+    protected abstract suspend fun getCache(params: CacheParams<Param>): CacheResult
 
-    protected abstract suspend fun load(param: Param): LoadResult
+    protected open suspend fun onCacheResult(params: CacheParams<Param>, cacheResult: CacheResult) {}
+
+    protected abstract suspend fun load(params: LoadParams<Param>): LoadResult
+
+    protected open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
 
     protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
@@ -46,10 +56,22 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
             val sources: List<ItemSourceInfo>,
         ) : LoadResult()
     }
-}
 
-data class ItemSourceInfo(
-    val sourceToken: Any,
-    val paramProvider: IParamProvider<out Any>,
-    val lazySource: Lazy<IItemSource<out Any>>
-)
+    data class ItemSourceInfo(
+        val sourceToken: Any,
+        val paramProvider: IParamProvider<out Any>,
+        val lazySource: Lazy<IItemSource<out Any>>
+    )
+
+    class CacheParams<Param : Any>(
+        val param: Param,
+        val lastCacheResult: CacheResult?,
+        val lastLoadResult: LoadResult?
+    )
+
+    class LoadParams<Param : Any>(
+        val param: Param,
+        val lastCacheResult: CacheResult?,
+        val lastLoadResult: LoadResult?
+    )
+}

@@ -4,14 +4,7 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
-import com.hyh.list.IItemSource
-import com.hyh.list.IParamProvider
-import com.hyh.list.ItemSourceInfo
-import com.hyh.list.ItemSourceRepository
-import com.hyh.tabs.TabSource
-import com.hyh.tabs.internal.CacheTabLoader
-import com.hyh.tabs.internal.TabEvent
-import com.hyh.tabs.internal.TabFetcherSnapshot
+import com.hyh.list.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -40,13 +33,16 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             }
             .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param? ->
                 previousSnapshot?.close()
-                val completeTimes = (previousSnapshot?.completeTimes ?: 0) + (if (previousSnapshot?.getCacheComplete == true) 1 else 0)
-                val snapshot: ItemSourceFetcherSnapshot<Param> = if (param == null) {
-                    ItemSourceFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), null)
-                } else {
-                    ItemSourceFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), getFetchDispatcher(param))
-                }
-                snapshot
+                ItemSourceFetcherSnapshot(
+                    param,
+                    previousSnapshot?.cacheResult,
+                    previousSnapshot?.loadResult,
+                    getCacheLoader(),
+                    geOnSourceCacheResult(),
+                    getLoader(),
+                    geOnSourceLoadResult(),
+                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param)
+                )
             }
             .filterNotNull()
             .simpleMapLatest { snapshot ->
@@ -58,13 +54,17 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             }
     }.buffer(Channel.BUFFERED)
 
-    private fun getCacheLoader(): CacheSourceLoader<Param> = ::getCache
+    private fun getCacheLoader(): SourceCacheLoader<Param> = ::getCache
+    private fun geOnSourceCacheResult(): OnSourceCacheResult<Param> = ::onCacheResult
 
     private fun getLoader(): SourceLoader<Param> = ::load
+    private fun geOnSourceLoadResult(): OnSourceLoadResult<Param> = ::onLoadResult
 
-    abstract suspend fun getCache(param: Param, completeTimes: Int): ItemSourceRepository.CacheResult
+    abstract suspend fun getCache(params: ItemSourceRepository.CacheParams<Param>): ItemSourceRepository.CacheResult
+    abstract suspend fun onCacheResult(params: ItemSourceRepository.CacheParams<Param>, cacheResult: ItemSourceRepository.CacheResult)
 
-    abstract suspend fun load(param: Param): ItemSourceRepository.LoadResult
+    abstract suspend fun load(params: ItemSourceRepository.LoadParams<Param>): ItemSourceRepository.LoadResult
+    abstract suspend fun onLoadResult(params: ItemSourceRepository.LoadParams<Param>, loadResult: ItemSourceRepository.LoadResult)
 
     abstract fun getFetchDispatcher(param: Param): CoroutineDispatcher
 
@@ -72,13 +72,17 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
 class ItemSourceFetcherSnapshot<Param : Any>(
     private val param: Param?,
-    val completeTimes: Int,
-    private val cacheLoader: CacheSourceLoader<Param>,
+    private val lastCacheResult: ItemSourceRepository.CacheResult? = null,
+    private val lastLoadResult: ItemSourceRepository.LoadResult? = null,
+    private val cacheLoader: SourceCacheLoader<Param>,
+    private val onSourceCacheResult: OnSourceCacheResult<Param>,
     private val loader: SourceLoader<Param>,
+    private val onSourceLoadResult: OnSourceLoadResult<Param>,
     private val fetchDispatcher: CoroutineDispatcher?,
 ) {
 
-    var getCacheComplete = false
+    var cacheResult: ItemSourceRepository.CacheResult? = null
+    var loadResult: ItemSourceRepository.LoadResult? = null
 
     private val repoEventChannelFlowJob = Job()
     private val repoEventCh = Channel<RepoEvent>(Channel.BUFFERED)
@@ -102,24 +106,28 @@ class ItemSourceFetcherSnapshot<Param : Any>(
 
         repoEventCh.send(RepoEvent.Loading)
 
-        val cacheResult = cacheLoader.invoke(param, completeTimes)
+        val cacheParams = ItemSourceRepository.CacheParams(param, lastCacheResult, lastLoadResult)
+        val cacheResult = cacheLoader.invoke(cacheParams)
+        this@ItemSourceFetcherSnapshot.cacheResult = cacheResult
         var usingCache = false
         if (cacheResult is ItemSourceRepository.CacheResult.Success) {
             usingCache = true
             val sources = newSources(cacheResult.sources)
             val event = RepoEvent.UsingCache(sources)
             repoEventCh.send(event)
-            getCacheComplete = true
         }
+        onSourceCacheResult(cacheParams, cacheResult)
 
+        val loadParams = ItemSourceRepository.LoadParams(param, lastCacheResult, lastLoadResult)
         val loadResult: ItemSourceRepository.LoadResult
         if (fetchDispatcher == null) {
-            loadResult = loader.invoke(param)
+            loadResult = loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {
-                loadResult = loader.invoke(param)
+                loadResult = loader.invoke(loadParams)
             }
         }
+        this@ItemSourceFetcherSnapshot.loadResult = loadResult
         when (loadResult) {
             is ItemSourceRepository.LoadResult.Success -> {
                 val sources = newSources(loadResult.sources)
@@ -131,6 +139,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
                 repoEventCh.send(event)
             }
         }
+        onSourceLoadResult(loadParams, loadResult)
     }
 
     fun close() {
@@ -138,7 +147,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun newSources(sources: List<ItemSourceInfo>): List<LazySourceData<Any>> {
+    private suspend fun newSources(sources: List<ItemSourceRepository.ItemSourceInfo>): List<LazySourceData<Any>> {
         return sources
             .map {
                 val sourceToken: Any = it.sourceToken
@@ -154,5 +163,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     }
 }
 
-internal typealias CacheSourceLoader<Param> = (suspend (param: Param, completeTimes: Int) -> ItemSourceRepository.CacheResult)
-internal typealias SourceLoader<Param> = (suspend (param: Param) -> ItemSourceRepository.LoadResult)
+internal typealias SourceCacheLoader<Param> = (suspend (ItemSourceRepository.CacheParams<Param>) -> ItemSourceRepository.CacheResult)
+internal typealias OnSourceCacheResult<Param> = (suspend (ItemSourceRepository.CacheParams<Param>, ItemSourceRepository.CacheResult) -> Unit)
+internal typealias SourceLoader<Param> = (suspend (ItemSourceRepository.LoadParams<Param>) -> ItemSourceRepository.LoadResult)
+internal typealias OnSourceLoadResult<Param> = (suspend (ItemSourceRepository.LoadParams<Param>, ItemSourceRepository.LoadResult) -> Unit)

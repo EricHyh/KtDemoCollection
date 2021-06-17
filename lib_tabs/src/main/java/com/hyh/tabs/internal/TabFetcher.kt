@@ -5,7 +5,6 @@ import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
 import com.hyh.tabs.ITab
-import com.hyh.tabs.TabInfo
 import com.hyh.tabs.TabSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -33,13 +32,16 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
             }
             .simpleScan(null) { previousSnapshot: TabFetcherSnapshot<Param, Tab>?, param: Param? ->
                 previousSnapshot?.close()
-                val completeTimes = (previousSnapshot?.completeTimes ?: 0) + (if (previousSnapshot?.getCacheComplete == true) 1 else 0)
-                val snapshot: TabFetcherSnapshot<Param, Tab> = if (param == null) {
-                    TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), Dispatchers.Unconfined)
-                } else {
-                    TabFetcherSnapshot(param, completeTimes, getCacheLoader(), getLoader(), getFetchDispatcher(param))
-                }
-                snapshot
+                TabFetcherSnapshot(
+                    param,
+                    previousSnapshot?.cacheResult,
+                    previousSnapshot?.loadResult,
+                    getCacheLoader(),
+                    getOnCacheResult(),
+                    getLoader(),
+                    getOnLoadResult(),
+                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param)
+                )
             }
             .filterNotNull()
             .simpleMapLatest { snapshot ->
@@ -51,13 +53,16 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
             }
     }.buffer(Channel.BUFFERED)
 
-    private fun getCacheLoader(): CacheTabLoader<Param, Tab> = ::getCache
-
+    private fun getCacheLoader(): TabCacheLoader<Param, Tab> = ::getCache
+    private fun getOnCacheResult(): OnTabCacheResult<Param, Tab> = ::onCacheResult
     private fun getLoader(): TabLoader<Param, Tab> = ::load
+    private fun getOnLoadResult(): OnTabLoadResult<Param, Tab> = ::onLoadResult
 
-    abstract suspend fun getCache(param: Param, completeTimes: Int): TabSource.CacheResult<Tab>
+    abstract suspend fun getCache(params: TabSource.CacheParams<Param, Tab>): TabSource.CacheResult<Tab>
+    abstract suspend fun onCacheResult(params: TabSource.CacheParams<Param, Tab>, result: TabSource.CacheResult<Tab>)
 
-    abstract suspend fun load(param: Param): TabSource.LoadResult<Tab>
+    abstract suspend fun load(params: TabSource.LoadParams<Param, Tab>): TabSource.LoadResult<Tab>
+    abstract suspend fun onLoadResult(params: TabSource.LoadParams<Param, Tab>, result: TabSource.LoadResult<Tab>)
 
     abstract fun getFetchDispatcher(param: Param): CoroutineDispatcher
 }
@@ -65,15 +70,19 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
 
 internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
     private val param: Param?,
-    val completeTimes: Int,
-    private val cacheLoader: CacheTabLoader<Param, Tab>,
+    private val lastCacheResult: TabSource.CacheResult<Tab>? = null,
+    private val lastLoadResult: TabSource.LoadResult<Tab>? = null,
+    private val cacheLoader: TabCacheLoader<Param, Tab>,
+    private val onTabCacheResult: OnTabCacheResult<Param, Tab>,
     private val loader: TabLoader<Param, Tab>,
+    private val onTabLoadResult: OnTabLoadResult<Param, Tab>,
     private val fetchDispatcher: CoroutineDispatcher?,
 ) {
     private val pageEventChannelFlowJob = Job()
     private val pageEventCh = Channel<TabEvent<Tab>>(Channel.BUFFERED)
 
-    var getCacheComplete = false
+    var cacheResult: TabSource.CacheResult<Tab>? = null
+    var loadResult: TabSource.LoadResult<Tab>? = null
 
     val pageEventFlow: Flow<TabEvent<Tab>> = cancelableChannelFlow(pageEventChannelFlowJob) {
         launch {
@@ -94,23 +103,28 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
 
         pageEventCh.send(TabEvent.Loading())
 
-        val cacheResult = cacheLoader.invoke(param, completeTimes)
+        val cacheParams = TabSource.CacheParams(param, lastCacheResult, lastLoadResult)
+        val cacheResult = cacheLoader.invoke(cacheParams)
+        this@TabFetcherSnapshot.cacheResult = cacheResult
+
         var usingCache = false
         if (cacheResult is TabSource.CacheResult.Success) {
             usingCache = true
             val event = TabEvent.UsingCache(ArrayList(cacheResult.tabs))
             pageEventCh.send(event)
-            getCacheComplete = true
         }
+        onTabCacheResult(cacheParams, cacheResult)
 
+        val loadParams = TabSource.LoadParams(param, lastCacheResult, lastLoadResult)
         val loadResult: TabSource.LoadResult<Tab>
         if (fetchDispatcher == null) {
-            loadResult = loader.invoke(param)
+            loadResult = loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {
-                loadResult = loader.invoke(param)
+                loadResult = loader.invoke(loadParams)
             }
         }
+        this@TabFetcherSnapshot.loadResult = loadResult
 
         when (loadResult) {
             is TabSource.LoadResult.Success<Tab> -> {
@@ -122,6 +136,7 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
                 pageEventCh.send(event)
             }
         }
+        onTabLoadResult(loadParams, loadResult)
     }
 
     fun close() {
@@ -129,5 +144,7 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
     }
 }
 
-internal typealias CacheTabLoader<Param, Tab> = (suspend (param: Param, completeTimes: Int) -> TabSource.CacheResult<Tab>)
-internal typealias TabLoader<Param, Tab> = (suspend (param: Param) -> TabSource.LoadResult<Tab>)
+internal typealias TabCacheLoader<Param, Tab> = (suspend (TabSource.CacheParams<Param, Tab>) -> TabSource.CacheResult<Tab>)
+internal typealias OnTabCacheResult<Param, Tab> = (suspend (TabSource.CacheParams<Param, Tab>, TabSource.CacheResult<Tab>) -> Unit)
+internal typealias TabLoader<Param, Tab> = (suspend (TabSource.LoadParams<Param, Tab>) -> TabSource.LoadResult<Tab>)
+internal typealias OnTabLoadResult<Param, Tab> = (suspend (TabSource.LoadParams<Param, Tab>, TabSource.LoadResult<Tab>) -> Unit)

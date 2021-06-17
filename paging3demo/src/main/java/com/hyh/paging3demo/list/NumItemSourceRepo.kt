@@ -1,12 +1,11 @@
 package com.hyh.paging3demo.list
 
 import com.hyh.list.EmptyParamProvider
-import com.hyh.list.ItemSourceInfo
-import com.hyh.list.ItemSourceRepository
+import com.hyh.list.SimpleItemSourceRepository
 
-class NumItemSourceRepo : ItemSourceRepository<Unit>(Unit) {
+class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
 
-    override suspend fun getCache(param: Unit, completeTimes: Int): CacheResult {
+    override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult {
         return CacheResult.Unused
     }
 
@@ -23,4 +22,6 @@ class NumItemSourceRepo : ItemSourceRepository<Unit>(Unit) {
             }
         return LoadResult.Success(sources)
     }
+
+
 }
