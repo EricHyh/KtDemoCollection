@@ -92,6 +92,7 @@ class SourceAdapter(
                 }
                 itemViewType
             } else {
+                Log.d(TAG, "getItemViewType: 0")
                 0
             }
         } ?: 0

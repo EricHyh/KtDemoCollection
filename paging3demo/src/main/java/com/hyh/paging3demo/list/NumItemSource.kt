@@ -15,16 +15,31 @@ import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
+    private var lastNums: List<Int> = emptyList()
+
     override suspend fun getPreShowJustFirstTime(param: Unit): IItemSource.PreShowResult {
         return IItemSource.PreShowResult.Unused
     }
 
     override suspend fun load(param: Unit): IItemSource.LoadResult {
-        //delay((Random(SystemClock.currentThreadTimeMillis()).nextLong() % 1000))
         val items = mutableListOf<ItemData>()
-        for (index in 0 until 6) {
-            items.add(NumItemData(type, index))
+        val random = Random(SystemClock.currentThreadTimeMillis())
+        val count = random.nextLong(5, 10).toInt()
+        val nums = mutableListOf<Int>()
+        for (index in 0 until count) {
+            nums.add(index)
         }
+        nums.sortBy {
+            Math.random()
+        }
+        val titleItemData = TitleItemData(type, lastNums, nums)
+        lastNums = nums
+
+        val numItems = nums.map { NumItemData(type, it) }
+
+        items.add(titleItemData)
+        items.addAll(numItems)
+
         return IItemSource.LoadResult.Success(items)
     }
 
@@ -34,13 +49,54 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 }
 
 
+class TitleItemData(
+    private val type: String,
+    private val lastNums: List<Int>,
+    private val curNums: List<Int>,
+) : IItemData<RecyclerView.ViewHolder> {
+
+    override fun getItemViewType(): Int {
+        return 0
+    }
+
+    override fun getViewHolderFactory(): ViewHolderFactory {
+        return {
+            SystemClock.sleep(10)
+            val textView = TextView(it.context)
+            textView.setTextColor(Color.BLACK)
+            textView.setBackgroundColor(Color.GRAY)
+            textView.setPadding(20, 10, 0, 10)
+            textView.gravity = Gravity.CENTER_VERTICAL or Gravity.LEFT
+            textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            object : RecyclerView.ViewHolder(textView) {}
+        }
+    }
+
+    override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder) {
+        var lastNumsStr = "上一次序列："
+        var curNumsStr = "这一次序列："
+        lastNums.let { nums ->
+            nums.forEach {
+                lastNumsStr += it.toString()
+            }
+        }
+        curNums.let { nums ->
+            nums.forEach {
+                curNumsStr += it.toString()
+            }
+        }
+        (viewHolder.itemView as TextView).text = "$type:\n\t$lastNumsStr\n\t$curNumsStr"
+    }
+}
+
+
 class NumItemData(
     private val type: String,
     private val num: Int
 ) : IItemData<RecyclerView.ViewHolder> {
 
     override fun getItemViewType(): Int {
-        return 0
+        return 1
     }
 
     override fun getViewHolderFactory(): ViewHolderFactory {

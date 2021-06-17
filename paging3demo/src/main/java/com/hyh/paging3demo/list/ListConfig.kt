@@ -9,6 +9,8 @@ object ListConfig {
     val lastTypesLiveData = MutableLiveData<List<String>>()
     val typesLiveData = MutableLiveData<List<String>>()
 
+
+
     private val typesMap = mapOf(
         Pair(0, listOf("A")),
         Pair(1, listOf("A", "B")),
@@ -68,6 +70,7 @@ object ListConfig {
         typesLiveData.postValue(newTypes)
         return newTypes
     }
+
 
 
 }

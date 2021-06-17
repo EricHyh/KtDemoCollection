@@ -174,7 +174,7 @@ class MultiSourceAdapter<Param : Any>(
 
     override fun getItemViewType(position: Int): Int {
         val wrapperAndPos = findWrapperAndLocalPosition(position)
-        val itemViewType = wrapperAndPos.wrapper?.getItemViewType(position) ?: 0
+        val itemViewType = wrapperAndPos.wrapper?.getItemViewType(wrapperAndPos.localPosition) ?: 0
         releaseWrapperAndLocalPosition(wrapperAndPos)
         return itemViewType
     }
