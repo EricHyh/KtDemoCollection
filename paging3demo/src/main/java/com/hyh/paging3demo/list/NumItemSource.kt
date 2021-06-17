@@ -8,6 +8,10 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
@@ -16,12 +20,17 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
     }
 
     override suspend fun load(param: Unit): IItemSource.LoadResult {
+        //delay((Random(SystemClock.currentThreadTimeMillis()).nextLong() % 1000))
         val items = mutableListOf<ItemData>()
         for (index in 0 until 6) {
             items.add(NumItemData(type, index))
         }
         return IItemSource.LoadResult.Success(items)
     }
+
+    /*override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {
+        return Dispatchers.IO
+    }*/
 }
 
 
@@ -47,12 +56,12 @@ class NumItemData(
     }
 
     override fun areItemsTheSame(other: ItemData): Boolean {
-        if(other !is NumItemData)return false
+        if (other !is NumItemData) return false
         return this.type == other.type && this.num == other.num
     }
 
     override fun areContentsTheSame(other: ItemData): Boolean {
-        if(other !is NumItemData)return false
+        if (other !is NumItemData) return false
         return this.type == other.type && this.num == other.num
     }
 

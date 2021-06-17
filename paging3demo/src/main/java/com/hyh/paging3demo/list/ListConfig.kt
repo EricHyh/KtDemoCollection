@@ -50,18 +50,20 @@ object ListConfig {
     )
 
     fun randomTypes(): List<String> {
-        //val random = Random(System.currentTimeMillis())
-        val types = typesMap2[(index++ % 2)]
-        //val types = typesMap[abs(random.nextInt() % 18)]
+        val random = Random(System.currentTimeMillis())
+        //val types = typesMap2[(index++ % 2)]
         //val types = types
-        /*val newTypes = types!!.map {
+        //val newTypes = types!!
+
+        val types = typesMap[abs(random.nextInt() % 18)]
+        val newTypes = types!!.map {
             Pair(it, random.nextInt())
         }.sortedBy {
             it.second
         }.map {
             it.first
-        }*/
-        val newTypes = types!!
+        }
+
         lastTypesLiveData.postValue(typesLiveData.value)
         typesLiveData.postValue(newTypes)
         return newTypes

@@ -16,6 +16,15 @@ import kotlinx.coroutines.launch
 
 class ListTestActivity : AppCompatActivity() {
 
+    val handler = Handler()
+    val refreshRunnable = object : Runnable {
+        override fun run() {
+            //testAdapter.refresh()
+            multiSourceAdapter.refresh(Unit)
+            handler.post(this)
+        }
+    }
+
     val multiSourceAdapter = MultiSourceAdapter<Unit>()
     //val testAdapter = TestAdapter()
 
@@ -54,24 +63,18 @@ class ListTestActivity : AppCompatActivity() {
             }
             lastTvTypes.text = str
         })
-
     }
 
     fun refresh(v: View) {
         multiSourceAdapter.refresh(Unit)
-        /*val handler = Handler()
-        val runnable = object : Runnable {
-            override fun run() {
-                //testAdapter.refresh()
-                multiSourceAdapter.refresh(Unit)
-                handler.post(this)
-            }
-        }
-        handler.post(runnable)*/
-        //testAdapter.refresh()
-        //testAdapter.refresh()
-        //testAdapter.refresh()
-        //testAdapter.refresh()
     }
 
+    fun startRefresh(v: View) {
+        handler.removeCallbacks(refreshRunnable)
+        handler.post(refreshRunnable)
+    }
+
+    fun stopRefresh(v: View) {
+        handler.removeCallbacks(refreshRunnable)
+    }
 }
