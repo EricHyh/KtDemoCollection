@@ -176,6 +176,7 @@ class SourceAdapter(
                             _loadStateFlow.value = SourceLoadState.Success(newItems.size)
                         }
                     }
+                    event.onReceived()
                 }
             }
         }

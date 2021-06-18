@@ -3,13 +3,13 @@ package com.hyh.list
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
-interface IItemSource<Param : Any> {
+abstract class ItemSource<Param : Any> {
 
-    suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
-    suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
-    suspend fun load(params: LoadParams<Param>): LoadResult
-    suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
-    fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
+    abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
+    open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
+    abstract suspend fun load(params: LoadParams<Param>): LoadResult
+    open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
+    open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
     sealed class PreShowResult {
 

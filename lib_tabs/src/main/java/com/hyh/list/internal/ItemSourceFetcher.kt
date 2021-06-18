@@ -154,7 +154,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
                 val paramProvider: IParamProvider<Any> = it.paramProvider as IParamProvider<Any>
                 val lazyFlow: Deferred<Flow<SourceData<Any>>> = GlobalScope.async(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
                     ItemFetcher(
-                        it.lazySource.value as IItemSource<Any>,
+                        it.lazySource.value as ItemSource<Any>,
                         paramProvider.getParam()
                     ).flow
                 }

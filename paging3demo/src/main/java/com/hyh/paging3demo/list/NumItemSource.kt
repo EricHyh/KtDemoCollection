@@ -8,20 +8,17 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.*
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
     private var lastNums: List<Int> = emptyList()
 
-    override suspend fun getPreShowWhenTheFirstTime(param: Unit): IItemSource.PreShowResult {
-        return IItemSource.PreShowResult.Unused
+    override suspend fun getPreShowWhenTheFirstTime(param: Unit): ItemSource.PreShowResult {
+        return ItemSource.PreShowResult.Unused
     }
 
-    override suspend fun load(param: Unit): IItemSource.LoadResult {
+    override suspend fun load(param: Unit): ItemSource.LoadResult {
         val items = mutableListOf<ItemData>()
         val random = Random(SystemClock.currentThreadTimeMillis())
         val count = random.nextLong(5, 10).toInt()
@@ -40,7 +37,7 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
         items.add(titleItemData)
         items.addAll(numItems)
 
-        return IItemSource.LoadResult.Success(items)
+        return ItemSource.LoadResult.Success(items)
     }
 
     /*override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {

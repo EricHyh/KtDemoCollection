@@ -4,7 +4,7 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
-import com.hyh.list.IItemSource
+import com.hyh.list.ItemSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 
 
 class ItemFetcher<Param : Any>(
-    private val itemSource: IItemSource<Param>,
+    private val itemSource: ItemSource<Param>,
     private val initialParam: Param
 ) {
 
@@ -68,19 +68,19 @@ class ItemFetcher<Param : Any>(
     private fun getOnLoadResult(): OnItemLoadResult<Param> = ::onLoadResult
 
 
-    private suspend fun getPreShow(params: IItemSource.PreShowParams<Param>): IItemSource.PreShowResult {
+    private suspend fun getPreShow(params: ItemSource.PreShowParams<Param>): ItemSource.PreShowResult {
         return itemSource.getPreShow(params)
     }
 
-    private suspend fun onPreShowResult(params: IItemSource.PreShowParams<Param>, preShowResult: IItemSource.PreShowResult) {
+    private suspend fun onPreShowResult(params: ItemSource.PreShowParams<Param>, preShowResult: ItemSource.PreShowResult) {
         itemSource.onPreShowResult(params, preShowResult)
     }
 
-    private suspend fun load(params: IItemSource.LoadParams<Param>): IItemSource.LoadResult {
+    private suspend fun load(params: ItemSource.LoadParams<Param>): ItemSource.LoadResult {
         return itemSource.load(params)
     }
 
-    private suspend fun onLoadResult(params: IItemSource.LoadParams<Param>, loadResult: IItemSource.LoadResult) {
+    private suspend fun onLoadResult(params: ItemSource.LoadParams<Param>, loadResult: ItemSource.LoadResult) {
         itemSource.onLoadResult(params, loadResult)
     }
 
@@ -92,8 +92,8 @@ class ItemFetcher<Param : Any>(
 
 class ItemFetcherSnapshot<Param : Any>(
     private val param: Param,
-    private val lastPreShowResult: IItemSource.PreShowResult? = null,
-    private val lastLoadResult: IItemSource.LoadResult? = null,
+    private val lastPreShowResult: ItemSource.PreShowResult? = null,
+    private val lastLoadResult: ItemSource.LoadResult? = null,
     private val preShowLoader: PreShowLoader<Param>,
     private val onPreShowResult: OnPreShowResult<Param>,
     private val loader: ItemLoader<Param>,
@@ -101,8 +101,8 @@ class ItemFetcherSnapshot<Param : Any>(
     private val fetchDispatcher: CoroutineDispatcher?,
 ) {
 
-    var preShowResult: IItemSource.PreShowResult? = null
-    var loadResult: IItemSource.LoadResult? = null
+    var preShowResult: ItemSource.PreShowResult? = null
+    var loadResult: ItemSource.LoadResult? = null
 
     private val sourceEventChannelFlowJob = Job()
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
@@ -122,20 +122,20 @@ class ItemFetcherSnapshot<Param : Any>(
 
         sourceEventCh.send(SourceEvent.Loading)
 
-        val preShowParams = IItemSource.PreShowParams(param, lastPreShowResult, lastLoadResult)
+        val preShowParams = ItemSource.PreShowParams(param, lastPreShowResult, lastLoadResult)
         val preShowResult = preShowLoader.invoke(preShowParams)
         this@ItemFetcherSnapshot.preShowResult = preShowResult
 
         var preShowing = false
-        if (preShowResult is IItemSource.PreShowResult.Success) {
+        if (preShowResult is ItemSource.PreShowResult.Success) {
             preShowing = true
             val event = SourceEvent.PreShowing(ArrayList(preShowResult.items))
             sourceEventCh.send(event)
         }
         onPreShowResult(preShowParams, preShowResult)
 
-        val loadParams = IItemSource.LoadParams(param, lastPreShowResult, lastLoadResult)
-        val loadResult: IItemSource.LoadResult
+        val loadParams = ItemSource.LoadParams(param, lastPreShowResult, lastLoadResult)
+        val loadResult: ItemSource.LoadResult
         if (fetchDispatcher == null) {
             loadResult = loader.invoke(loadParams)
         } else {
@@ -146,11 +146,11 @@ class ItemFetcherSnapshot<Param : Any>(
         this@ItemFetcherSnapshot.loadResult = loadResult
 
         when (loadResult) {
-            is IItemSource.LoadResult.Success -> {
+            is ItemSource.LoadResult.Success -> {
                 val event = SourceEvent.Success(ArrayList(loadResult.items))
                 sourceEventCh.send(event)
             }
-            is IItemSource.LoadResult.Error -> {
+            is ItemSource.LoadResult.Error -> {
                 val event = SourceEvent.Error(loadResult.error, preShowing)
                 sourceEventCh.send(event)
             }
@@ -163,7 +163,7 @@ class ItemFetcherSnapshot<Param : Any>(
     }
 }
 
-internal typealias PreShowLoader<Param> = (suspend (params: IItemSource.PreShowParams<Param>) -> IItemSource.PreShowResult)
-internal typealias OnPreShowResult<Param> = (suspend (IItemSource.PreShowParams<Param>, IItemSource.PreShowResult) -> Unit)
-internal typealias ItemLoader<Param> = (suspend (param: IItemSource.LoadParams<Param>) -> IItemSource.LoadResult)
-internal typealias OnItemLoadResult<Param> = (suspend (IItemSource.LoadParams<Param>, IItemSource.LoadResult) -> Unit)
+internal typealias PreShowLoader<Param> = (suspend (params: ItemSource.PreShowParams<Param>) -> ItemSource.PreShowResult)
+internal typealias OnPreShowResult<Param> = (suspend (ItemSource.PreShowParams<Param>, ItemSource.PreShowResult) -> Unit)
+internal typealias ItemLoader<Param> = (suspend (param: ItemSource.LoadParams<Param>) -> ItemSource.LoadResult)
+internal typealias OnItemLoadResult<Param> = (suspend (ItemSource.LoadParams<Param>, ItemSource.LoadResult) -> Unit)

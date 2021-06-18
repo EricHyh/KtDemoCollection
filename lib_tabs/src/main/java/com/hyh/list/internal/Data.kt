@@ -34,14 +34,16 @@ sealed class RepoEvent {
 
 }
 
-sealed class SourceEvent {
+sealed class SourceEvent(val onReceived: OnEventReceived) {
 
-    object Loading : SourceEvent()
+    class Loading(onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
 
-    class PreShowing(val items: List<ItemData>) : SourceEvent()
+    class PreShowing(val items: List<ItemData>, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
 
-    class Success(val items: List<ItemData>) : SourceEvent()
+    class Success(val items: List<ItemData>, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
 
-    class Error(val error: Throwable, val preShowing: Boolean) : SourceEvent()
+    class Error(val error: Throwable, val preShowing: Boolean, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
 
 }
+
+typealias OnEventReceived = () -> Unit
