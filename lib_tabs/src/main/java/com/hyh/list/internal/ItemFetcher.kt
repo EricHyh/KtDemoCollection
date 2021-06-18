@@ -4,14 +4,12 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
+import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 
 class ItemFetcher<Param : Any>(
@@ -38,6 +36,7 @@ class ItemFetcher<Param : Any>(
             .onStart {
                 emit(initialParam)
             }
+            .flowOn(Dispatchers.Main)
             .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param>?, param: Param ->
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
@@ -48,7 +47,8 @@ class ItemFetcher<Param : Any>(
                     onPreShowResult = getOnPreShowResult(),
                     loader = getLoader(),
                     onItemLoadResult = getOnLoadResult(),
-                    fetchDispatcher = getFetchDispatcher(param)
+                    fetchDispatcher = getFetchDispatcher(param),
+                    displayItems = previousSnapshot?.displayItems
                 )
             }
             .filterNotNull()
@@ -99,6 +99,7 @@ class ItemFetcherSnapshot<Param : Any>(
     private val loader: ItemLoader<Param>,
     private val onItemLoadResult: OnItemLoadResult<Param>,
     private val fetchDispatcher: CoroutineDispatcher?,
+    var displayItems: List<ItemData>?
 ) {
 
     var preShowResult: ItemSource.PreShowResult? = null
@@ -120,21 +121,24 @@ class ItemFetcherSnapshot<Param : Any>(
             }
         }
 
-        sourceEventCh.send(SourceEvent.Loading)
+        sourceEventCh.send(SourceEvent.Loading())
 
-        val preShowParams = ItemSource.PreShowParams(param, lastPreShowResult, lastLoadResult)
+        val preShowParams = ItemSource.PreShowParams(param, getDisplayItemsSnapshot(), lastPreShowResult, lastLoadResult)
         val preShowResult = preShowLoader.invoke(preShowParams)
         this@ItemFetcherSnapshot.preShowResult = preShowResult
 
         var preShowing = false
         if (preShowResult is ItemSource.PreShowResult.Success) {
             preShowing = true
-            val event = SourceEvent.PreShowing(ArrayList(preShowResult.items))
+            val items = ArrayList(preShowResult.items)
+            val event = SourceEvent.PreShowing(items) {
+                displayItems = items
+            }
             sourceEventCh.send(event)
         }
         onPreShowResult(preShowParams, preShowResult)
 
-        val loadParams = ItemSource.LoadParams(param, lastPreShowResult, lastLoadResult)
+        val loadParams = ItemSource.LoadParams(param, getDisplayItemsSnapshot(), lastPreShowResult, lastLoadResult)
         val loadResult: ItemSource.LoadResult
         if (fetchDispatcher == null) {
             loadResult = loader.invoke(loadParams)
@@ -147,7 +151,10 @@ class ItemFetcherSnapshot<Param : Any>(
 
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
-                val event = SourceEvent.Success(ArrayList(loadResult.items))
+                val items = ArrayList(loadResult.items)
+                val event = SourceEvent.Success(items) {
+                    displayItems = items
+                }
                 sourceEventCh.send(event)
             }
             is ItemSource.LoadResult.Error -> {
@@ -160,6 +167,11 @@ class ItemFetcherSnapshot<Param : Any>(
 
     fun close() {
         sourceEventChannelFlowJob.cancel()
+    }
+
+    private fun getDisplayItemsSnapshot(): List<ItemData>? {
+        val displayItems = this.displayItems ?: return null
+        return ArrayList(displayItems)
     }
 }
 

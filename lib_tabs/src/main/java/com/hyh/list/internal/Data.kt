@@ -1,5 +1,6 @@
 package com.hyh.list.internal
 
+import com.hyh.OnEventReceived
 import com.hyh.list.IParamProvider
 import com.hyh.list.ItemData
 import kotlinx.coroutines.Deferred
@@ -22,15 +23,15 @@ data class SourceData<Param : Any>(
 )
 
 
-sealed class RepoEvent {
+sealed class RepoEvent(val onReceived: OnEventReceived) {
 
-    object Loading : RepoEvent()
+    class Loading(onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
-    class UsingCache(val sources: List<LazySourceData<out Any>>) : RepoEvent()
+    class UsingCache(val sources: List<LazySourceData<out Any>>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
-    class Success(val sources: List<LazySourceData<out Any>>) : RepoEvent()
+    class Success(val sources: List<LazySourceData<out Any>>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
-    class Error(val error: Throwable, val usingCache: Boolean) : RepoEvent()
+    class Error(val error: Throwable, val usingCache: Boolean, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
 }
 
@@ -45,5 +46,3 @@ sealed class SourceEvent(val onReceived: OnEventReceived) {
     class Error(val error: Throwable, val preShowing: Boolean, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
 
 }
-
-typealias OnEventReceived = () -> Unit

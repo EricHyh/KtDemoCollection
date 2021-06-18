@@ -83,6 +83,7 @@ class MultiSourceAdapter<Param : Any>(
                             invokeEventCh.send(result.invokes)
                         }
                     }
+                    event.onReceived()
                 }
             }
         }

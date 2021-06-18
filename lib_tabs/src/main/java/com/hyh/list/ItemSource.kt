@@ -5,6 +5,18 @@ import kotlinx.coroutines.Dispatchers
 
 abstract class ItemSource<Param : Any> {
 
+    private var _sourcePosition: Int = -1
+    val sourcePosition: Int
+        get() = _sourcePosition
+
+    fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>) {
+        val oldPosition = _sourcePosition
+        _sourcePosition = newPosition
+        onUpdateItemSource(oldPosition, newPosition, newItemSource)
+    }
+
+    open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param>) {}
+
     abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
     open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
     abstract suspend fun load(params: LoadParams<Param>): LoadResult
@@ -33,12 +45,14 @@ abstract class ItemSource<Param : Any> {
 
     class PreShowParams<Param : Any>(
         val param: Param,
+        val displayItemsSnapshot: List<ItemData>?,
         val lastPreShowResult: PreShowResult?,
         val lastLoadResult: LoadResult?
     )
 
     class LoadParams<Param : Any>(
         val param: Param,
+        val displayItemsSnapshot: List<ItemData>?,
         val lastPreShowResult: PreShowResult?,
         val lastLoadResult: LoadResult?
     )

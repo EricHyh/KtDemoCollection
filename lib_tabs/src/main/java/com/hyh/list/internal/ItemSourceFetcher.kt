@@ -104,7 +104,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
             return@cancelableChannelFlow
         }
 
-        repoEventCh.send(RepoEvent.Loading)
+        repoEventCh.send(RepoEvent.Loading())
 
         val cacheParams = ItemSourceRepository.CacheParams(param, lastCacheResult, lastLoadResult)
         val cacheResult = cacheLoader.invoke(cacheParams)
