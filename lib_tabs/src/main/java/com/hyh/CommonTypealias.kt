@@ -7,4 +7,6 @@ package com.hyh
  * @data 2021/6/18
  */
 
+
 typealias OnEventReceived = () -> Unit
+typealias RefreshActuator<Param> = (Param) -> Unit

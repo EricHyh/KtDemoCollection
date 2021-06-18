@@ -61,6 +61,10 @@ class ItemFetcher<Param : Any>(
             }
     }.buffer(Channel.BUFFERED)
 
+    fun refresh(param: Param) {
+        uiReceiver.refresh(param)
+    }
+
     private fun getPreShowLoader(): PreShowLoader<Param> = ::getPreShow
     private fun getOnPreShowResult(): OnPreShowResult<Param> = ::onPreShowResult
 

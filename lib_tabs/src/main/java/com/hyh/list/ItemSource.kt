@@ -1,5 +1,6 @@
 package com.hyh.list
 
+import com.hyh.RefreshActuator
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -8,6 +9,14 @@ abstract class ItemSource<Param : Any> {
     private var _sourcePosition: Int = -1
     val sourcePosition: Int
         get() = _sourcePosition
+
+    private lateinit var _refreshActuator: RefreshActuator<Param>
+    val refreshActuator: RefreshActuator<Param>
+        get() = _refreshActuator
+
+    fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>) {
+        _refreshActuator = refreshActuator
+    }
 
     fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>) {
         val oldPosition = _sourcePosition
@@ -22,6 +31,7 @@ abstract class ItemSource<Param : Any> {
     abstract suspend fun load(params: LoadParams<Param>): LoadResult
     open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
     open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
+
 
     sealed class PreShowResult {
 
