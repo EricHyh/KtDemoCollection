@@ -1,10 +1,21 @@
 package com.hyh.list
 
 import com.hyh.RefreshActuator
+import com.hyh.list.internal.ItemSourceFetcherSnapshot
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 abstract class ItemSource<Param : Any> {
+
+    internal val delegate: ItemSourceFetcherSnapshot.ItemSourceDelegate<Param> =
+        object : ItemSourceFetcherSnapshot.ItemSourceDelegate<Param>() {
+            override fun initPosition(position: Int) {
+                _sourcePosition = position
+            }
+            override fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>) {
+                _refreshActuator = refreshActuator
+            }
+        }
 
     private var _sourcePosition: Int = -1
     val sourcePosition: Int
@@ -14,9 +25,6 @@ abstract class ItemSource<Param : Any> {
     val refreshActuator: RefreshActuator<Param>
         get() = _refreshActuator
 
-    fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>) {
-        _refreshActuator = refreshActuator
-    }
 
     fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>) {
         val oldPosition = _sourcePosition
@@ -55,14 +63,14 @@ abstract class ItemSource<Param : Any> {
 
     class PreShowParams<Param : Any>(
         val param: Param,
-        val displayItemsSnapshot: List<ItemData>?,
+        val displayedItemsSnapshot: List<ItemData>?,
         val lastPreShowResult: PreShowResult?,
         val lastLoadResult: LoadResult?
     )
 
     class LoadParams<Param : Any>(
         val param: Param,
-        val displayItemsSnapshot: List<ItemData>?,
+        val displayedItemsSnapshot: List<ItemData>?,
         val lastPreShowResult: PreShowResult?,
         val lastLoadResult: LoadResult?
     )

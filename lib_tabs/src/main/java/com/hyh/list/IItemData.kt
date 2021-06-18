@@ -17,17 +17,17 @@ interface IItemData<VH : RecyclerView.ViewHolder> {
     /**
      * 判断是否为同一条数据.
      */
-    fun areItemsTheSame(other: ItemData) = this.hashCode() == other.hashCode()
+    fun areItemsTheSame(newItemData: ItemData): Boolean
 
     /**
      * 判断内容是否改变
      */
-    fun areContentsTheSame(other: ItemData) = equals(other)
+    fun areContentsTheSame(newItemData: ItemData): Boolean
 
     /**
      * 获取数据变动部分
      */
-    fun getChangePayload(other: ItemData): Any = other
+    fun getChangePayload(newItemData: ItemData): Any? = null
 
 }
 

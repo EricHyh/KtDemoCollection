@@ -60,7 +60,7 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
     data class ItemSourceInfo(
         val sourceToken: Any,
         val paramProvider: IParamProvider<out Any>,
-        val lazySource: Lazy<ItemSource<out Any>>
+        val source: ItemSource<out Any>,
     )
 
     class CacheParams<Param : Any>(

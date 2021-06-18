@@ -3,6 +3,7 @@ package com.hyh.list.internal
 import com.hyh.OnEventReceived
 import com.hyh.list.IParamProvider
 import com.hyh.list.ItemData
+import com.hyh.list.ItemSource
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 
@@ -13,8 +14,10 @@ data class RepoData<Param : Any>(
 
 data class LazySourceData<Param : Any>(
     val sourceToken: Any,
+    val itemSource: ItemSource<Param>,
     val paramProvider: IParamProvider<Param>,
-    val lazyFlow: Deferred<Flow<SourceData<Param>>>
+    val lazyFlow: Deferred<Flow<SourceData<Param>>>,
+    val onReuse: (oldItemSource: ItemSource<Param>) -> Unit
 )
 
 data class SourceData<Param : Any>(

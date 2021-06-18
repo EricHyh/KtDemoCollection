@@ -1,5 +1,6 @@
 package com.hyh.list.internal
 
+import com.hyh.RefreshActuator
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
@@ -38,9 +39,9 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
                     previousSnapshot?.cacheResult,
                     previousSnapshot?.loadResult,
                     getCacheLoader(),
-                    geOnSourceCacheResult(),
+                    geOnCacheResult(),
                     getLoader(),
-                    geOnSourceLoadResult(),
+                    geOnLoadResult(),
                     if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param)
                 )
             }
@@ -55,10 +56,10 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     }.buffer(Channel.BUFFERED)
 
     private fun getCacheLoader(): SourceCacheLoader<Param> = ::getCache
-    private fun geOnSourceCacheResult(): OnSourceCacheResult<Param> = ::onCacheResult
+    private fun geOnCacheResult(): OnSourceCacheResult<Param> = ::onCacheResult
 
     private fun getLoader(): SourceLoader<Param> = ::load
-    private fun geOnSourceLoadResult(): OnSourceLoadResult<Param> = ::onLoadResult
+    private fun geOnLoadResult(): OnSourceLoadResult<Param> = ::onLoadResult
 
     abstract suspend fun getCache(params: ItemSourceRepository.CacheParams<Param>): ItemSourceRepository.CacheResult
     abstract suspend fun onCacheResult(params: ItemSourceRepository.CacheParams<Param>, cacheResult: ItemSourceRepository.CacheResult)
@@ -75,10 +76,11 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     private val lastCacheResult: ItemSourceRepository.CacheResult? = null,
     private val lastLoadResult: ItemSourceRepository.LoadResult? = null,
     private val cacheLoader: SourceCacheLoader<Param>,
-    private val onSourceCacheResult: OnSourceCacheResult<Param>,
+    private val onCacheResult: OnSourceCacheResult<Param>,
     private val loader: SourceLoader<Param>,
-    private val onSourceLoadResult: OnSourceLoadResult<Param>,
+    private val onLoadResult: OnSourceLoadResult<Param>,
     private val fetchDispatcher: CoroutineDispatcher?,
+    /*var displayedItemSources: List<ItemSource<out Any>>?*/
 ) {
 
     var cacheResult: ItemSourceRepository.CacheResult? = null
@@ -116,7 +118,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
             val event = RepoEvent.UsingCache(sources)
             repoEventCh.send(event)
         }
-        onSourceCacheResult(cacheParams, cacheResult)
+        onCacheResult(cacheParams, cacheResult)
 
         val loadParams = ItemSourceRepository.LoadParams(param, lastCacheResult, lastLoadResult)
         val loadResult: ItemSourceRepository.LoadResult
@@ -139,7 +141,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
                 repoEventCh.send(event)
             }
         }
-        onSourceLoadResult(loadParams, loadResult)
+        onLoadResult(loadParams, loadResult)
     }
 
     fun close() {
@@ -149,20 +151,28 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     @Suppress("UNCHECKED_CAST")
     private suspend fun newSources(sources: List<ItemSourceRepository.ItemSourceInfo>): List<LazySourceData<Any>> {
         return sources
-            .map {
-                val sourceToken: Any = it.sourceToken
-                val paramProvider: IParamProvider<Any> = it.paramProvider as IParamProvider<Any>
+            .mapIndexed { index, itemSourceInfo ->
+                val sourceToken: Any = itemSourceInfo.sourceToken
+                val paramProvider: IParamProvider<Any> = itemSourceInfo.paramProvider as IParamProvider<Any>
+                val newItemSource = itemSourceInfo.source as ItemSource<Any>
+                newItemSource.delegate.initPosition(index)
                 val lazyFlow: Deferred<Flow<SourceData<Any>>> = GlobalScope.async(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
-                    val itemSource = it.lazySource.value
                     val itemFetcher = ItemFetcher(
-                        itemSource as ItemSource<Any>,
+                        newItemSource,
                         paramProvider.getParam()
                     )
-                    itemSource.injectRefreshActuator(itemFetcher::refresh)
+                    newItemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                     itemFetcher.flow
                 }
-                LazySourceData(sourceToken, paramProvider, lazyFlow)
+                LazySourceData(sourceToken, newItemSource, paramProvider, lazyFlow) { oldItemSource ->
+                    oldItemSource.updateItemSource(index, newItemSource)
+                }
             }
+    }
+
+    abstract class ItemSourceDelegate<Param : Any> {
+        abstract fun initPosition(position: Int)
+        abstract fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>)
     }
 }
 

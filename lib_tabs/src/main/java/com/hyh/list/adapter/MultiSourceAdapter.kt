@@ -1,17 +1,13 @@
 package com.hyh.list.adapter
 
-import android.annotation.SuppressLint
-import android.graphics.Color
-import android.os.SystemClock
 import android.util.Log
 import android.util.SparseArray
-import android.view.Gravity
 import android.view.ViewGroup
-import android.widget.TextView
-import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.Invoke
+import com.hyh.SuspendInvoke
 import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SingleRunner
 import com.hyh.list.*
@@ -69,7 +65,7 @@ class MultiSourceAdapter<Param : Any>(
                         is RepoEvent.UsingCache -> {
                             val result = updateWrappers(event.sources)
                             _loadStateFlow.value = RepoLoadState.UsingCache(result.newWrappers.size)
-                            invokeEventCh.send(result.invokes)
+                            invokeEventCh.send(result.refreshInvokes)
                         }
                         is RepoEvent.Loading -> {
                             _loadStateFlow.value = RepoLoadState.Loading
@@ -80,7 +76,7 @@ class MultiSourceAdapter<Param : Any>(
                         is RepoEvent.Success -> {
                             val result = updateWrappers(event.sources)
                             _loadStateFlow.value = RepoLoadState.Success(result.newWrappers.size)
-                            invokeEventCh.send(result.invokes)
+                            invokeEventCh.send(result.refreshInvokes)
                         }
                     }
                     event.onReceived()
@@ -106,7 +102,8 @@ class MultiSourceAdapter<Param : Any>(
 
     @Suppress("UNCHECKED_CAST")
     private fun updateWrappers(sources: List<LazySourceData<out Any>>): UpdateWrappersResult {
-        val invokes: MutableList<SuspendInvoke> = mutableListOf()
+        val reuseInvokes: MutableList<Invoke> = mutableListOf()
+        val refreshInvokes: MutableList<SuspendInvoke> = mutableListOf()
         val oldWrappers = wrappers
         val oldSourceTokens = oldWrappers.map { it.sourceToken }
         val newSourceTokens = mutableListOf<Any>()
@@ -117,14 +114,17 @@ class MultiSourceAdapter<Param : Any>(
             if (oldWrapper != null) {
                 oldWrapper.paramProvider = it.paramProvider as IParamProvider<Any>
                 newWrappers.add(oldWrapper)
-                invokes.add {
+                reuseInvokes.add {
+                    (it.onReuse as (oldItemSource: ItemSource<Any>) -> Unit).invoke(oldWrapper.itemSource)
+                }
+                refreshInvokes.add {
                     val param = oldWrapper.paramProvider.getParam()
                     oldWrapper.adapter.refresh(param)
                 }
             } else {
                 val wrapper = createWrapper(it)
                 newWrappers.add(wrapper)
-                invokes.add {
+                refreshInvokes.add {
                     submitData(wrapper, it.lazyFlow.await())
                 }
             }
@@ -133,6 +133,9 @@ class MultiSourceAdapter<Param : Any>(
         val removedWrappers = mutableListOf<SourceAdapterWrapper>()
 
         wrappers = newWrappers
+        reuseInvokes.forEach {
+            it()
+        }
 
         if (oldWrappers.isEmpty() || newWrappers.isEmpty()) {
             if (oldWrappers.isNotEmpty()) {
@@ -141,10 +144,10 @@ class MultiSourceAdapter<Param : Any>(
             notifyDataSetChanged()
         } else {
             val diffResult = DiffUtil.calculateDiff(DiffUtilCallback(oldSourceTokens, newSourceTokens))
-            val updateOperates: MutableList<UpdateOperate> = mutableListOf()
-            diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(updateOperates))
+            val updateOperateOperates: MutableList<UpdateOperate> = mutableListOf()
+            diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(updateOperateOperates))
             SimpleDispatchUpdatesHelper.dispatch(
-                updateOperates,
+                updateOperateOperates,
                 ArrayList(oldWrappers),
                 newWrappers,
                 removedWrappers
@@ -158,11 +161,11 @@ class MultiSourceAdapter<Param : Any>(
                 wrapper.destroy()
             }
         }
-        invokes.addAll(0, destroyInvokes)
+        refreshInvokes.addAll(0, destroyInvokes)
 
         return UpdateWrappersResult(
             newWrappers,
-            invokes
+            refreshInvokes
         )
     }
 
@@ -287,56 +290,12 @@ class MultiSourceAdapter<Param : Any>(
     private fun createWrapper(sourceData: LazySourceData<out Any>): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
+            sourceData.itemSource as ItemSource<Any>,
             sourceData.paramProvider as IParamProvider<Any>,
             SourceAdapter(workerDispatcher),
             viewTypeStorage,
             sourceAdapterCallback
-        )/*.apply {
-            val items = mutableListOf<ItemData>()
-            for (index in 0 until 6) {
-                items.add(NumItemData(sourceData.sourceToken.toString(), index))
-            }
-            adapter.setData(items)
-        }*/
-    }
-
-
-    class NumItemData(
-        private val type: String,
-        private val num: Int
-    ) : IItemData<RecyclerView.ViewHolder> {
-
-        override fun getItemViewType(): Int {
-            return 0
-        }
-
-        override fun getViewHolderFactory(): ViewHolderFactory {
-            return {
-                SystemClock.sleep(10)
-                val textView = TextView(it.context)
-                textView.setTextColor(Color.BLACK)
-                textView.setBackgroundColor(Color.WHITE)
-                textView.gravity = Gravity.CENTER
-                textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100)
-                object : RecyclerView.ViewHolder(textView) {}
-            }
-        }
-
-        override fun areItemsTheSame(other: ItemData): Boolean {
-            if (other !is NumItemData) return false
-            return this.type == other.type && this.num == other.num
-        }
-
-        override fun areContentsTheSame(other: ItemData): Boolean {
-            if (other !is NumItemData) return false
-            return this.type == other.type && this.num == other.num
-        }
-
-        @SuppressLint("SetTextI18n")
-        override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder) {
-            SystemClock.sleep(10)
-            (viewHolder.itemView as TextView).text = "$type:$num"
-        }
+        )
     }
 
     private fun findWrapperAndLocalPosition(globalPosition: Int): WrapperAndLocalPosition {
@@ -420,7 +379,7 @@ class MultiSourceAdapter<Param : Any>(
 
     class UpdateWrappersResult(
         val newWrappers: List<SourceAdapterWrapper>,
-        val invokes: List<SuspendInvoke>
+        val refreshInvokes: List<SuspendInvoke>
     )
 
     inner class SourceAdapterCallback : SourceAdapterWrapper.Callback {
@@ -560,10 +519,9 @@ class MultiSourceAdapter<Param : Any>(
     // endregion
 }
 
-typealias SuspendInvoke = (suspend () -> Unit)
-
 class SourceAdapterWrapper(
     val sourceToken: Any,
+    var itemSource: ItemSource<Any>,
     var paramProvider: IParamProvider<Any>,
     val adapter: SourceAdapter,
     viewTypeStorage: ViewTypeStorage,
@@ -807,40 +765,31 @@ interface ViewTypeStorage {
 }
 
 
-sealed class UpdateOperate {
-
-    data class OnChanged(val position: Int, val count: Int) : UpdateOperate()
-    data class OnMoved(val fromPosition: Int, val toPosition: Int) : UpdateOperate()
-    data class OnInserted(val position: Int, val count: Int) : UpdateOperate()
-    data class OnRemoved(val position: Int, val count: Int) : UpdateOperate()
-
-}
-
 class SourceWrappersUpdateCallback(
-    private val updateOperates: MutableList<UpdateOperate>,
+    private val updateOperateOperates: MutableList<UpdateOperate>,
 ) : ListUpdateCallback {
 
     override fun onChanged(position: Int, count: Int, payload: Any?) {
-        updateOperates.add(UpdateOperate.OnChanged(position, count))
+        updateOperateOperates.add(UpdateOperate.OnChanged(position, count))
     }
 
     override fun onMoved(fromPosition: Int, toPosition: Int) {
-        updateOperates.add(UpdateOperate.OnMoved(fromPosition, toPosition))
+        updateOperateOperates.add(UpdateOperate.OnMoved(fromPosition, toPosition))
     }
 
     override fun onInserted(position: Int, count: Int) {
-        updateOperates.add(UpdateOperate.OnInserted(position, count))
+        updateOperateOperates.add(UpdateOperate.OnInserted(position, count))
     }
 
     override fun onRemoved(position: Int, count: Int) {
-        updateOperates.add(UpdateOperate.OnRemoved(position, count))
+        updateOperateOperates.add(UpdateOperate.OnRemoved(position, count))
     }
 }
 
 object DispatchUpdatesHelper {
 
     fun dispatch(
-        updateOperates: List<UpdateOperate>,
+        updateOperateOperates: List<UpdateOperate>,
         oldWrappers: List<SourceAdapterWrapper>,
         newWrappers: List<SourceAdapterWrapper>,
         removedWrappers: MutableList<SourceAdapterWrapper>
@@ -850,7 +799,7 @@ object DispatchUpdatesHelper {
         val wrapperStubs = mutableListOf<WrapperStub>()
         wrapperStubs.addAll(oldWrappers.map { WrapperStub(wrapper = it) })
 
-        updateOperates.forEach { operate ->
+        updateOperateOperates.forEach { operate ->
             when (operate) {
                 is UpdateOperate.OnChanged -> {
                     onChanged(operate, wrapperStubs, newWrappers, operateInvokes)
@@ -1097,7 +1046,7 @@ object DispatchUpdatesHelper {
 object SimpleDispatchUpdatesHelper {
 
     fun dispatch(
-        updateOperates: List<UpdateOperate>,
+        updateOperateOperates: List<UpdateOperate>,
         oldWrappers: List<SourceAdapterWrapper>,
         newWrappers: List<SourceAdapterWrapper>,
         removedWrappers: MutableList<SourceAdapterWrapper>
@@ -1107,7 +1056,7 @@ object SimpleDispatchUpdatesHelper {
         val wrapperStubs = mutableListOf<WrapperStub>()
         wrapperStubs.addAll(oldWrappers.map { WrapperStub(wrapper = it) })
 
-        updateOperates.forEach { operate ->
+        updateOperateOperates.forEach { operate ->
             when (operate) {
                 is UpdateOperate.OnChanged -> {
                     onChanged(operate, wrapperStubs, operateInvokes)

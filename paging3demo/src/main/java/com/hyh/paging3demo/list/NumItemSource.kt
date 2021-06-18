@@ -84,8 +84,16 @@ class TitleItemData(
         }
         (viewHolder.itemView as TextView).text = "$type:\n\t$lastNumsStr\n\t$curNumsStr"
     }
-}
 
+    override fun areItemsTheSame(newItemData: ItemData): Boolean {
+        if (newItemData !is TitleItemData) return false
+        return type == newItemData.type
+    }
+
+    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+        return false
+    }
+}
 
 class NumItemData(
     private val type: String,
@@ -108,14 +116,14 @@ class NumItemData(
         }
     }
 
-    override fun areItemsTheSame(other: ItemData): Boolean {
-        if (other !is NumItemData) return false
-        return this.type == other.type && this.num == other.num
+    override fun areItemsTheSame(newItemData: ItemData): Boolean {
+        if (newItemData !is NumItemData) return false
+        return this.type == newItemData.type && this.num == newItemData.num
     }
 
-    override fun areContentsTheSame(other: ItemData): Boolean {
-        if (other !is NumItemData) return false
-        return this.type == other.type && this.num == other.num
+    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+        if (newItemData !is NumItemData) return false
+        return this.type == newItemData.type && this.num == newItemData.num
     }
 
     @SuppressLint("SetTextI18n")
