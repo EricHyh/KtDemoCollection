@@ -48,7 +48,7 @@ class ItemFetcher<Param : Any>(
                     loader = getLoader(),
                     onItemLoadResult = getOnLoadResult(),
                     fetchDispatcher = getFetchDispatcher(param),
-                    displayedItems = previousSnapshot?.displayedItems
+                    lastDisplayedItems = previousSnapshot?.displayedItems
                 )
             }
             .filterNotNull()
@@ -103,9 +103,10 @@ class ItemFetcherSnapshot<Param : Any>(
     private val loader: ItemLoader<Param>,
     private val onItemLoadResult: OnItemLoadResult<Param>,
     private val fetchDispatcher: CoroutineDispatcher?,
-    var displayedItems: List<ItemData>?
+    private val lastDisplayedItems: List<ItemData>?
 ) {
 
+    var displayedItems: List<ItemData>? = lastDisplayedItems
     var preShowResult: ItemSource.PreShowResult? = null
     var loadResult: ItemSource.LoadResult? = null
 
@@ -155,9 +156,11 @@ class ItemFetcherSnapshot<Param : Any>(
 
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
-                val items = ArrayList(loadResult.items)
-                val event = SourceEvent.Success(items) {
-                    displayedItems = items
+                val updateResult =
+                    ListUpdate.calculateDiff(lastDisplayedItems, loadResult.items, IElementDiff.ItemDataDiff())
+                val event = SourceEvent.Success(updateResult.list, updateResult.listOperates) {
+                    displayedItems = updateResult.list
+                    ListUpdate.handleItemDataChanges(updateResult.elementOperates)
                 }
                 sourceEventCh.send(event)
             }
@@ -174,7 +177,7 @@ class ItemFetcherSnapshot<Param : Any>(
     }
 
     private fun getDisplayedItemsSnapshot(): List<ItemData>? {
-        val displayItems = this.displayedItems ?: return null
+        val displayItems = this.lastDisplayedItems ?: return null
         return ArrayList(displayItems)
     }
 }

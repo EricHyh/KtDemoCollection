@@ -2,83 +2,140 @@ package com.hyh.list.internal
 
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
+import com.hyh.Invoke
 import com.hyh.list.ItemData
+import java.util.*
+import kotlin.collections.ArrayList
 
-sealed class UpdateOperate {
+sealed class ListOperate {
 
-    data class OnChanged(val position: Int, val count: Int, val payload: Any? = null) : UpdateOperate()
-    data class OnMoved(val fromPosition: Int, val toPosition: Int) : UpdateOperate()
-    data class OnInserted(val position: Int, val count: Int) : UpdateOperate()
-    data class OnRemoved(val position: Int, val count: Int) : UpdateOperate()
+    object OnAllChanged : ListOperate()
+    data class OnChanged(val position: Int, val count: Int, val payload: Any? = null) : ListOperate()
+    data class OnMoved(val fromPosition: Int, val toPosition: Int) : ListOperate()
+    data class OnInserted(val position: Int, val count: Int) : ListOperate()
+    data class OnRemoved(val position: Int, val count: Int) : ListOperate()
 
 }
 
-data class OnElementChanged<E>(val oldElement: E, val newElement: E, val payload: Any?)
+
+sealed class ElementOperate<E> {
+
+    data class ElementChanged<E>(val oldElement: E, val newElement: E, val payload: Any?) : ElementOperate<E>()
+
+    data class ElementActivated<E>(val element: E, val position: Int) : ElementOperate<E>()
+
+    data class ElementPositionChanged<E>(val element: E, val position: Int) : ElementOperate<E>()
+
+    data class ElementDestroyed<E>(val element: E) : ElementOperate<E>()
+
+}
+
 
 object ListUpdate {
 
-    fun <E> calculateDiff(oldList: MutableList<E>, newList: MutableList<E>, elementDiff: IElementDiff<E>): UpdateResult<E> {
-        val list = mutableListOf<E>()
-        list.addAll(oldList)
-        val diffResult = DiffUtil.calculateDiff(DiffCallbackImpl(oldList, newList, elementDiff))
-        val operates = mutableListOf<UpdateOperate>()
-        val elementChanges = mutableListOf<OnElementChanged<E>>()
+    fun <E> calculateDiff(oldList: List<E>?, newList: List<E>, elementDiff: IElementDiff<E>): UpdateResult<E> {
+        if (oldList == null) {
+            return UpdateResult(
+                list = ArrayList(newList),
+                listOperates = listOf(ListOperate.OnAllChanged),
+                elementOperates = emptyList()
+            )
+        }
+
+        val list = mutableListOf<ElementStub<E>>()
+        list.addAll(oldList.map { ElementStub(it) })
+
+        val contentsNotSameMap: IdentityHashMap<E, E> = IdentityHashMap()
+        val diffResult = DiffUtil.calculateDiff(DiffCallbackImpl(oldList, newList, elementDiff, contentsNotSameMap))
+        val operates = mutableListOf<ListOperate>()
+        val elementOperates = mutableListOf<ElementOperate<E>>()
+
+        val elementChangeBuilders = mutableListOf<Invoke>()
+
         diffResult.dispatchUpdatesTo(object : ListUpdateCallback {
 
             override fun onChanged(position: Int, count: Int, payload: Any?) {
-                operates.add(UpdateOperate.OnChanged(position, count, payload))
+                operates.add(ListOperate.OnChanged(position, count, payload))
+                val listSnapshot = ArrayList(list)
                 for (index in position until (position + count)) {
-                    val oldElement = oldList[index]
-                    val indexOfNewList = indexOf(elementDiff, newList, oldElement)
-                    val newElement = newList[indexOfNewList]
-                    elementChanges.add(OnElementChanged(oldElement, newElement, payload))
+                    elementChangeBuilders.add {
+                        val elementStub = listSnapshot[index]
+                        val oldElement = elementStub.element!!
+                        val newElement = contentsNotSameMap[oldElement]!!
+                        if (elementDiff.isSupportUpdateItemData(oldElement)) {
+                            elementOperates.add(ElementOperate.ElementChanged(oldElement, newElement, payload))
+                        } else {
+                            elementStub.element = newElement
+                            elementOperates.add(ElementOperate.ElementDestroyed(oldElement))
+                            elementOperates.add(ElementOperate.ElementActivated(newElement, newList.indexOf(newElement)))
+                        }
+                    }
                 }
             }
 
             override fun onMoved(fromPosition: Int, toPosition: Int) {
-                operates.add(UpdateOperate.OnMoved(fromPosition, toPosition))
+                operates.add(ListOperate.OnMoved(fromPosition, toPosition))
+                move(list, fromPosition, toPosition)
             }
 
             override fun onInserted(position: Int, count: Int) {
-                operates.add(UpdateOperate.OnInserted(position, count))
+                operates.add(ListOperate.OnInserted(position, count))
+                for (index in position until (position + count)) {
+                    list.add(index, ElementStub())
+                }
             }
 
             override fun onRemoved(position: Int, count: Int) {
-                operates.add(UpdateOperate.OnRemoved(position, count))
+                operates.add(ListOperate.OnRemoved(position, count))
+                val subList = ArrayList(list).subList(position, position + count)
+                list.removeAll(subList)
             }
         })
-        return UpdateResult(list, operates, elementChanges)
-    }
-
-    private fun <E> indexOf(elementDiff: IElementDiff<E>, list: List<E>, e: E): Int {
-        if (e == null) {
-            for (i in list.indices) {
-                if (list[i] == null) return i
-            }
-        } else {
-            for (i in list.indices) {
-                if (elementDiff.elementEquals(e, list[i])) return i
+        list.forEachIndexed { index, elementStub ->
+            if (elementStub.element == null) {
+                elementStub.element = newList[index]
             }
         }
-        return -1
+        elementChangeBuilders.forEach {
+            it()
+        }
+
+        return UpdateResult(list.map { it.element!! }, operates, elementOperates)
     }
 
-    private fun <E> IElementDiff<E>.elementEquals(e1: E, e2: E): Boolean {
-        if (e1 === e2) return true
-        return areItemsTheSame(e1, e2)
+    fun <E> move(list: MutableList<E>, sourceIndex: Int, targetIndex: Int): Boolean {
+        if (list.isNullOrEmpty()) return false
+        val size = list.size
+        if (size <= sourceIndex || size <= targetIndex) return false
+        if (sourceIndex == targetIndex) {
+            return true
+        }
+        list.add(targetIndex, list.removeAt(sourceIndex))
+        return true
     }
+
+    fun handleItemDataChanges(elementChanges: List<ElementOperate<ItemData>>) {
+        /*elementChanges.forEach {
+            it.oldElement.updateItemData(it.newElement)
+        }*/
+    }
+
+    class ElementStub<E>(
+        var element: E? = null
+    )
 
     class UpdateResult<E>(
-        val list: MutableList<E>,
-        val operates: MutableList<UpdateOperate>,
-        val elementChanges: MutableList<OnElementChanged<E>>
+        val list: List<E>,
+        val listOperates: List<ListOperate>,
+        val elementOperates: List<ElementOperate<E>>
     )
 }
 
 class DiffCallbackImpl<E>(
-    private val oldList: MutableList<E>,
-    private val newList: MutableList<E>,
-    private val elementDiff: IElementDiff<E>
+    private val oldList: List<E>,
+    private val newList: List<E>,
+    private val elementDiff: IElementDiff<E>,
+    private val contentsNotSameMap: IdentityHashMap<E, E>,
 ) : DiffUtil.Callback() {
 
     override fun getOldListSize(): Int = oldList.size
@@ -90,7 +147,13 @@ class DiffCallbackImpl<E>(
     }
 
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return elementDiff.areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+        val oldElement = oldList[oldItemPosition]
+        val newElement = newList[newItemPosition]
+        val areContentsTheSame = elementDiff.areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+        if (!areContentsTheSame) {
+            contentsNotSameMap[oldElement] = newElement
+        }
+        return areContentsTheSame
     }
 
     override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
@@ -100,12 +163,17 @@ class DiffCallbackImpl<E>(
 
 interface IElementDiff<E> {
 
+    fun isSupportUpdateItemData(element: E): Boolean
     fun areItemsTheSame(oldElement: E, newElement: E): Boolean
     fun areContentsTheSame(oldElement: E, newElement: E): Boolean
     fun getChangePayload(oldElement: E, newElement: E): Any?
 
 
     class ItemDataDiff : IElementDiff<ItemData> {
+
+        override fun isSupportUpdateItemData(element: ItemData): Boolean {
+            return element.isSupportUpdateItemData()
+        }
 
         override fun areItemsTheSame(oldElement: ItemData, newElement: ItemData): Boolean {
             return oldElement.areItemsTheSame(newElement)
@@ -121,6 +189,8 @@ interface IElementDiff<E> {
     }
 
     class AnyDiff<E> : IElementDiff<E> {
+
+        override fun isSupportUpdateItemData(element: E): Boolean = true
 
         override fun areItemsTheSame(oldElement: E, newElement: E): Boolean {
             return oldElement == newElement

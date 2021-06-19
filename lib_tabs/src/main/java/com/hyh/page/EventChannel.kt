@@ -1,6 +1,5 @@
 package com.hyh.page
 
-import android.util.Log
 import androidx.lifecycle.*
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
@@ -53,8 +52,8 @@ class DataWrapperEvent private constructor(private val mData: Any) : IEvent {
 interface IEventChannel {
 
     object Factory {
-        fun create(owner: LifecycleOwner): IEventChannel {
-            return EventChannel.create(owner)
+        fun create(lifecycle: Lifecycle, lifecycleScope: CoroutineScope): IEventChannel {
+            return EventChannel.create(lifecycle, lifecycleScope)
         }
     }
 
@@ -85,12 +84,15 @@ interface IEventChannel {
     fun send(event: IEvent)
 }
 
-class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, LifecycleObserver {
+class EventChannel private constructor(
+    private val lifecycle: Lifecycle,
+    private val lifecycleScope: CoroutineScope
+) : IEventChannel, LifecycleObserver {
 
     companion object {
 
-        fun create(owner: LifecycleOwner): IEventChannel {
-            return EventChannel(owner)
+        fun create(lifecycle: Lifecycle, lifecycleScope: CoroutineScope): IEventChannel {
+            return EventChannel(lifecycle, lifecycleScope)
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -99,20 +101,13 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
         }
     }
 
-    private val lifecycleOwner = owner
-
     private val eventSource = PublishSubject.create<IEvent>()
 
     private val eventFlow = MutableSharedFlow<IEvent>()
 
-    private val lifecycleScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        FtLifecycleCoroutineScopeImpl(owner.lifecycle, SupervisorJob() + Dispatchers.Main.immediate).apply {
-            register()
-        }
-    }
 
     init {
-        lifecycleOwner.lifecycle.addObserver(this)
+        lifecycle.addObserver(this)
     }
 
     override fun send(event: IEvent) {
@@ -169,40 +164,7 @@ class EventChannel private constructor(owner: LifecycleOwner) : IEventChannel, L
         }
         return false
     }
-
-    class FtLifecycleCoroutineScopeImpl(
-        val lifecycle: Lifecycle,
-        override val coroutineContext: CoroutineContext
-    ) : CoroutineScope, LifecycleEventObserver {
-
-        init {
-            // in case we are initialized on a non-main thread, make a best effort check before
-            // we return the scope. This is not sync but if developer is launching on a non-main
-            // dispatcher, they cannot be 100% sure anyways.
-            if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
-                coroutineContext.cancel()
-            }
-        }
-
-        fun register() {
-            launch(Dispatchers.Main.immediate) {
-                if (lifecycle.currentState >= Lifecycle.State.INITIALIZED) {
-                    lifecycle.addObserver(this@FtLifecycleCoroutineScopeImpl)
-                } else {
-                    coroutineContext.cancel()
-                }
-            }
-        }
-
-        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
-            if (lifecycle.currentState <= Lifecycle.State.DESTROYED) {
-                lifecycle.removeObserver(this)
-                coroutineContext.cancel()
-            }
-        }
-    }
 }
-
 
 sealed class Inner : IEvent {
 

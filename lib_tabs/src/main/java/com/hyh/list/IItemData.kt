@@ -4,30 +4,41 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 
 
-interface IItemData<VH : RecyclerView.ViewHolder> {
+abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
-    fun getItemViewType(): Int
+    var _localPosition = -1
 
-    fun getViewHolderFactory(): ViewHolderFactory
+    val localPosition
+        get() = _localPosition
 
-    fun onBindViewHolder(viewHolder: VH)
 
-    fun onBindViewHolder(viewHolder: VH, payloads: MutableList<Any>) = onBindViewHolder(viewHolder)
+    open fun isSupportUpdateItemData() = false
+    open fun updateItemData(newItemData: ItemData) {}
+
+    abstract fun getItemViewType(): Int
+
+    abstract fun getViewHolderFactory(): ViewHolderFactory
+
+    abstract fun onBindViewHolder(viewHolder: VH)
+
+    open fun onBindViewHolder(viewHolder: VH, payloads: MutableList<Any>) = onBindViewHolder(viewHolder)
 
     /**
      * 判断是否为同一条数据.
+     *
+     * 例如，使用数据的唯一id作为判断是否为同一条数据的依据.
      */
-    fun areItemsTheSame(newItemData: ItemData): Boolean
+    abstract fun areItemsTheSame(newItemData: ItemData): Boolean
 
     /**
      * 判断内容是否改变
      */
-    fun areContentsTheSame(newItemData: ItemData): Boolean
+    abstract fun areContentsTheSame(newItemData: ItemData): Boolean
 
     /**
      * 获取数据变动部分
      */
-    fun getChangePayload(newItemData: ItemData): Any? = null
+    open fun getChangePayload(newItemData: ItemData): Any? = null
 
 }
 

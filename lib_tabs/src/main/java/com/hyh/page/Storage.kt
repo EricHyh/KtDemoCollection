@@ -7,8 +7,8 @@ import kotlin.reflect.KClass
 interface IStorage {
 
     object Factory {
-        fun create(owner: LifecycleOwner): IStorage {
-            return StorageImpl.create(owner)
+        fun create(lifecycle: Lifecycle): IStorage {
+            return StorageImpl.create(lifecycle)
         }
     }
 
@@ -41,11 +41,11 @@ interface IStorage {
 }
 
 
-class StorageImpl private constructor(private val owner: LifecycleOwner) : IStorage, LifecycleObserver {
+class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStorage, LifecycleObserver {
 
     companion object {
-        fun create(owner: LifecycleOwner): IStorage {
-            return StorageImpl(owner)
+        fun create(lifecycle: Lifecycle): IStorage {
+            return StorageImpl(lifecycle)
         }
     }
 
@@ -54,7 +54,7 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
 
     override fun store(store: IStore<*>) {
         bindLifeCycle()
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val value = store.value
         val cls: Class<out IStore<*>> = store::class.java
         val mutableLiveData = storeMap[cls]
@@ -67,7 +67,7 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
 
     override fun postStore(store: IStore<*>) {
         bindLifeCycle()
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val value = store.value
         val cls: Class<out IStore<*>> = store::class.java
         val mutableLiveData = storeMap[cls]
@@ -80,13 +80,13 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
 
     @Suppress("UNCHECKED_CAST")
     override fun <Value> get(cls: Class<out IStore<Value>>): Value? {
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return null
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val mutableLiveData = storeMap[cls] ?: return null
         return mutableLiveData.value as? Value
     }
 
     override fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? {
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return null
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val liveData = prepareLiveData(cls)
         val wrappedObserver = Observer<Value> { value -> onChanged.invoke(value) }
         liveData.observeForever(wrappedObserver)
@@ -94,7 +94,7 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
     }
 
     override fun <Value> observeForever(cls: Class<out IStore<Value>>, observer: Observer<Value>) {
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val liveData = prepareLiveData(cls)
         liveData.observeForever(observer)
     }
@@ -112,7 +112,7 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
     }
 
     override fun <Value> removeObserver(cls: Class<out IStore<Value>>, observer: Observer<Value>) {
-        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) return
         val liveData = getTypedLiveData(cls) ?: return
         liveData.removeObserver(observer)
     }
@@ -168,7 +168,7 @@ class StorageImpl private constructor(private val owner: LifecycleOwner) : IStor
         synchronized(isBoundLifeCycle) {
             if (isBoundLifeCycle.get()) return
             isBoundLifeCycle.set(true)
-            owner.lifecycle.addObserver(this)
+            lifecycle.addObserver(this)
         }
     }
 }

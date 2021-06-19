@@ -67,7 +67,7 @@ fun main() {
     }
 
 
-    runBlocking {
+    /*runBlocking {
         println("runBlocking2 start")
         launch {
             channel.receiveAsFlow()
@@ -82,7 +82,7 @@ fun main() {
             channel.send(num++)
             //eventFlow.emit(num++)
         }
-    }
+    }*/
 
     /*runBlocking {
         test(lifecycleContext)

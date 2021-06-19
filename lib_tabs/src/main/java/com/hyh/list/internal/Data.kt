@@ -42,10 +42,22 @@ sealed class SourceEvent(val onReceived: OnEventReceived) {
 
     class Loading(onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
 
-    class PreShowing(val items: List<ItemData>, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
+    class PreShowing(
+        val items: List<ItemData>,
+        val listOperates: List<ListOperate>,
+        onReceived: OnEventReceived = {}
+    ) : SourceEvent(onReceived)
 
-    class Success(val items: List<ItemData>, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
+    class Success(
+        val items: List<ItemData>,
+        val listOperates: List<ListOperate>,
+        onReceived: OnEventReceived = {}
+    ) : SourceEvent(onReceived)
 
-    class Error(val error: Throwable, val preShowing: Boolean, onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
+    class Error(
+        val error: Throwable,
+        val preShowing: Boolean,
+        onReceived: OnEventReceived = {}
+    ) : SourceEvent(onReceived)
 
 }

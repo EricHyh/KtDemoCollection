@@ -10,6 +10,7 @@ import androidx.lifecycle.coroutineScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.adapter.MultiSourceAdapter
+import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -25,7 +26,7 @@ class ListTestActivity : AppCompatActivity() {
         }
     }
 
-    val multiSourceAdapter = MultiSourceAdapter<Unit>()
+    val multiSourceAdapter = MultiSourceAdapter<Unit>(this.pageContext)
     //val testAdapter = TestAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
