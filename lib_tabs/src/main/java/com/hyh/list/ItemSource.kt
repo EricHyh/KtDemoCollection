@@ -1,19 +1,26 @@
 package com.hyh.list
 
 import com.hyh.RefreshActuator
-import com.hyh.list.internal.ItemSourceFetcherSnapshot
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 abstract class ItemSource<Param : Any> {
 
-    internal val delegate: ItemSourceFetcherSnapshot.ItemSourceDelegate<Param> =
-        object : ItemSourceFetcherSnapshot.ItemSourceDelegate<Param>() {
+    internal val delegate: Delegate<Param> =
+        object : Delegate<Param>() {
+
+            override fun activate() {
+            }
+
             override fun initPosition(position: Int) {
                 _sourcePosition = position
             }
+
             override fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>) {
                 _refreshActuator = refreshActuator
+            }
+
+            override fun destroy() {
             }
         }
 
@@ -40,6 +47,12 @@ abstract class ItemSource<Param : Any> {
     open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
     open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
+    abstract class Delegate<Param : Any> {
+        abstract fun activate()
+        abstract fun initPosition(position: Int)
+        abstract fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>)
+        abstract fun destroy()
+    }
 
     sealed class PreShowResult {
 

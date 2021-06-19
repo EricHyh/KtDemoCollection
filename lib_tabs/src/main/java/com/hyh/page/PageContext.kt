@@ -1,5 +1,6 @@
 package com.hyh.page
 
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
@@ -7,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
 import com.hyh.Invoke
 import kotlinx.coroutines.*
+import java.lang.ref.WeakReference
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -16,12 +18,105 @@ import kotlin.coroutines.CoroutineContext
  * @data 2021/4/28
  */
 
-class PageContext(
+abstract class PageContext(
     @Suppress("unused")
     val viewModelStoreOwner: ViewModelStoreOwner,
     @Suppress
     val lifecycleOwner: LifecycleOwner
 ) {
+
+    companion object {
+
+        val lock = Any()
+
+        fun get(
+            viewModelStoreOwner: ViewModelStoreOwner,
+            lifecycleOwner: LifecycleOwner
+        ): PageContext {
+            if (viewModelStoreOwner is Activity) {
+                if (viewModelStoreOwner.application == null) {
+                    return LazyPageContext(viewModelStoreOwner, lifecycleOwner)
+                }
+            } else if (viewModelStoreOwner is Fragment) {
+                if (!viewModelStoreOwner.isAdded) {
+                    return LazyPageContext(viewModelStoreOwner, lifecycleOwner)
+                }
+            }
+            val viewModel = ViewModelProvider(viewModelStoreOwner).get(PageContextViewModel::class.java)
+            val cachePageContext = LazyPageContext.getCachePageContext(lifecycleOwner)
+            return if (cachePageContext != null) {
+                viewModel.setPageContext(lifecycleOwner.lifecycle, cachePageContext)
+                cachePageContext
+            } else {
+                viewModel.getPageContext(viewModelStoreOwner, lifecycleOwner)
+            }
+        }
+    }
+
+    abstract val lifecycleScope: CoroutineScope
+    abstract val eventChannel: IEventChannel
+    abstract val storage: IStorage
+    abstract fun invokeOnDestroy(block: () -> Unit)
+
+}
+
+
+class LazyPageContext(
+    viewModelStoreOwner: ViewModelStoreOwner,
+    lifecycleOwner: LifecycleOwner
+) : PageContext(viewModelStoreOwner, lifecycleOwner) {
+
+    companion object {
+
+        private val pageContextMap: MutableMap<Int, WeakReference<out PageContext>> = mutableMapOf()
+
+        fun getCachePageContext(lifecycleOwner: LifecycleOwner): PageContext? {
+            synchronized(lock) {
+                val hashCode = System.identityHashCode(lifecycleOwner.lifecycle)
+                return pageContextMap[hashCode]?.get()
+            }
+        }
+
+        private fun obtain(viewModelStoreOwner: ViewModelStoreOwner, lifecycleOwner: LifecycleOwner): PageContext {
+            synchronized(lock) {
+                val iterator = pageContextMap.entries.iterator()
+                while (iterator.hasNext()) {
+                    val next = iterator.next()
+                    if (next.value.get() == null) {
+                        iterator.remove()
+                    }
+                }
+                val hashCode = System.identityHashCode(lifecycleOwner.lifecycle)
+                val pageContextRef = pageContextMap[hashCode]
+                var pageContext = pageContextRef?.get()
+                if (pageContext != null) return pageContext
+                pageContext = PageContextImpl(viewModelStoreOwner, lifecycleOwner)
+                pageContextMap[hashCode] = WeakReference(pageContext)
+                return pageContext
+            }
+        }
+    }
+
+    private val realPageContext = obtain(viewModelStoreOwner, lifecycleOwner)
+
+    override val lifecycleScope: CoroutineScope
+        get() = realPageContext.lifecycleScope
+    override val eventChannel: IEventChannel
+        get() = realPageContext.eventChannel
+    override val storage: IStorage
+        get() = realPageContext.storage
+
+    override fun invokeOnDestroy(block: () -> Unit) {
+        realPageContext.invokeOnDestroy(block)
+    }
+}
+
+
+class PageContextImpl(
+    viewModelStoreOwner: ViewModelStoreOwner,
+    lifecycleOwner: LifecycleOwner
+) : PageContext(viewModelStoreOwner, lifecycleOwner) {
+
 
     companion object {
         fun get(
@@ -41,21 +136,21 @@ class PageContext(
         }
     }
 
-    val lifecycleScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    override val lifecycleScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         LifecycleCoroutineScopeImpl(lifecycleOwner.lifecycle, SupervisorJob() + Dispatchers.Main.immediate).apply {
             register()
         }
     }
 
-    val eventChannel: IEventChannel by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    override val eventChannel: IEventChannel by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         IEventChannel.Factory.create(lifecycleOwner.lifecycle, lifecycleScope)
     }
 
-    val storage: IStorage by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+    override val storage: IStorage by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         IStorage.Factory.create(lifecycleOwner.lifecycle)
     }
 
-    fun invokeOnDestroy(block: () -> Unit) {
+    override fun invokeOnDestroy(block: () -> Unit) {
         runOnMainThread {
             if (lifecycleOwner.lifecycle.currentState != Lifecycle.State.DESTROYED) {
                 var mutableList: MutableList<Invoke>? = lifecycleInvokeMap[Lifecycle.Event.ON_DESTROY]
@@ -86,7 +181,6 @@ class PageContext(
             }
         }
     }
-
 }
 
 private class LifecycleCoroutineScopeImpl(
@@ -133,10 +227,16 @@ private class PageContextViewModel : ViewModel() {
         if (pageContext != null) {
             return pageContext
         }
-        synchronized(pageContextMap) {
-            return PageContext(viewModelStoreOwner, lifecycleOwner).apply {
+        synchronized(PageContext.lock) {
+            return PageContextImpl(viewModelStoreOwner, lifecycleOwner).apply {
                 pageContextMap[lifecycleOwner.lifecycle] = this
             }
+        }
+    }
+
+    fun setPageContext(lifecycle: Lifecycle, pageContext: PageContext) {
+        synchronized(PageContext.lock) {
+            pageContextMap[lifecycle] = pageContext
         }
     }
 

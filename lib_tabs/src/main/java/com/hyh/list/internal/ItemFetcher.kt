@@ -135,9 +135,14 @@ class ItemFetcherSnapshot<Param : Any>(
         var preShowing = false
         if (preShowResult is ItemSource.PreShowResult.Success) {
             preShowing = true
-            val items = ArrayList(preShowResult.items)
-            val event = SourceEvent.PreShowing(items) {
-                displayedItems = items
+            val updateResult =
+                ListUpdate.calculateDiff(lastDisplayedItems, preShowResult.items, IElementDiff.ItemDataDiff())
+            val event = SourceEvent.PreShowing(updateResult.list, updateResult.listOperates) {
+                displayedItems = updateResult.list
+                updateResult.list.forEach {
+                    it.delegate.displayedItems = displayedItems
+                }
+                ListUpdate.handleItemDataChanges(updateResult.elementOperates)
             }
             sourceEventCh.send(event)
         }
@@ -160,6 +165,9 @@ class ItemFetcherSnapshot<Param : Any>(
                     ListUpdate.calculateDiff(lastDisplayedItems, loadResult.items, IElementDiff.ItemDataDiff())
                 val event = SourceEvent.Success(updateResult.list, updateResult.listOperates) {
                     displayedItems = updateResult.list
+                    updateResult.list.forEach {
+                        it.delegate.displayedItems = displayedItems
+                    }
                     ListUpdate.handleItemDataChanges(updateResult.elementOperates)
                 }
                 sourceEventCh.send(event)

@@ -2,6 +2,7 @@ package com.hyh.list.internal
 
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
+import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.list.ItemData
 import java.util.*
@@ -10,23 +11,21 @@ import kotlin.collections.ArrayList
 sealed class ListOperate {
 
     object OnAllChanged : ListOperate()
-    data class OnChanged(val position: Int, val count: Int, val payload: Any? = null) : ListOperate()
+    data class OnChanged(val positionStart: Int, val count: Int, val payload: Any? = null) : ListOperate()
     data class OnMoved(val fromPosition: Int, val toPosition: Int) : ListOperate()
-    data class OnInserted(val position: Int, val count: Int) : ListOperate()
-    data class OnRemoved(val position: Int, val count: Int) : ListOperate()
+    data class OnInserted(val positionStart: Int, val count: Int) : ListOperate()
+    data class OnRemoved(val positionStart: Int, val count: Int) : ListOperate()
 
 }
 
 
 sealed class ElementOperate<E> {
 
-    data class ElementChanged<E>(val oldElement: E, val newElement: E, val payload: Any?) : ElementOperate<E>()
+    data class Activated<E>(val element: E) : ElementOperate<E>()
 
-    data class ElementActivated<E>(val element: E, val position: Int) : ElementOperate<E>()
+    data class Changed<E>(val oldElement: E, val newElement: E, val payload: Any?) : ElementOperate<E>()
 
-    data class ElementPositionChanged<E>(val element: E, val position: Int) : ElementOperate<E>()
-
-    data class ElementDestroyed<E>(val element: E) : ElementOperate<E>()
+    data class Destroyed<E>(val element: E) : ElementOperate<E>()
 
 }
 
@@ -63,11 +62,11 @@ object ListUpdate {
                         val oldElement = elementStub.element!!
                         val newElement = contentsNotSameMap[oldElement]!!
                         if (elementDiff.isSupportUpdateItemData(oldElement)) {
-                            elementOperates.add(ElementOperate.ElementChanged(oldElement, newElement, payload))
+                            elementOperates.add(ElementOperate.Changed(oldElement, newElement, payload))
                         } else {
                             elementStub.element = newElement
-                            elementOperates.add(ElementOperate.ElementDestroyed(oldElement))
-                            elementOperates.add(ElementOperate.ElementActivated(newElement, newList.indexOf(newElement)))
+                            elementOperates.add(ElementOperate.Destroyed(oldElement))
+                            elementOperates.add(ElementOperate.Activated(newElement))
                         }
                     }
                 }
@@ -76,6 +75,7 @@ object ListUpdate {
             override fun onMoved(fromPosition: Int, toPosition: Int) {
                 operates.add(ListOperate.OnMoved(fromPosition, toPosition))
                 move(list, fromPosition, toPosition)
+
             }
 
             override fun onInserted(position: Int, count: Int) {
@@ -115,9 +115,41 @@ object ListUpdate {
     }
 
     fun handleItemDataChanges(elementChanges: List<ElementOperate<ItemData>>) {
-        /*elementChanges.forEach {
-            it.oldElement.updateItemData(it.newElement)
-        }*/
+        elementChanges.forEach {
+            when (it) {
+                is ElementOperate.Activated<ItemData> -> {
+                    it.element.delegate.activate()
+                }
+                is ElementOperate.Changed<ItemData> -> {
+                    it.oldElement.delegate.updateItemData(it.newElement)
+                }
+                is ElementOperate.Destroyed<ItemData> -> {
+                    it.element.delegate.destroy()
+                }
+            }
+        }
+    }
+
+    fun handleListOperates(listOperates: List<ListOperate>, adapter: RecyclerView.Adapter<*>) {
+        listOperates.forEach {
+            when (it) {
+                is ListOperate.OnAllChanged -> {
+                    adapter.notifyDataSetChanged()
+                }
+                is ListOperate.OnChanged -> {
+                    adapter.notifyItemRangeChanged(it.positionStart, it.count)
+                }
+                is ListOperate.OnMoved -> {
+                    adapter.notifyItemMoved(it.fromPosition, it.toPosition)
+                }
+                is ListOperate.OnInserted -> {
+                    adapter.notifyItemRangeInserted(it.positionStart, it.count)
+                }
+                is ListOperate.OnRemoved -> {
+                    adapter.notifyItemRangeRemoved(it.positionStart, it.count)
+                }
+            }
+        }
     }
 
     class ElementStub<E>(

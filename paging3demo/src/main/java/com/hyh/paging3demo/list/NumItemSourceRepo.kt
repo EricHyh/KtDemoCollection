@@ -15,9 +15,7 @@ class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
                 ItemSourceInfo(
                     it,
                     EmptyParamProvider,
-                    lazy {
-                        NumItemSource(it)
-                    }
+                    NumItemSource(it)
                 )
             }
         return LoadResult.Success(sources)

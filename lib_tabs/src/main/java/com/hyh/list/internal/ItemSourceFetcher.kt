@@ -169,11 +169,6 @@ class ItemSourceFetcherSnapshot<Param : Any>(
                 }
             }
     }
-
-    abstract class ItemSourceDelegate<Param : Any> {
-        abstract fun initPosition(position: Int)
-        abstract fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>)
-    }
 }
 
 internal typealias SourceCacheLoader<Param> = (suspend (ItemSourceRepository.CacheParams<Param>) -> ItemSourceRepository.CacheResult)

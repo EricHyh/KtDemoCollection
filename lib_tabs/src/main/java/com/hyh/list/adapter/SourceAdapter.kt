@@ -12,6 +12,7 @@ import com.hyh.list.IItemData
 import com.hyh.list.ItemData
 import com.hyh.list.SourceLoadState
 import com.hyh.list.ViewHolderFactory
+import com.hyh.list.internal.ListUpdate
 import com.hyh.list.internal.SourceData
 import com.hyh.list.internal.SourceEvent
 import com.hyh.list.internal.UiReceiverForSource
@@ -129,10 +130,6 @@ class SourceAdapter(
         }
     }
 
-    fun setData(items: List<ItemData>) {
-        this.items = items
-    }
-
     suspend fun submitData(data: SourceData<out Any>) {
         collectFromRunner.runInIsolation {
             receiver = data.receiver as UiReceiverForSource<Any>
@@ -140,7 +137,7 @@ class SourceAdapter(
                 withContext(mainDispatcher) {
                     when (event) {
                         is SourceEvent.PreShowing -> {
-                            val oldItems = items
+                            /*val oldItems = items
                             val newItems = event.items
                             if (oldItems.isNullOrEmpty() || newItems.isNullOrEmpty()) {
                                 items = newItems
@@ -151,7 +148,10 @@ class SourceAdapter(
                                 }
                                 items = newItems
                                 diffResult.dispatchUpdatesTo(this@SourceAdapter)
-                            }
+                            }*/
+                            val newItems = event.items
+                            items = newItems
+                            ListUpdate.handleListOperates(event.listOperates, this@SourceAdapter)
                             _loadStateFlow.value = SourceLoadState.PreShow(newItems.size)
                         }
                         is SourceEvent.Loading -> {
@@ -161,7 +161,7 @@ class SourceAdapter(
                             _loadStateFlow.value = SourceLoadState.Error(event.error, event.preShowing)
                         }
                         is SourceEvent.Success -> {
-                            val oldItems = items
+                            /*val oldItems = items
                             val newItems = event.items
                             if (oldItems.isNullOrEmpty() || newItems.isNullOrEmpty()) {
                                 items = newItems
@@ -172,7 +172,11 @@ class SourceAdapter(
                                 }
                                 items = newItems
                                 diffResult.dispatchUpdatesTo(this@SourceAdapter)
-                            }
+                            }*/
+                            val newItems = event.items
+                            items = newItems
+                            ListUpdate.handleListOperates(event.listOperates, this@SourceAdapter)
+                            _loadStateFlow.value = SourceLoadState.PreShow(newItems.size)
                             _loadStateFlow.value = SourceLoadState.Success(newItems.size)
                         }
                     }
@@ -184,6 +188,12 @@ class SourceAdapter(
 
     fun refresh(param: Any) {
         receiver?.refresh(param)
+    }
+
+    fun destroy() {
+        items?.forEach {
+            it.delegate.destroy()
+        }
     }
 
     inner class ViewTypeStorage {

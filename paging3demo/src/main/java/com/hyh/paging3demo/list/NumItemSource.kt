@@ -50,7 +50,7 @@ class TitleItemData(
     private val type: String,
     private val lastNums: List<Int>,
     private val curNums: List<Int>,
-) : IItemData<RecyclerView.ViewHolder> {
+) : IItemData<RecyclerView.ViewHolder>() {
 
     override fun getItemViewType(): Int {
         return 0
@@ -98,7 +98,7 @@ class TitleItemData(
 class NumItemData(
     private val type: String,
     private val num: Int
-) : IItemData<RecyclerView.ViewHolder> {
+) : IItemData<RecyclerView.ViewHolder>() {
 
     override fun getItemViewType(): Int {
         return 1
