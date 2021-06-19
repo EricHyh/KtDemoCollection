@@ -37,7 +37,9 @@ object ListUpdate {
             return UpdateResult(
                 list = ArrayList(newList),
                 listOperates = listOf(ListOperate.OnAllChanged),
-                elementOperates = emptyList()
+                elementOperates = newList.map {
+                    ElementOperate.Activated(it)
+                }
             )
         }
 
@@ -81,7 +83,8 @@ object ListUpdate {
             override fun onInserted(position: Int, count: Int) {
                 operates.add(ListOperate.OnInserted(position, count))
                 for (index in position until (position + count)) {
-                    list.add(index, ElementStub())
+                    val elementStub = ElementStub<E>()
+                    list.add(index, elementStub)
                 }
             }
 
@@ -89,11 +92,16 @@ object ListUpdate {
                 operates.add(ListOperate.OnRemoved(position, count))
                 val subList = ArrayList(list).subList(position, position + count)
                 list.removeAll(subList)
+                subList.forEach {
+                    val element = it.element ?: return@forEach
+                    elementOperates.add(ElementOperate.Destroyed(element))
+                }
             }
         })
         list.forEachIndexed { index, elementStub ->
             if (elementStub.element == null) {
                 elementStub.element = newList[index]
+                elementOperates.add(ElementOperate.Activated(elementStub.element!!))
             }
         }
         elementChangeBuilders.forEach {

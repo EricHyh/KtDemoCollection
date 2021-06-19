@@ -3,6 +3,7 @@ package com.hyh.paging3demo.list
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.SystemClock
+import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.TextView
@@ -11,6 +12,12 @@ import com.hyh.list.*
 import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
+
+
+    companion object{
+        const val TAG = "NumItemSource"
+    }
+
 
     private var lastNums: List<Int> = emptyList()
 
@@ -52,6 +59,25 @@ class TitleItemData(
     private val curNums: List<Int>,
 ) : IItemData<RecyclerView.ViewHolder>() {
 
+    var activated = false
+
+    override fun onActivated() {
+        super.onActivated()
+        ListConfig.aliveItems++
+        //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onActivated: ${ListConfig.aliveItems}")
+        activated = true
+        Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
+    }
+
+    override fun onDestroyed() {
+        super.onDestroyed()
+        ListConfig.aliveItems--
+        //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onDestroyed: ${ListConfig.aliveItems}")
+        activated = false
+        Log.d(NumItemSource.TAG, "${this}:onDestroyed: $activated")
+    }
+
+
     override fun getItemViewType(): Int {
         return 0
     }
@@ -69,6 +95,7 @@ class TitleItemData(
         }
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder) {
         var lastNumsStr = "上一次序列："
         var curNumsStr = "这一次序列："
@@ -99,6 +126,24 @@ class NumItemData(
     private val type: String,
     private val num: Int
 ) : IItemData<RecyclerView.ViewHolder>() {
+
+    var activated = false
+
+    override fun onActivated() {
+        super.onActivated()
+        ListConfig.aliveItems++
+        //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onActivated: ${ListConfig.aliveItems}")
+        activated = true
+        Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
+    }
+
+    override fun onDestroyed() {
+        super.onDestroyed()
+        ListConfig.aliveItems--
+        //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onDestroyed: ${ListConfig.aliveItems}")
+        activated = false
+        Log.d(NumItemSource.TAG, "${this}:onDestroyed: $activated")
+    }
 
     override fun getItemViewType(): Int {
         return 1

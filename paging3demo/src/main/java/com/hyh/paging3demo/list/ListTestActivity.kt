@@ -2,6 +2,7 @@ package com.hyh.paging3demo.list
 
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -16,6 +17,8 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ListTestActivity : AppCompatActivity() {
+
+    private val TAG = "ListTestActivity_"
 
     val handler = Handler()
     val refreshRunnable = object : Runnable {
@@ -37,14 +40,7 @@ class ListTestActivity : AppCompatActivity() {
         recyclerView.adapter = multiSourceAdapter
 
         Handler().postDelayed({
-            lifecycle.coroutineScope.launch {
-                NumItemSourceRepo()
-                    .flow
-                    .collectLatest {
-                        multiSourceAdapter.submitData(it)
-                        //testAdapter.refresh()
-                    }
-            }
+            multiSourceAdapter.submitData( NumItemSourceRepo().flow)
         }, 2000)
 
         val tvTypes = findViewById<TextView>(R.id.tv_types)
@@ -64,6 +60,11 @@ class ListTestActivity : AppCompatActivity() {
             }
             lastTvTypes.text = str
         })
+
+
+        /*ListConfig.aliveItems.observeForever {
+            Log.d(TAG, "aliveItems: $it")
+        }*/
     }
 
     fun refresh(v: View) {

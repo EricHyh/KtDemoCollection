@@ -157,6 +157,7 @@ class PageContextImpl(
                 if (mutableList == null) {
                     mutableList = mutableListOf()
                     mutableList.add(block)
+                    lifecycleInvokeMap[Lifecycle.Event.ON_DESTROY] = mutableList
                 } else {
                     mutableList.add(block)
                 }

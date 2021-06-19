@@ -10,6 +10,10 @@ object ListConfig {
     val typesLiveData = MutableLiveData<List<String>>()
 
 
+    //val aliveItems = MutableLiveData(0)
+
+    var aliveItems = 0
+
 
     private val typesMap = mapOf(
         Pair(0, listOf("A")),

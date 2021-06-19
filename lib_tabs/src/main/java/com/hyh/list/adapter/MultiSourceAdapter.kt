@@ -10,25 +10,27 @@ import com.hyh.Invoke
 import com.hyh.SuspendInvoke
 import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SingleRunner
-import com.hyh.list.*
+import com.hyh.list.IParamProvider
+import com.hyh.list.ItemSource
+import com.hyh.list.RepoLoadState
 import com.hyh.list.internal.*
 import com.hyh.page.PageContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
+import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.coroutines.CoroutineContext
 
 /**
- * TODO: Add Description
+ * 管理多个[SourceAdapter]
  *
  * @author eriche
  * @data 2021/6/7
  */
 class MultiSourceAdapter<Param : Any>(
     private val pageContext: PageContext,
-    private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -46,6 +48,7 @@ class MultiSourceAdapter<Param : Any>(
     private var reusableHolder: WrapperAndLocalPosition = WrapperAndLocalPosition()
     private val binderLookup = IdentityHashMap<RecyclerView.ViewHolder, SourceAdapterWrapper>()
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage.SharedIdRangeViewTypeStorage()
+    private val attachedRecyclerViews: MutableList<WeakReference<RecyclerView>> = mutableListOf()
 
     init {
         pageContext.invokeOnDestroy {
@@ -65,7 +68,7 @@ class MultiSourceAdapter<Param : Any>(
             }
     }
 
-    suspend fun submitData(data: RepoData<Param>) {
+    private suspend fun submitData(data: RepoData<Param>) {
         collectFromRunner.runInIsolation {
             pageContext
                 .lifecycleScope.launch {
@@ -122,6 +125,7 @@ class MultiSourceAdapter<Param : Any>(
     @Suppress("UNCHECKED_CAST")
     private fun updateWrappers(sources: List<LazySourceData<out Any>>): UpdateWrappersResult {
         val reuseInvokes: MutableList<Invoke> = mutableListOf()
+        val newInvokes: MutableList<Invoke> = mutableListOf()
         val refreshInvokes: MutableList<SuspendInvoke> = mutableListOf()
         val oldWrappers = wrappers
         val oldSourceTokens = oldWrappers.map { it.sourceToken }
@@ -143,6 +147,9 @@ class MultiSourceAdapter<Param : Any>(
             } else {
                 val wrapper = createWrapper(it)
                 newWrappers.add(wrapper)
+                newInvokes.add {
+                    onAdapterAdded(wrapper)
+                }
                 refreshInvokes.add {
                     submitData(wrapper, it.lazyFlow.await())
                 }
@@ -153,6 +160,9 @@ class MultiSourceAdapter<Param : Any>(
 
         wrappers = newWrappers
         reuseInvokes.forEach {
+            it()
+        }
+        newInvokes.forEach {
             it()
         }
 
@@ -175,12 +185,10 @@ class MultiSourceAdapter<Param : Any>(
             }
         }
 
-        val destroyInvokes: List<SuspendInvoke> = removedWrappers.map { wrapper ->
-            suspend {
-                wrapper.destroy()
-            }
+        removedWrappers.forEach {
+            onAdapterRemoved(it)
+            it.destroy()
         }
-        refreshInvokes.addAll(0, destroyInvokes)
 
         return UpdateWrappersResult(
             newWrappers,
@@ -232,10 +240,29 @@ class MultiSourceAdapter<Param : Any>(
 
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
+        if (isAttachedTo(recyclerView)) {
+            return
+        }
+        attachedRecyclerViews.add(WeakReference(recyclerView))
+        for (wrapper in wrappers) {
+            wrapper.adapter.onAttachedToRecyclerView(recyclerView)
+        }
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
+        for (index in attachedRecyclerViews.indices.reversed()) {
+            val reference: WeakReference<RecyclerView> = attachedRecyclerViews[index]
+            if (reference.get() == null) {
+                attachedRecyclerViews.removeAt(index)
+            } else if (reference.get() === recyclerView) {
+                attachedRecyclerViews.removeAt(index)
+                break // here we can break as we don't keep duplicates
+            }
+        }
+        for (wrapper in wrappers) {
+            wrapper.adapter.onDetachedFromRecyclerView(recyclerView)
+        }
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
@@ -296,6 +323,33 @@ class MultiSourceAdapter<Param : Any>(
         )
     }
 
+    private fun isAttachedTo(recyclerView: RecyclerView): Boolean {
+        for (reference in attachedRecyclerViews) {
+            if (reference.get() === recyclerView) {
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun onAdapterAdded(wrapper: SourceAdapterWrapper) {
+        for (reference in attachedRecyclerViews) {
+            val recyclerView = reference.get()
+            if (recyclerView != null) {
+                wrapper.adapter.onAttachedToRecyclerView(recyclerView)
+            }
+        }
+    }
+
+    private fun onAdapterRemoved(wrapper: SourceAdapterWrapper) {
+        for (reference in attachedRecyclerViews) {
+            val recyclerView = reference.get()
+            if (recyclerView != null) {
+                wrapper.adapter.onDetachedFromRecyclerView(recyclerView)
+            }
+        }
+    }
+
     private fun List<SourceAdapterWrapper>.findWrapper(sourceToken: Any): SourceAdapterWrapper? {
         forEach {
             if (it.sourceToken == sourceToken) {
@@ -311,7 +365,7 @@ class MultiSourceAdapter<Param : Any>(
             sourceData.sourceToken,
             sourceData.itemSource as ItemSource<Any>,
             sourceData.paramProvider as IParamProvider<Any>,
-            SourceAdapter(workerDispatcher),
+            SourceAdapter(),
             viewTypeStorage,
             sourceAdapterCallback
         )
@@ -969,33 +1023,6 @@ object SimpleDispatchUpdatesHelper {
             count += if (item !== wrapperStub) {
                 val wrapper = item.wrapper
                 wrapper?.cachedItemCount ?: 0
-            } else {
-                break
-            }
-        }
-        return count
-    }
-
-    private fun countItemsBefore(
-        wrapperStub: WrapperStub,
-        wrapperStubsSnapshot: List<WrapperStub>,
-        wrapperStubs: List<WrapperStub>,
-        newWrappers: List<SourceAdapterWrapper>
-    ): Int {
-        var count = 0
-        for (item in wrapperStubsSnapshot) {
-            count += if (item !== wrapperStub) {
-                val wrapper = item.wrapper
-                if (wrapper != null) {
-                    wrapper.cachedItemCount
-                } else {
-                    val index = wrapperStubs.indexOf(item)
-                    if (index in newWrappers.indices) {
-                        newWrappers[index].cachedItemCount
-                    } else {
-                        0
-                    }
-                }
             } else {
                 break
             }

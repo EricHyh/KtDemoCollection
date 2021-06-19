@@ -23,42 +23,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
-
-interface ISourceAdapter {
-
-    fun getItemCount()
-
-    fun getItemId(position: Int): Long
-
-    fun getItemViewType(position: Int): Int
-
-    fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder
-
-    fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int)
-
-    fun registerAdapterDataObserver(observer: RecyclerView.AdapterDataObserver)
-
-    fun unregisterAdapterDataObserver(observer: RecyclerView.AdapterDataObserver)
-
-    fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder)
-
-    fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder)
-
-    fun onFailedToRecycleView(holder: RecyclerView.ViewHolder)
-
-    fun onViewRecycled(holder: RecyclerView.ViewHolder)
-
-    fun onAttachedToRecyclerView(recyclerView: RecyclerView)
-
-    fun onDetachedFromRecyclerView(recyclerView: RecyclerView)
-
-    suspend fun submitData(data: SourceData<out Any>)
-
-    fun refresh(param: Any)
-
-}
-
-
 /**
  * TODO: Add Description
  *
@@ -66,9 +30,7 @@ interface ISourceAdapter {
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-class SourceAdapter(
-    private val workerDispatcher: CoroutineDispatcher = Dispatchers.Default
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val TAG = "SourceAdapter"
