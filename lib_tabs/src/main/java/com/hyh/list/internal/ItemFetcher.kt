@@ -225,7 +225,7 @@ class ItemFetcherSnapshot<Param : Any>(
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
                 val updateResult =
-                    ListUpdate.calculateDiff(lastDisplayedItems, loadResult.items, IElementDiff.ItemDataDiff())
+                    ListUpdate.calculateDiff(displayedItems, loadResult.items, IElementDiff.ItemDataDiff())
                 val event = SourceEvent.Success(updateResult.list, updateResult.listOperates) {
                     displayedItems = updateResult.list
                     updateResult.list.forEach {

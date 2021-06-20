@@ -12,6 +12,7 @@ import com.hyh.list.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import java.util.*
 import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
@@ -25,7 +26,8 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
     private var lastNums: List<Int> = emptyList()
 
     override suspend fun getPreShowWhenTheFirstTime(param: Unit): PreShowResult {
-        return PreShowResult.Unused
+        val titleItemData = TitleItemData(type, lastNums, emptyList())
+        return PreShowResult.Success(listOf(titleItemData))
     }
 
     override suspend fun load(param: Unit): LoadResult {
@@ -124,6 +126,7 @@ class TitleItemData(
     }
 
     override fun areContentsTheSame(newItemData: ItemData): Boolean {
+        if (newItemData !is TitleItemData) return false
         return false
     }
 }

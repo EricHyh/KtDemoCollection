@@ -23,13 +23,15 @@ class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
     override suspend fun load(param: Unit): LoadResult {
         delay(1000)
         //SystemClock.sleep(1000)
-        val sources = ListConfig.randomTypes()
+        val sources = listOf(ItemSourceInfo("A", NumItemSource("A")))
+
+        /*val sources = ListConfig.randomTypes()
             .map {
                 ItemSourceInfo(
                     it,
                     NumItemSource(it)
                 )
-            }
+            }*/
         return LoadResult.Success(sources)
     }
 
