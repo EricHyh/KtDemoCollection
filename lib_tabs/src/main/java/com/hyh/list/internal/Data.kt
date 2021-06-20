@@ -1,7 +1,6 @@
 package com.hyh.list.internal
 
 import com.hyh.OnEventReceived
-import com.hyh.list.IParamProvider
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.Deferred
@@ -15,14 +14,13 @@ data class RepoData<Param : Any>(
 data class LazySourceData<Param : Any>(
     val sourceToken: Any,
     val itemSource: ItemSource<Param>,
-    val paramProvider: IParamProvider<Param>,
-    val lazyFlow: Deferred<Flow<SourceData<Param>>>,
+    val lazyFlow: Deferred<Flow<SourceData>>,
     val onReuse: (oldItemSource: ItemSource<Param>) -> Unit
 )
 
-data class SourceData<Param : Any>(
+data class SourceData(
     val flow: Flow<SourceEvent>,
-    val receiver: UiReceiverForSource<Param>
+    val receiver: UiReceiverForSource
 )
 
 
@@ -59,5 +57,19 @@ sealed class SourceEvent(val onReceived: OnEventReceived) {
         val preShowing: Boolean,
         onReceived: OnEventReceived = {}
     ) : SourceEvent(onReceived)
+
+}
+
+enum class RefreshStage {
+    UNBLOCK,
+    TIMING,
+    BLOCK
+}
+
+sealed class RefreshStrategy {
+
+    object CancelLast : RefreshStrategy()
+    object QueueUp : RefreshStrategy()
+    data class DelayedQueueUp(val delay: Int) : RefreshStrategy()
 
 }

@@ -10,9 +10,10 @@ import com.hyh.Invoke
 import com.hyh.SuspendInvoke
 import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SingleRunner
-import com.hyh.list.IParamProvider
+import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import com.hyh.list.RepoLoadState
+import com.hyh.list.SourceLoadState
 import com.hyh.list.internal.*
 import com.hyh.page.PageContext
 import kotlinx.coroutines.*
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.*
 import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.LinkedHashMap
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -31,7 +33,7 @@ import kotlin.coroutines.CoroutineContext
  */
 class MultiSourceAdapter<Param : Any>(
     private val pageContext: PageContext,
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), IListAdapter<Param> {
 
     companion object {
         private const val TAG = "MultiSourceAdapter"
@@ -40,10 +42,16 @@ class MultiSourceAdapter<Param : Any>(
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
     private val sourceAdapterCallback = SourceAdapterCallback()
-    private var wrappers = mutableListOf<SourceAdapterWrapper>()
+    //private var wrappers = mutableListOf<SourceAdapterWrapper>()
+
+    private var wrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
+
+
     private var receiver: UiReceiverForRepo<Param>? = null
-    private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
     private val invokeEventCh = Channel<List<SuspendInvoke>>(Channel.BUFFERED)
+    private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
+    override val repoLoadStateFlow: StateFlow<RepoLoadState>
+        get() = _loadStateFlow
 
     private var reusableHolder: WrapperAndLocalPosition = WrapperAndLocalPosition()
     private val binderLookup = IdentityHashMap<RecyclerView.ViewHolder, SourceAdapterWrapper>()
@@ -52,13 +60,13 @@ class MultiSourceAdapter<Param : Any>(
 
     init {
         pageContext.invokeOnDestroy {
-            wrappers.forEach {
-                it.destroy()
+            wrapperMap.forEach {
+                it.value.destroy()
             }
         }
     }
 
-    fun submitData(flow: Flow<RepoData<Param>>) {
+    override fun submitData(flow: Flow<RepoData<Param>>) {
         pageContext
             .lifecycleScope
             .launch {
@@ -66,6 +74,132 @@ class MultiSourceAdapter<Param : Any>(
                     submitData(it)
                 }
             }
+    }
+
+    override fun refreshRepo(param: Param) {
+        receiver?.refresh(param)
+    }
+
+    override fun getSourceLoadState(sourceIndex: Int): StateFlow<SourceLoadState>? {
+        if (sourceIndex !in 0 until wrapperMap.size) {
+            return null
+        }
+        var index = 0
+        wrapperMap.forEach {
+            if (index == sourceIndex) {
+                return@getSourceLoadState it.value.adapter.loadStateFlow
+            }
+            index++
+        }
+        return null
+    }
+
+    override fun getSourceLoadState(sourceToken: Any): StateFlow<SourceLoadState>? {
+        val wrapper = wrapperMap[sourceToken] ?: return null
+        return wrapper.adapter.loadStateFlow
+    }
+
+    override fun getItemSnapshot(): List<ItemData> {
+        val itemSnapshot = mutableListOf<ItemData>()
+        wrapperMap.forEach {
+            itemSnapshot += it.value.adapter.items ?: emptyList()
+        }
+        return itemSnapshot
+    }
+
+    override fun getItemSnapshot(sourceIndexStart: Int, count: Int): List<ItemData> {
+        val itemSnapshot = mutableListOf<ItemData>()
+        findWrappers(sourceIndexStart, count).forEach {
+            itemSnapshot += it.adapter.items ?: emptyList()
+        }
+        return itemSnapshot
+    }
+
+    override fun getItemSnapshot(sourceTokenStart: Any, count: Int): List<ItemData> {
+        val itemSnapshot = mutableListOf<ItemData>()
+        findWrappers(sourceTokenStart, count).forEach {
+            itemSnapshot += it.adapter.items ?: emptyList()
+        }
+        return itemSnapshot
+    }
+
+    override fun refreshSources() {
+        wrapperMap.forEach {
+            it.value.adapter.refresh()
+        }
+    }
+
+    override fun refreshSources(vararg sourceIndexes: Int) {
+        var index = 0
+        val sourceIndexList = sourceIndexes.toMutableList()
+        wrapperMap.forEach {
+            if (sourceIndexList.isEmpty()) return@refreshSources
+            if (sourceIndexList.remove(index)) {
+                it.value.adapter.refresh()
+            }
+            index++
+        }
+    }
+
+    override fun refreshSources(vararg sourceTokens: Any) {
+        sourceTokens.forEach {
+            wrapperMap[it]?.adapter?.refresh()
+        }
+    }
+
+    override fun refreshSources(sourceIndexStart: Int, count: Int) {
+        findWrappers(sourceIndexStart, count).forEach {
+            it.adapter.refresh()
+        }
+    }
+
+    override fun refreshSources(sourceTokenStart: Any, count: Int) {
+        findWrappers(sourceTokenStart, count).forEach {
+            it.adapter.refresh()
+        }
+    }
+
+    private fun findWrappers(sourceIndexStart: Int, count: Int): List<SourceAdapterWrapper> {
+        val wrappers = mutableListOf<SourceAdapterWrapper>()
+        var index = 0
+        val sourceIndexEnd = sourceIndexStart + count - 1
+        kotlin.run {
+            wrapperMap.forEach {
+                if (index < sourceIndexStart) {
+                    index++
+                    return@forEach
+                }
+                if (index > sourceIndexEnd) {
+                    return@run
+                }
+                wrappers += it.value
+                index++
+            }
+        }
+        return wrappers
+    }
+
+    private fun findWrappers(sourceTokenStart: Any, count: Int): List<SourceAdapterWrapper> {
+        val wrappers = mutableListOf<SourceAdapterWrapper>()
+        var sourceTokenMatched = false
+        var addCount = 0
+        kotlin.run {
+            wrapperMap.forEach {
+                if (!sourceTokenMatched) {
+                    if (it.key == sourceTokenStart) {
+                        sourceTokenMatched = true
+                    } else {
+                        return@forEach
+                    }
+                }
+                wrappers += it.value
+                addCount++
+                if (addCount >= count) {
+                    return@run
+                }
+            }
+        }
+        return wrappers
     }
 
     private suspend fun submitData(data: RepoData<Param>) {
@@ -86,7 +220,7 @@ class MultiSourceAdapter<Param : Any>(
                     when (event) {
                         is RepoEvent.UsingCache -> {
                             val result = updateWrappers(event.sources)
-                            _loadStateFlow.value = RepoLoadState.UsingCache(result.newWrappers.size)
+                            _loadStateFlow.value = RepoLoadState.UsingCache(result.newWrapperMap.size)
                             invokeEventCh.send(result.refreshInvokes)
                         }
                         is RepoEvent.Loading -> {
@@ -97,7 +231,7 @@ class MultiSourceAdapter<Param : Any>(
                         }
                         is RepoEvent.Success -> {
                             val result = updateWrappers(event.sources)
-                            _loadStateFlow.value = RepoLoadState.Success(result.newWrappers.size)
+                            _loadStateFlow.value = RepoLoadState.Success(result.newWrapperMap.size)
                             invokeEventCh.send(result.refreshInvokes)
                         }
                     }
@@ -107,11 +241,7 @@ class MultiSourceAdapter<Param : Any>(
         }
     }
 
-    fun refresh(param: Param) {
-        receiver?.refresh(param)
-    }
-
-    private suspend fun submitData(wrapper: SourceAdapterWrapper, flow: Flow<SourceData<out Any>>) {
+    private suspend fun submitData(wrapper: SourceAdapterWrapper, flow: Flow<SourceData>) {
         val context: CoroutineContext = SupervisorJob() + mainDispatcher
         val job = CloseableCoroutineScope(context).launch {
             flow.collectLatest {
@@ -127,26 +257,26 @@ class MultiSourceAdapter<Param : Any>(
         val reuseInvokes: MutableList<Invoke> = mutableListOf()
         val newInvokes: MutableList<Invoke> = mutableListOf()
         val refreshInvokes: MutableList<SuspendInvoke> = mutableListOf()
-        val oldWrappers = wrappers
-        val oldSourceTokens = oldWrappers.map { it.sourceToken }
+        val oldWrapperMap = wrapperMap
+
+        val oldSourceTokens = ArrayList(oldWrapperMap.keys)
         val newSourceTokens = mutableListOf<Any>()
-        val newWrappers = mutableListOf<SourceAdapterWrapper>()
+        //val newWrappers = mutableListOf<SourceAdapterWrapper>()
+        val newWrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
         sources.forEach {
             newSourceTokens.add(it.sourceToken)
-            val oldWrapper = oldWrappers.findWrapper(it.sourceToken)
+            val oldWrapper = oldWrapperMap[it.sourceToken]
             if (oldWrapper != null) {
-                oldWrapper.paramProvider = it.paramProvider as IParamProvider<Any>
-                newWrappers.add(oldWrapper)
+                newWrapperMap[it.sourceToken] = oldWrapper
                 reuseInvokes.add {
                     (it.onReuse as (oldItemSource: ItemSource<Any>) -> Unit).invoke(oldWrapper.itemSource)
                 }
                 refreshInvokes.add {
-                    val param = oldWrapper.paramProvider.getParam()
-                    oldWrapper.adapter.refresh(param)
+                    oldWrapper.adapter.refresh()
                 }
             } else {
                 val wrapper = createWrapper(it)
-                newWrappers.add(wrapper)
+                newWrapperMap[it.sourceToken] = wrapper
                 newInvokes.add {
                     onAdapterAdded(wrapper)
                 }
@@ -158,7 +288,7 @@ class MultiSourceAdapter<Param : Any>(
 
         val removedWrappers = mutableListOf<SourceAdapterWrapper>()
 
-        wrappers = newWrappers
+        wrapperMap = newWrapperMap
         reuseInvokes.forEach {
             it()
         }
@@ -166,9 +296,9 @@ class MultiSourceAdapter<Param : Any>(
             it()
         }
 
-        if (oldWrappers.isEmpty() || newWrappers.isEmpty()) {
-            if (oldWrappers.isNotEmpty()) {
-                removedWrappers.addAll(oldWrappers)
+        if (oldWrapperMap.isEmpty() || newWrapperMap.isEmpty()) {
+            if (oldWrapperMap.isNotEmpty()) {
+                removedWrappers.addAll(oldWrapperMap.values)
             }
             notifyDataSetChanged()
         } else {
@@ -177,8 +307,8 @@ class MultiSourceAdapter<Param : Any>(
             diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(listOperateOperates))
             SimpleDispatchUpdatesHelper.dispatch(
                 listOperateOperates,
-                ArrayList(oldWrappers),
-                newWrappers,
+                ArrayList(oldWrapperMap.values),
+                ArrayList(newWrapperMap.values),
                 removedWrappers
             ).forEach {
                 it.invoke(this)
@@ -191,7 +321,7 @@ class MultiSourceAdapter<Param : Any>(
         }
 
         return UpdateWrappersResult(
-            newWrappers,
+            newWrapperMap,
             refreshInvokes
         )
     }
@@ -217,8 +347,8 @@ class MultiSourceAdapter<Param : Any>(
 
     override fun getItemCount(): Int {
         var total = 0
-        for (wrapper in wrappers) {
-            total += wrapper.cachedItemCount
+        for (wrapper in wrapperMap) {
+            total += wrapper.value.cachedItemCount
         }
         return total
     }
@@ -244,8 +374,8 @@ class MultiSourceAdapter<Param : Any>(
             return
         }
         attachedRecyclerViews.add(WeakReference(recyclerView))
-        for (wrapper in wrappers) {
-            wrapper.adapter.onAttachedToRecyclerView(recyclerView)
+        for (wrapper in wrapperMap) {
+            wrapper.value.adapter.onAttachedToRecyclerView(recyclerView)
         }
     }
 
@@ -260,8 +390,8 @@ class MultiSourceAdapter<Param : Any>(
                 break // here we can break as we don't keep duplicates
             }
         }
-        for (wrapper in wrappers) {
-            wrapper.adapter.onDetachedFromRecyclerView(recyclerView)
+        for (wrapper in wrapperMap) {
+            wrapper.value.adapter.onDetachedFromRecyclerView(recyclerView)
         }
     }
 
@@ -364,7 +494,6 @@ class MultiSourceAdapter<Param : Any>(
         return SourceAdapterWrapper(
             sourceData.sourceToken,
             sourceData.itemSource as ItemSource<Any>,
-            sourceData.paramProvider as IParamProvider<Any>,
             SourceAdapter(),
             viewTypeStorage,
             sourceAdapterCallback
@@ -380,13 +509,13 @@ class MultiSourceAdapter<Param : Any>(
             result = reusableHolder
         }
         var localPosition = globalPosition
-        for (wrapper in wrappers) {
-            if (wrapper.cachedItemCount > localPosition) {
-                result.wrapper = wrapper
+        for (wrapper in wrapperMap) {
+            if (wrapper.value.cachedItemCount > localPosition) {
+                result.wrapper = wrapper.value
                 result.localPosition = localPosition
                 break
             }
-            localPosition -= wrapper.cachedItemCount
+            localPosition -= wrapper.value.cachedItemCount
         }
         requireNotNull(result.wrapper) { "Cannot find wrapper for $globalPosition" }
         return result
@@ -400,14 +529,26 @@ class MultiSourceAdapter<Param : Any>(
     }
 
     private fun countItemsBefore(wrapper: SourceAdapterWrapper): Int {
-        return countItemsBefore(wrapper, wrappers)
+        return countItemsBefore(wrapper, wrapperMap)
     }
 
-    private fun countItemsBefore(wrapper: SourceAdapterWrapper, wrappers: List<SourceAdapterWrapper>): Int {
+    private fun countItemsBefore(wrapper: SourceAdapterWrapper, wrappers: Collection<SourceAdapterWrapper>): Int {
         var count = 0
         for (item in wrappers) {
             count += if (item !== wrapper) {
                 item.cachedItemCount
+            } else {
+                break
+            }
+        }
+        return count
+    }
+
+    private fun countItemsBefore(wrapper: SourceAdapterWrapper, wrappers: LinkedHashMap<Any, SourceAdapterWrapper>): Int {
+        var count = 0
+        for (item in wrappers) {
+            count += if (item.value !== wrapper) {
+                item.value.cachedItemCount
             } else {
                 break
             }
@@ -431,12 +572,12 @@ class MultiSourceAdapter<Param : Any>(
     }
 
     private fun computeStateRestorationPolicy(): StateRestorationPolicy {
-        for (wrapper in wrappers) {
-            val strategy = wrapper.adapter.stateRestorationPolicy
+        for (wrapper in wrapperMap) {
+            val strategy = wrapper.value.adapter.stateRestorationPolicy
             if (strategy == StateRestorationPolicy.PREVENT) {
                 // one adapter can block all
                 return StateRestorationPolicy.PREVENT
-            } else if (strategy == StateRestorationPolicy.PREVENT_WHEN_EMPTY && wrapper.cachedItemCount == 0) {
+            } else if (strategy == StateRestorationPolicy.PREVENT_WHEN_EMPTY && wrapper.value.cachedItemCount == 0) {
                 // an adapter wants to allow w/ size but we need to make sure there is no prevent
                 return StateRestorationPolicy.PREVENT
             }
@@ -451,32 +592,32 @@ class MultiSourceAdapter<Param : Any>(
     // region inner class
 
     class UpdateWrappersResult(
-        val newWrappers: List<SourceAdapterWrapper>,
+        val newWrapperMap: LinkedHashMap<Any, SourceAdapterWrapper>,
         val refreshInvokes: List<SuspendInvoke>
     )
 
     inner class SourceAdapterCallback : SourceAdapterWrapper.Callback {
 
         override fun onChanged(wrapper: SourceAdapterWrapper) {
-            val wrappers = wrappers
-            val index = wrappers.indexOf(wrapper)
-            if (index < 0) {
-                Log.d(TAG, "SourceAdapterCallback onChanged: wrapper index = $index")
+            val sourceToken = wrapper.sourceToken
+            val cacheWrapper = wrapperMap[sourceToken]
+            if (cacheWrapper == null) {
+                Log.d(TAG, "SourceAdapterCallback onChanged: cacheWrapper[sourceToken=$sourceToken] is null")
                 return
             }
-            val offset = countItemsBefore(wrapper, wrappers)
+            val offset = countItemsBefore(wrapper, wrapperMap)
             notifyItemRangeChanged(offset, wrapper.cachedItemCount)
             calculateAndUpdateStateRestorationPolicy()
         }
 
         override fun onItemRangeChanged(wrapper: SourceAdapterWrapper, positionStart: Int, itemCount: Int) {
-            val wrappers = wrappers
-            val index = wrappers.indexOf(wrapper)
-            if (index < 0) {
-                Log.d(TAG, "SourceAdapterCallback onItemRangeChanged: wrapper index = $index")
+            val sourceToken = wrapper.sourceToken
+            val cacheWrapper = wrapperMap[sourceToken]
+            if (cacheWrapper == null) {
+                Log.d(TAG, "SourceAdapterCallback onItemRangeChanged: cacheWrapper[sourceToken=$sourceToken] is null")
                 return
             }
-            val offset = countItemsBefore(wrapper, wrappers)
+            val offset = countItemsBefore(wrapper, wrapperMap)
             notifyItemRangeChanged(
                 positionStart + offset,
                 itemCount
@@ -484,13 +625,13 @@ class MultiSourceAdapter<Param : Any>(
         }
 
         override fun onItemRangeChanged(wrapper: SourceAdapterWrapper, positionStart: Int, itemCount: Int, payload: Any?) {
-            val wrappers = wrappers
-            val index = wrappers.indexOf(wrapper)
-            if (index < 0) {
-                Log.d(TAG, "SourceAdapterCallback onItemRangeChanged: wrapper index = $index")
+            val sourceToken = wrapper.sourceToken
+            val cacheWrapper = wrapperMap[sourceToken]
+            if (cacheWrapper == null) {
+                Log.d(TAG, "SourceAdapterCallback onItemRangeChanged: cacheWrapper[sourceToken=$sourceToken] is null")
                 return
             }
-            val offset = countItemsBefore(wrapper, wrappers)
+            val offset = countItemsBefore(wrapper, wrapperMap)
             notifyItemRangeChanged(
                 positionStart + offset,
                 itemCount,
@@ -499,13 +640,13 @@ class MultiSourceAdapter<Param : Any>(
         }
 
         override fun onItemRangeInserted(wrapper: SourceAdapterWrapper, positionStart: Int, itemCount: Int) {
-            val wrappers = wrappers
-            val index = wrappers.indexOf(wrapper)
-            if (index < 0) {
-                Log.d(TAG, "SourceAdapterCallback onItemRangeInserted: wrapper index = $index")
+            val sourceToken = wrapper.sourceToken
+            val cacheWrapper = wrapperMap[sourceToken]
+            if (cacheWrapper == null) {
+                Log.d(TAG, "SourceAdapterCallback onItemRangeInserted: cacheWrapper[sourceToken=$sourceToken] is null")
                 return
             }
-            val offset = countItemsBefore(wrapper, wrappers)
+            val offset = countItemsBefore(wrapper, wrapperMap)
             notifyItemRangeInserted(
                 positionStart + offset,
                 itemCount
@@ -513,13 +654,13 @@ class MultiSourceAdapter<Param : Any>(
         }
 
         override fun onItemRangeRemoved(wrapper: SourceAdapterWrapper, positionStart: Int, itemCount: Int) {
-            val wrappers = wrappers
-            val index = wrappers.indexOf(wrapper)
-            if (index < 0) {
-                Log.d(TAG, "SourceAdapterCallback onItemRangeRemoved: wrapper index = $index")
+            val sourceToken = wrapper.sourceToken
+            val cacheWrapper = wrapperMap[sourceToken]
+            if (cacheWrapper == null) {
+                Log.d(TAG, "SourceAdapterCallback onItemRangeRemoved: cacheWrapper[sourceToken=$sourceToken] is null")
                 return
             }
-            val offset = countItemsBefore(wrapper, wrappers)
+            val offset = countItemsBefore(wrapper, wrapperMap)
             notifyItemRangeRemoved(
                 positionStart + offset,
                 itemCount
@@ -527,13 +668,13 @@ class MultiSourceAdapter<Param : Any>(
         }
 
         override fun onItemRangeMoved(wrapper: SourceAdapterWrapper, fromPosition: Int, toPosition: Int) {
-            val wrappers = wrappers
-            val index = wrappers.indexOf(wrapper)
-            if (index < 0) {
-                Log.d(TAG, "SourceAdapterCallback onItemRangeMoved: wrapper index = $index")
+            val sourceToken = wrapper.sourceToken
+            val cacheWrapper = wrapperMap[sourceToken]
+            if (cacheWrapper == null) {
+                Log.d(TAG, "SourceAdapterCallback onItemRangeMoved: cacheWrapper[sourceToken=$sourceToken] is null")
                 return
             }
-            val offset = countItemsBefore(wrapper, wrappers)
+            val offset = countItemsBefore(wrapper, wrapperMap)
             notifyItemMoved(
                 fromPosition + offset,
                 toPosition + offset
@@ -595,7 +736,6 @@ class MultiSourceAdapter<Param : Any>(
 class SourceAdapterWrapper(
     val sourceToken: Any,
     var itemSource: ItemSource<Any>,
-    var paramProvider: IParamProvider<Any>,
     val adapter: SourceAdapter,
     viewTypeStorage: ViewTypeStorage,
     val callback: Callback
@@ -883,6 +1023,8 @@ object SimpleDispatchUpdatesHelper {
                 }
                 is ListOperate.OnRemoved -> {
                     onRemoved(operate, wrapperStubs, removedWrappers, operateInvokes)
+                }
+                else -> {
                 }
             }
         }

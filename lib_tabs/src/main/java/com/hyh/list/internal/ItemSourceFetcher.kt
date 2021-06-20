@@ -1,5 +1,7 @@
 package com.hyh.list.internal
 
+import android.os.SystemClock
+import com.hyh.Invoke
 import com.hyh.RefreshActuator
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
@@ -10,6 +12,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
+import kotlin.math.abs
 
 
 abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) {
@@ -18,11 +21,57 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
         private val state = MutableStateFlow(Pair<Long, Param?>(0, initialParam))
 
-        val flow = state
-            .map { it.second }
+        private var cacheState: MutableStateFlow<Pair<Long, Param>>? = null
+        private var refreshStage = RefreshStage.UNBLOCK
+        private var delay = 0
+        private var timingStart: Long = 0
+
+        val flow = state.map { it.second }
 
         override fun refresh(param: Param) {
-            state.value = Pair(state.value.first + 1, param)
+            when (refreshStage) {
+                RefreshStage.UNBLOCK -> {
+                    state.value = Pair(state.value.first + 1, param)
+                    when (val refreshStrategy = getRefreshStrategy()) {
+                        is RefreshStrategy.QueueUp -> {
+                            refreshStage = RefreshStage.BLOCK
+                        }
+                        is RefreshStrategy.DelayedQueueUp -> {
+                            refreshStage = RefreshStage.TIMING
+                            timingStart = SystemClock.elapsedRealtime()
+                            delay = refreshStrategy.delay
+                        }
+                        else -> {
+                            refreshStage = RefreshStage.UNBLOCK
+                        }
+                    }
+                }
+                RefreshStage.TIMING -> {
+                    state.value = Pair(state.value.first + 1, param)
+                    val elapsedRealtime = SystemClock.elapsedRealtime()
+                    if (abs(elapsedRealtime - timingStart) > delay) {
+                        refreshStage = RefreshStage.BLOCK
+                    }
+                }
+                RefreshStage.BLOCK -> {
+                    val cacheState = this.cacheState
+                    if (cacheState != null) {
+                        cacheState.value = Pair(cacheState.value.first + 1, param)
+                    } else {
+                        this.cacheState = MutableStateFlow(Pair<Long, Param>(0, param))
+                    }
+                }
+            }
+        }
+
+        fun onRefreshComplete() {
+            val cacheState = this.cacheState
+            this.cacheState = null
+            timingStart = 0
+            refreshStage = RefreshStage.UNBLOCK
+            if (cacheState != null) {
+                refresh(cacheState.value.second)
+            }
         }
     }
 
@@ -42,7 +91,8 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
                     geOnCacheResult(),
                     getLoader(),
                     geOnLoadResult(),
-                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param)
+                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param),
+                    uiReceiver::onRefreshComplete
                 )
             }
             .filterNotNull()
@@ -61,6 +111,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     private fun getLoader(): SourceLoader<Param> = ::load
     private fun geOnLoadResult(): OnSourceLoadResult<Param> = ::onLoadResult
 
+    abstract fun getRefreshStrategy(): RefreshStrategy
     abstract suspend fun getCache(params: ItemSourceRepository.CacheParams<Param>): ItemSourceRepository.CacheResult
     abstract suspend fun onCacheResult(params: ItemSourceRepository.CacheParams<Param>, cacheResult: ItemSourceRepository.CacheResult)
 
@@ -80,7 +131,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     private val loader: SourceLoader<Param>,
     private val onLoadResult: OnSourceLoadResult<Param>,
     private val fetchDispatcher: CoroutineDispatcher?,
-    /*var displayedItemSources: List<ItemSource<out Any>>?*/
+    private val onRefreshComplete: Invoke
 ) {
 
     var cacheResult: ItemSourceRepository.CacheResult? = null
@@ -133,11 +184,15 @@ class ItemSourceFetcherSnapshot<Param : Any>(
         when (loadResult) {
             is ItemSourceRepository.LoadResult.Success -> {
                 val sources = newSources(loadResult.sources)
-                val event = RepoEvent.Success(sources)
+                val event = RepoEvent.Success(sources) {
+                    onRefreshComplete()
+                }
                 repoEventCh.send(event)
             }
             is ItemSourceRepository.LoadResult.Error -> {
-                val event = RepoEvent.Error(loadResult.error, usingCache)
+                val event = RepoEvent.Error(loadResult.error, usingCache) {
+                    onRefreshComplete()
+                }
                 repoEventCh.send(event)
             }
         }
@@ -149,22 +204,18 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private suspend fun newSources(sources: List<ItemSourceRepository.ItemSourceInfo>): List<LazySourceData<Any>> {
+    private fun newSources(sources: List<ItemSourceRepository.ItemSourceInfo>): List<LazySourceData<Any>> {
         return sources
             .mapIndexed { index, itemSourceInfo ->
                 val sourceToken: Any = itemSourceInfo.sourceToken
-                val paramProvider: IParamProvider<Any> = itemSourceInfo.paramProvider as IParamProvider<Any>
                 val newItemSource = itemSourceInfo.source as ItemSource<Any>
                 newItemSource.delegate.initPosition(index)
-                val lazyFlow: Deferred<Flow<SourceData<Any>>> = GlobalScope.async(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
-                    val itemFetcher = ItemFetcher(
-                        newItemSource,
-                        paramProvider.getParam()
-                    )
+                val lazyFlow: Deferred<Flow<SourceData>> = GlobalScope.async(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
+                    val itemFetcher = ItemFetcher(newItemSource)
                     newItemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                     itemFetcher.flow
                 }
-                LazySourceData(sourceToken, newItemSource, paramProvider, lazyFlow) { oldItemSource ->
+                LazySourceData(sourceToken, newItemSource, lazyFlow) { oldItemSource ->
                     oldItemSource.updateItemSource(index, newItemSource)
                 }
             }

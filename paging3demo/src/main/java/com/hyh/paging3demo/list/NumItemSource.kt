@@ -9,6 +9,9 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
@@ -21,11 +24,12 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
     private var lastNums: List<Int> = emptyList()
 
-    override suspend fun getPreShowWhenTheFirstTime(param: Unit): ItemSource.PreShowResult {
-        return ItemSource.PreShowResult.Unused
+    override suspend fun getPreShowWhenTheFirstTime(param: Unit): PreShowResult {
+        return PreShowResult.Unused
     }
 
-    override suspend fun load(param: Unit): ItemSource.LoadResult {
+    override suspend fun load(param: Unit): LoadResult {
+        delay(1000)
         val items = mutableListOf<ItemData>()
         val random = Random(SystemClock.currentThreadTimeMillis())
         val count = random.nextLong(5, 10).toInt()
@@ -44,12 +48,14 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
         items.add(titleItemData)
         items.addAll(numItems)
 
-        return ItemSource.LoadResult.Success(items)
+        return LoadResult.Success(items)
     }
 
-    /*override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {
+    override suspend fun getParam() = Unit
+
+    override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {
         return Dispatchers.IO
-    }*/
+    }
 }
 
 
@@ -84,7 +90,7 @@ class TitleItemData(
 
     override fun getViewHolderFactory(): ViewHolderFactory {
         return {
-            SystemClock.sleep(10)
+            //SystemClock.sleep(10)
             val textView = TextView(it.context)
             textView.setTextColor(Color.BLACK)
             textView.setBackgroundColor(Color.GRAY)
@@ -151,7 +157,7 @@ class NumItemData(
 
     override fun getViewHolderFactory(): ViewHolderFactory {
         return {
-            SystemClock.sleep(10)
+            //SystemClock.sleep(10)
             val textView = TextView(it.context)
             textView.setTextColor(Color.BLACK)
             textView.setBackgroundColor(Color.WHITE)

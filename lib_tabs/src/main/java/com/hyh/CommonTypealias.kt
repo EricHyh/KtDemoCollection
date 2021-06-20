@@ -8,7 +8,7 @@ package com.hyh
  */
 
 
-typealias OnEventReceived = () -> Unit
-typealias RefreshActuator<Param> = (Param) -> Unit
-typealias Invoke = (() -> Unit)
+typealias Invoke = () -> Unit
 typealias SuspendInvoke = (suspend () -> Unit)
+typealias OnEventReceived = Invoke
+typealias RefreshActuator = Invoke

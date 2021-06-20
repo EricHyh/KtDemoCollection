@@ -1,10 +1,8 @@
 package com.hyh.list.adapter
 
 import android.util.Log
-import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.util.set
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.coroutine.SingleRunner
@@ -19,6 +17,7 @@ import com.hyh.list.internal.UiReceiverForSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
@@ -30,7 +29,7 @@ import java.lang.ref.WeakReference
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class SourceAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val TAG = "SourceAdapter"
@@ -39,13 +38,18 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage()
-    private var receiver: UiReceiverForSource<Any>? = null
-    private var items: List<ItemData>? = null
+    private var receiver: UiReceiverForSource? = null
+
+    private var _items: List<ItemData>? = null
+    val items: List<ItemData>?
+        get() = _items
 
     private val _loadStateFlow: MutableStateFlow<SourceLoadState> = MutableStateFlow(SourceLoadState.Initial)
+    val loadStateFlow: StateFlow<SourceLoadState>
+        get() = _loadStateFlow
 
     override fun getItemViewType(position: Int): Int {
-        return items?.let {
+        return _items?.let {
             if (position in it.indices) {
                 val itemData = it[position]
                 val itemViewType = itemData.getItemViewType()
@@ -70,13 +74,13 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     }
 
     override fun getItemCount(): Int {
-        return items?.size ?: 0
+        return _items?.size ?: 0
     }
 
     @Suppress("UNCHECKED_CAST")
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (position == RecyclerView.NO_POSITION) return
-        items?.let {
+        _items?.let {
             if (position in it.indices) {
                 (it[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder)
             }
@@ -85,16 +89,16 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (position == RecyclerView.NO_POSITION) return
-        items?.let {
+        _items?.let {
             if (position in it.indices) {
                 (it[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder, payloads)
             }
         }
     }
 
-    suspend fun submitData(data: SourceData<out Any>) {
+    suspend fun submitData(data: SourceData) {
         collectFromRunner.runInIsolation {
-            receiver = data.receiver as UiReceiverForSource<Any>
+            receiver = data.receiver
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
@@ -112,7 +116,7 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                                 diffResult.dispatchUpdatesTo(this@SourceAdapter)
                             }*/
                             val newItems = event.items
-                            items = newItems
+                            _items = newItems
                             ListUpdate.handleListOperates(event.listOperates, this@SourceAdapter)
                             _loadStateFlow.value = SourceLoadState.PreShow(newItems.size)
                         }
@@ -136,7 +140,7 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                                 diffResult.dispatchUpdatesTo(this@SourceAdapter)
                             }*/
                             val newItems = event.items
-                            items = newItems
+                            _items = newItems
                             ListUpdate.handleListOperates(event.listOperates, this@SourceAdapter)
                             _loadStateFlow.value = SourceLoadState.PreShow(newItems.size)
                             _loadStateFlow.value = SourceLoadState.Success(newItems.size)
@@ -148,12 +152,12 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    fun refresh(param: Any) {
-        receiver?.refresh(param)
+    fun refresh() {
+        receiver?.refresh()
     }
 
     fun destroy() {
-        items?.forEach {
+        _items?.forEach {
             it.delegate.destroy()
         }
     }
@@ -184,7 +188,7 @@ class SourceAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
 
         private fun findViewHolderFactory(viewType: Int): ViewHolderFactory? {
-            val items = this@SourceAdapter.items
+            val items = this@SourceAdapter._items
             if (items.isNullOrEmpty()) return null
             val itemsSnapshot = mutableListOf<ItemData>()
             itemsSnapshot.addAll(items)

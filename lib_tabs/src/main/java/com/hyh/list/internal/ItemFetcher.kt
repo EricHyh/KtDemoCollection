@@ -1,5 +1,7 @@
 package com.hyh.list.internal
 
+import android.os.SystemClock
+import com.hyh.Invoke
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
@@ -10,45 +12,90 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
+import kotlin.math.abs
 
 
 class ItemFetcher<Param : Any>(
     private val itemSource: ItemSource<Param>,
-    private val initialParam: Param
 ) {
 
-    private val uiReceiver = object : UiReceiverForSource<Param> {
+    private val uiReceiver = object : UiReceiverForSource {
 
-        private val state = MutableStateFlow(Pair<Long, Param?>(0, null))
+        private val state = MutableStateFlow<Long>(0)
 
-        val flow = state
-            .map { it.second }
-            .filterNotNull()
+        private var cacheState: MutableStateFlow<Long>? = null
+        private var refreshStage = RefreshStage.UNBLOCK
+        private var delay = 0
+        private var timingStart: Long = 0
 
-        override fun refresh(param: Param) {
-            state.value = Pair(state.value.first + 1, param)
+        val flow = state.asStateFlow()
+
+        override fun refresh() {
+            when (refreshStage) {
+                RefreshStage.UNBLOCK -> {
+                    state.value = state.value + 1
+                    when (val refreshStrategy = getRefreshStrategy()) {
+                        is RefreshStrategy.QueueUp -> {
+                            refreshStage = RefreshStage.BLOCK
+                        }
+                        is RefreshStrategy.DelayedQueueUp -> {
+                            refreshStage = RefreshStage.TIMING
+                            timingStart = SystemClock.elapsedRealtime()
+                            delay = refreshStrategy.delay
+                        }
+                        else -> {
+                        }
+                    }
+                }
+                RefreshStage.TIMING -> {
+                    state.value = state.value + 1
+                    val elapsedRealtime = SystemClock.elapsedRealtime()
+                    if (abs(elapsedRealtime - timingStart) > delay) {
+                        refreshStage = RefreshStage.BLOCK
+                    }
+                }
+                RefreshStage.BLOCK -> {
+                    val cacheState = this.cacheState
+                    if (cacheState != null) {
+                        cacheState.value = cacheState.value + 1
+                    } else {
+                        this.cacheState = MutableStateFlow(0)
+                    }
+                }
+            }
+        }
+
+        fun onRefreshComplete() {
+            val cacheState = this.cacheState
+            this.cacheState = null
+            timingStart = 0
+            refreshStage = RefreshStage.UNBLOCK
+            if (cacheState != null) {
+                refresh()
+            }
         }
     }
 
-    val flow: Flow<SourceData<Param>> = simpleChannelFlow<SourceData<Param>> {
+    val flow: Flow<SourceData> = simpleChannelFlow<SourceData> {
         uiReceiver
             .flow
             .onStart {
-                emit(initialParam)
+                emit(0)
             }
             .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param>?, param: Param ->
+            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param>?, _: Long ->
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
-                    param = param,
                     lastPreShowResult = previousSnapshot?.preShowResult,
                     lastLoadResult = previousSnapshot?.loadResult,
+                    paramProvider = getParamProvider(),
                     preShowLoader = getPreShowLoader(),
                     onPreShowResult = getOnPreShowResult(),
                     loader = getLoader(),
                     onItemLoadResult = getOnLoadResult(),
-                    fetchDispatcher = getFetchDispatcher(param),
-                    lastDisplayedItems = previousSnapshot?.displayedItems
+                    fetchDispatcherProvider = getFetchDispatcherProvider(),
+                    lastDisplayedItems = previousSnapshot?.displayedItems,
+                    onRefreshComplete = uiReceiver::onRefreshComplete
                 )
             }
             .filterNotNull()
@@ -61,9 +108,16 @@ class ItemFetcher<Param : Any>(
             }
     }.buffer(Channel.BUFFERED)
 
-    fun refresh(param: Param) {
-        uiReceiver.refresh(param)
+    fun refresh() {
+        uiReceiver.refresh()
     }
+
+    private fun getRefreshStrategy(): RefreshStrategy {
+        return itemSource.getRefreshStrategy()
+    }
+
+    private fun getParamProvider(): ParamProvider<Param> = ::getParam
+    private fun getFetchDispatcherProvider(): FetchDispatcherProvider<Param> = ::getFetchDispatcher
 
     private fun getPreShowLoader(): PreShowLoader<Param> = ::getPreShow
     private fun getOnPreShowResult(): OnPreShowResult<Param> = ::onPreShowResult
@@ -71,6 +125,13 @@ class ItemFetcher<Param : Any>(
     private fun getLoader(): ItemLoader<Param> = ::load
     private fun getOnLoadResult(): OnItemLoadResult<Param> = ::onLoadResult
 
+    private suspend fun getParam(): Param {
+        return itemSource.getParam()
+    }
+
+    private fun getFetchDispatcher(param: Param): CoroutineDispatcher {
+        return itemSource.getFetchDispatcher(param)
+    }
 
     private suspend fun getPreShow(params: ItemSource.PreShowParams<Param>): ItemSource.PreShowResult {
         return itemSource.getPreShow(params)
@@ -88,22 +149,20 @@ class ItemFetcher<Param : Any>(
         itemSource.onLoadResult(params, loadResult)
     }
 
-    private fun getFetchDispatcher(param: Param): CoroutineDispatcher {
-        return itemSource.getFetchDispatcher(param)
-    }
 }
 
 
 class ItemFetcherSnapshot<Param : Any>(
-    private val param: Param,
     private val lastPreShowResult: ItemSource.PreShowResult? = null,
     private val lastLoadResult: ItemSource.LoadResult? = null,
+    private val paramProvider: ParamProvider<Param>,
     private val preShowLoader: PreShowLoader<Param>,
     private val onPreShowResult: OnPreShowResult<Param>,
     private val loader: ItemLoader<Param>,
     private val onItemLoadResult: OnItemLoadResult<Param>,
-    private val fetchDispatcher: CoroutineDispatcher?,
-    private val lastDisplayedItems: List<ItemData>?
+    private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
+    private val lastDisplayedItems: List<ItemData>?,
+    private val onRefreshComplete: Invoke
 ) {
 
     var displayedItems: List<ItemData>? = lastDisplayedItems
@@ -127,6 +186,10 @@ class ItemFetcherSnapshot<Param : Any>(
         }
 
         sourceEventCh.send(SourceEvent.Loading())
+
+
+        val param = paramProvider.invoke()
+        val fetchDispatcher = fetchDispatcherProvider.invoke(param)
 
         val preShowParams = ItemSource.PreShowParams(param, getDisplayedItemsSnapshot(), lastPreShowResult, lastLoadResult)
         val preShowResult = preShowLoader.invoke(preShowParams)
@@ -169,11 +232,14 @@ class ItemFetcherSnapshot<Param : Any>(
                         it.delegate.displayedItems = displayedItems
                     }
                     ListUpdate.handleItemDataChanges(updateResult.elementOperates)
+                    onRefreshComplete()
                 }
                 sourceEventCh.send(event)
             }
             is ItemSource.LoadResult.Error -> {
-                val event = SourceEvent.Error(loadResult.error, preShowing)
+                val event = SourceEvent.Error(loadResult.error, preShowing) {
+                    onRefreshComplete()
+                }
                 sourceEventCh.send(event)
             }
         }
@@ -190,7 +256,9 @@ class ItemFetcherSnapshot<Param : Any>(
     }
 }
 
+internal typealias ParamProvider<Param> = (suspend () -> Param)
 internal typealias PreShowLoader<Param> = (suspend (params: ItemSource.PreShowParams<Param>) -> ItemSource.PreShowResult)
 internal typealias OnPreShowResult<Param> = (suspend (ItemSource.PreShowParams<Param>, ItemSource.PreShowResult) -> Unit)
 internal typealias ItemLoader<Param> = (suspend (param: ItemSource.LoadParams<Param>) -> ItemSource.LoadResult)
 internal typealias OnItemLoadResult<Param> = (suspend (ItemSource.LoadParams<Param>, ItemSource.LoadResult) -> Unit)
+internal typealias FetchDispatcherProvider<Param> = ((Param) -> CoroutineDispatcher?)

@@ -1,6 +1,7 @@
 package com.hyh.list
 
 import com.hyh.RefreshActuator
+import com.hyh.list.internal.RefreshStrategy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -16,7 +17,7 @@ abstract class ItemSource<Param : Any> {
                 _sourcePosition = position
             }
 
-            override fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>) {
+            override fun injectRefreshActuator(refreshActuator: RefreshActuator) {
                 _refreshActuator = refreshActuator
             }
 
@@ -28,8 +29,8 @@ abstract class ItemSource<Param : Any> {
     val sourcePosition: Int
         get() = _sourcePosition
 
-    private lateinit var _refreshActuator: RefreshActuator<Param>
-    val refreshActuator: RefreshActuator<Param>
+    private lateinit var _refreshActuator: RefreshActuator
+    val refreshActuator: RefreshActuator
         get() = _refreshActuator
 
 
@@ -41,6 +42,8 @@ abstract class ItemSource<Param : Any> {
 
     open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param>) {}
 
+    open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
+    abstract suspend fun getParam(): Param
     abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
     open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
     abstract suspend fun load(params: LoadParams<Param>): LoadResult
@@ -50,7 +53,7 @@ abstract class ItemSource<Param : Any> {
     abstract class Delegate<Param : Any> {
         abstract fun activate()
         abstract fun initPosition(position: Int)
-        abstract fun injectRefreshActuator(refreshActuator: RefreshActuator<Param>)
+        abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
         abstract fun destroy()
     }
 

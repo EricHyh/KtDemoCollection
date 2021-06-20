@@ -2,19 +2,15 @@ package com.hyh.paging3demo.list
 
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
-import androidx.lifecycle.coroutineScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.adapter.MultiSourceAdapter
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 class ListTestActivity : AppCompatActivity() {
 
@@ -24,7 +20,7 @@ class ListTestActivity : AppCompatActivity() {
     val refreshRunnable = object : Runnable {
         override fun run() {
             //testAdapter.refresh()
-            multiSourceAdapter.refresh(Unit)
+            multiSourceAdapter.refreshRepo(Unit)
             handler.post(this)
         }
     }
@@ -68,7 +64,7 @@ class ListTestActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        multiSourceAdapter.refresh(Unit)
+        multiSourceAdapter.refreshRepo(Unit)
     }
 
     fun startRefresh(v: View) {
