@@ -2,7 +2,9 @@ package com.hyh.kt_demo.flow1
 
 import com.hyh.kt_demo.IEvent
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.sendBlocking
 import kotlinx.coroutines.channels.ticker
 import kotlinx.coroutines.flow.*
 import java.time.LocalDateTime
@@ -15,7 +17,7 @@ fun main() {
         Thread(it, "test-main")
     }
 
-    val channel = Channel<Int>(Channel.BUFFERED)
+    val channel = BroadcastChannel<Int>(100)
 
     //val eventFlow = MutableSharedFlow<Int>()
 
@@ -29,33 +31,40 @@ fun main() {
 
     runBlocking {
         println("runBlocking start")
+
+        println("receiveAsFlow1")
+
+        launch {
+            channel.openSubscription().consumeAsFlow()
+                .collect {
+                    println("receiveAsFlow1:${it}")
+                }
+        }
+
+
+        println("receiveAsFlow2")
+
+        launch {
+            channel.openSubscription().consumeAsFlow()
+                .collect {
+                    println("receiveAsFlow2:${it}")
+                }
+        }
+
         launch(lifecycleContext) {
             println("lifecycleContext start")
-            launch (Dispatchers.IO){
-                channel.receiveAsFlow()
-                    .collect {
-                        println("consumeAsFlow:${it}")
-                    }
-                /*eventFlow.asSharedFlow()
-                    .collect {
-                        println("asSharedFlow:${it}")
-                    }*/
-            }
-
-
-            println("lifecycleContext mid")
 
             repeat(10) {
                 delay(1000)
                 println("send:${num}")
                 channel.send(num++)
+                channel.sendBlocking()
             }
             println("lifecycleContext end")
         }
 
 
         launch {
-
             delay(5000)
             lifecycleContext.cancel()
             println("cancel")
