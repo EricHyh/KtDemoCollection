@@ -7,7 +7,7 @@ import com.hyh.tabs.internal.TabData
 import kotlinx.coroutines.flow.Flow
 
 /**
- * TODO: Add Description
+ * TabAdapter 接口定义
  *
  * @author eriche
  * @data 2021/5/21
@@ -24,7 +24,7 @@ interface ITabAdapter<Param : Any, Tab : ITab> {
 
     val loadStateFlow: Flow<LoadState>
 
-    suspend fun submitData(data: TabData<Param, Tab>)
+    fun submitData(flow: Flow<TabData<Param, Tab>>)
 
     fun indexOf(tabToken: Any): Int {
         return tabTokens?.indexOf(tabToken) ?: -1

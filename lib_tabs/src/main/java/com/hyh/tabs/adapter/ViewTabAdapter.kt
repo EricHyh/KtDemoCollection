@@ -9,7 +9,9 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.viewpager.widget.PagerAdapter
 import com.hyh.fragment.BaseFragment
+import com.hyh.page.PageContext
 import com.hyh.tabs.AbsViewTab
+import com.hyh.tabs.FragmentTab
 import com.hyh.tabs.LoadState
 import com.hyh.tabs.TabInfo
 import com.hyh.tabs.internal.TabData
@@ -18,29 +20,22 @@ import java.lang.NullPointerException
 import kotlin.collections.set
 
 /**
- * TODO: Add Description
+ * [AbsViewTab]的[PagerAdapter]实现
  *
  * @author eriche
  * @data 2021/5/20
  */
 
-class ViewTabAdapter<Param : Any> :
-    PagerAdapter,
-    ITabAdapter<Param, AbsViewTab> {
+class ViewTabAdapter<Param : Any>(private val pageContext: PageContext) : PagerAdapter(), ITabAdapter<Param, AbsViewTab> {
 
-    private val baseTabAdapter: BaseTabAdapter<Param, AbsViewTab> = object : BaseTabAdapter<Param, AbsViewTab>() {
+    private val baseTabAdapter: BaseTabAdapter<Param, AbsViewTab> = object : BaseTabAdapter<Param, AbsViewTab>(pageContext) {
         override fun notifyDataSetChanged() {
             this@ViewTabAdapter.notifyDataSetChanged()
         }
 
         override val currentPrimaryItem: AbsViewTab?
             get() = this@ViewTabAdapter.currentPrimaryItem
-    }
 
-    private val parentLifecycleOwner: LifecycleOwner
-
-    private val parentLifecycleObserver: Lazy<LifecycleObserver> = lazy {
-        ParentFragmentLifecycleObserver()
     }
 
     private val attachedTabs: MutableList<TabRecord> = mutableListOf()
@@ -59,24 +54,16 @@ class ViewTabAdapter<Param : Any> :
     override val loadStateFlow: Flow<LoadState>
         get() = baseTabAdapter.loadStateFlow
 
-    constructor(parentFragment: BaseFragment) {
-        this.parentLifecycleOwner = parentFragment
-    }
 
-    constructor(parentTab: AbsViewTab) {
-        this.parentLifecycleOwner = parentTab
-    }
-
-    override suspend fun submitData(data: TabData<Param, AbsViewTab>) {
-        baseTabAdapter.submitData(data)
+    override fun submitData(flow: Flow<TabData<Param, AbsViewTab>>) {
+        baseTabAdapter.submitData(flow)
     }
 
     override fun refresh(param: Param) {
         baseTabAdapter.refresh(param)
     }
 
-    override fun getCount(): Int =
-        if (parentLifecycleOwner.lifecycle.currentState <= Lifecycle.State.DESTROYED) 0 else baseTabAdapter.tabCount
+    override fun getCount(): Int = baseTabAdapter.tabCount
 
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
@@ -137,7 +124,7 @@ class ViewTabAdapter<Param : Any> :
             }
 
             if (absViewTab?.isVisible != true) {
-                if (parentLifecycleOwner.lifecycle.currentState == Lifecycle.State.RESUMED) {
+                if (pageContext.lifecycleOwner.lifecycle.currentState == Lifecycle.State.RESUMED) {
                     absViewTab?.performTabVisible()
                 }
             }
@@ -181,13 +168,13 @@ class ViewTabAdapter<Param : Any> :
     }
 
     private fun bindParentFragmentLifeCycle() {
-        if (parentLifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
+        /*if (pageContext.lifecycleOwner.lifecycle.currentState == Lifecycle.State.DESTROYED) {
             return
         }
         if (parentLifecycleObserver.isInitialized()) {
             return
         }
-        parentLifecycleOwner.lifecycle.addObserver(parentLifecycleObserver.value)
+        parentLifecycleOwner.lifecycle.addObserver(parentLifecycleObserver.value)*/
     }
 
     private inner class ParentFragmentLifecycleObserver : LifecycleEventObserver {

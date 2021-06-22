@@ -2,10 +2,7 @@ package com.hyh.kt_demo.flow1
 
 import com.hyh.kt_demo.IEvent
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.sendBlocking
-import kotlinx.coroutines.channels.ticker
+import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*
 import java.time.LocalDateTime
 import java.util.concurrent.Executors
@@ -20,6 +17,7 @@ fun main() {
     val channel = BroadcastChannel<Int>(100)
 
     //val eventFlow = MutableSharedFlow<Int>()
+
 
 
 
@@ -58,7 +56,6 @@ fun main() {
                 delay(1000)
                 println("send:${num}")
                 channel.send(num++)
-                channel.sendBlocking()
             }
             println("lifecycleContext end")
         }

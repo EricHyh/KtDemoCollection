@@ -7,23 +7,32 @@ import kotlinx.coroutines.Dispatchers
 
 abstract class ItemSource<Param : Any> {
 
-    internal val delegate: Delegate<Param> =
-        object : Delegate<Param>() {
+    companion object {
+        val NONE_TOKEN = Any()
+    }
 
-            override fun activate() {
-            }
-
-            override fun initPosition(position: Int) {
-                _sourcePosition = position
-            }
-
-            override fun injectRefreshActuator(refreshActuator: RefreshActuator) {
-                _refreshActuator = refreshActuator
-            }
-
-            override fun destroy() {
-            }
+    internal val delegate: Delegate<Param> = object : Delegate<Param>() {
+        override fun activate() {
         }
+
+        override fun initPosition(position: Int) {
+            _sourcePosition = position
+        }
+
+        override fun injectRefreshActuator(refreshActuator: RefreshActuator) {
+            _refreshActuator = refreshActuator
+        }
+
+        override fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>) {
+            val oldPosition = _sourcePosition
+            _sourcePosition = newPosition
+            onUpdateItemSource(oldPosition, newPosition, newItemSource)
+        }
+
+        override fun destroy() {
+            _sourcePosition = -1
+        }
+    }
 
     private var _sourcePosition: Int = -1
     val sourcePosition: Int
@@ -33,12 +42,6 @@ abstract class ItemSource<Param : Any> {
     val refreshActuator: RefreshActuator
         get() = _refreshActuator
 
-
-    fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>) {
-        val oldPosition = _sourcePosition
-        _sourcePosition = newPosition
-        onUpdateItemSource(oldPosition, newPosition, newItemSource)
-    }
 
     open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param>) {}
 
@@ -54,6 +57,7 @@ abstract class ItemSource<Param : Any> {
         abstract fun activate()
         abstract fun initPosition(position: Int)
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
+        abstract fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>)
         abstract fun destroy()
     }
 
@@ -62,7 +66,8 @@ abstract class ItemSource<Param : Any> {
         object Unused : PreShowResult()
 
         data class Success constructor(
-            val items: List<ItemData>
+            val items: List<ItemData>,
+            val itemsToken: Any = NONE_TOKEN
         ) : PreShowResult()
     }
 
@@ -73,7 +78,8 @@ abstract class ItemSource<Param : Any> {
         ) : LoadResult()
 
         data class Success constructor(
-            val items: List<ItemData>
+            val items: List<ItemData>,
+            val itemsToken: Any = NONE_TOKEN
         ) : LoadResult()
     }
 

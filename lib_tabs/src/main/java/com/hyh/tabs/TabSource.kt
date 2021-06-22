@@ -21,6 +21,8 @@ abstract class TabSource<Param : Any, Tab : ITab>(
         override suspend fun load(params: LoadParams<Param, Tab>): LoadResult<Tab> = this@TabSource.load(params)
         override suspend fun onLoadResult(params: LoadParams<Param, Tab>, result: LoadResult<Tab>) = this@TabSource.onLoadResult(params, result)
         override fun getFetchDispatcher(param: Param): CoroutineDispatcher = this@TabSource.getFetchDispatcher(param)
+        override fun onDestroy() {
+        }
     }
 
     val flow: Flow<TabData<Param, Tab>> = tabFetcher.flow

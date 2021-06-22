@@ -216,7 +216,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
                     itemFetcher.flow
                 }
                 LazySourceData(sourceToken, newItemSource, lazyFlow) { oldItemSource ->
-                    oldItemSource.updateItemSource(index, newItemSource)
+                    oldItemSource.delegate.updateItemSource(index, newItemSource)
                 }
             }
     }

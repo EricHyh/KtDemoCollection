@@ -94,6 +94,7 @@ class ItemFetcher<Param : Any>(
                     loader = getLoader(),
                     onItemLoadResult = getOnLoadResult(),
                     fetchDispatcherProvider = getFetchDispatcherProvider(),
+                    lastDisplayedItemsToken = previousSnapshot?.displayItemsToken,
                     lastDisplayedItems = previousSnapshot?.displayedItems,
                     onRefreshComplete = uiReceiver::onRefreshComplete
                 )
@@ -161,10 +162,12 @@ class ItemFetcherSnapshot<Param : Any>(
     private val loader: ItemLoader<Param>,
     private val onItemLoadResult: OnItemLoadResult<Param>,
     private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
+    private val lastDisplayedItemsToken: Any?,
     private val lastDisplayedItems: List<ItemData>?,
     private val onRefreshComplete: Invoke
 ) {
 
+    var displayItemsToken: Any? = lastDisplayedItemsToken
     var displayedItems: List<ItemData>? = lastDisplayedItems
     var preShowResult: ItemSource.PreShowResult? = null
     var loadResult: ItemSource.LoadResult? = null

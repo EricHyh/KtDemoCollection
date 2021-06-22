@@ -1,6 +1,7 @@
 package com.hyh.tabs.adapter
 
 import com.hyh.coroutine.SingleRunner
+import com.hyh.page.PageContext
 import com.hyh.tabs.ITab
 import com.hyh.tabs.LoadState
 import com.hyh.tabs.TabInfo
@@ -11,15 +12,16 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import java.util.*
 
 /**
- * TabAdapter 基类
+ * [ITabAdapter]基类
  *
  * @author eriche
  * @data 2021/5/20
  */
-internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<Param, Tab> {
+internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>(private val pageContext: PageContext) : ITabAdapter<Param, Tab> {
 
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
@@ -41,6 +43,13 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<
     override val tabCount: Int
         get() = tabs?.size ?: 0
 
+
+    init {
+        pageContext.invokeOnDestroy {
+            performDestroy()
+        }
+    }
+
     internal fun indexOf(tabInfo: TabInfo<Tab>): Int {
         return tabs?.indexOf(tabInfo) ?: -1
     }
@@ -53,38 +62,10 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<
         return tabs?.get(position)?.tabTitle
     }
 
-    override suspend fun submitData(data: TabData<Param, Tab>) {
-        collectFromRunner.runInIsolation {
-            receiver = data.receiver
-            data.flow.collect { event ->
-                withContext(mainDispatcher) {
-                    when (event) {
-                        is TabEvent.UsingCache<Tab> -> {
-                            val oldTabs = tabs
-                            val newTabs = event.tabs
-                            tabs = newTabs
-                            if (!Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())) {
-                                notifyDataSetChanged()
-                            }
-                            _loadStateFlow.value = LoadState.UsingCache(newTabs.size)
-                        }
-                        is TabEvent.Loading<Tab> -> {
-                            _loadStateFlow.value = LoadState.Loading
-                        }
-                        is TabEvent.Error<Tab> -> {
-                            _loadStateFlow.value = LoadState.Error(event.error, event.usingCache)
-                        }
-                        is TabEvent.Success<Tab> -> {
-                            val oldTabs = tabs
-                            val newTabs = event.tabs
-                            tabs = newTabs
-                            if (!Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())) {
-                                notifyDataSetChanged()
-                            }
-                            _loadStateFlow.value = LoadState.Success(newTabs.size)
-                        }
-                    }
-                }
+    override fun submitData(flow: Flow<TabData<Param, Tab>>) {
+        pageContext.lifecycleScope.launch {
+            flow.collectLatest {
+                submitData(it)
             }
         }
     }
@@ -94,5 +75,44 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<
     }
 
     protected abstract fun notifyDataSetChanged()
-}
 
+    private suspend fun submitData(data: TabData<Param, Tab>) {
+        collectFromRunner.runInIsolation {
+            receiver = data.receiver
+            data.flow.collect { event ->
+                withContext(mainDispatcher) {
+                    when (event) {
+                        is TabEvent.UsingCache<Tab> -> {
+                            val newTabs = updateTabs(event.tabs)
+                            _loadStateFlow.value = LoadState.UsingCache(newTabs.size)
+                        }
+                        is TabEvent.Loading<Tab> -> {
+                            _loadStateFlow.value = LoadState.Loading
+                        }
+                        is TabEvent.Error<Tab> -> {
+                            _loadStateFlow.value = LoadState.Error(event.error, event.usingCache)
+                        }
+                        is TabEvent.Success<Tab> -> {
+                            val newTabs = updateTabs(event.tabs)
+                            _loadStateFlow.value = LoadState.Success(newTabs.size)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateTabs(tabs: List<TabInfo<Tab>>): List<TabInfo<Tab>> {
+        val oldTabs = tabs
+        val newTabs = tabs
+        this.tabs = newTabs
+        if (!Arrays.equals(oldTabs.toTypedArray(), newTabs.toTypedArray())) {
+            notifyDataSetChanged()
+        }
+        return newTabs
+    }
+
+    private fun performDestroy() {
+
+    }
+}

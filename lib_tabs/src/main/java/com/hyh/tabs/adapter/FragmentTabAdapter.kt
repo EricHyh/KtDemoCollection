@@ -5,6 +5,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
 import androidx.viewpager.widget.PagerAdapter
+import com.hyh.page.PageContext
 import com.hyh.tabs.FragmentTab
 import com.hyh.tabs.LoadState
 import com.hyh.tabs.TabInfo
@@ -14,20 +15,21 @@ import java.lang.NullPointerException
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * TODO: Add Description
+ * [FragmentTab]的[PagerAdapter]实现
  *
  * @author eriche
  * @data 2021/5/21
  */
-class FragmentTabAdapter<Param : Any>(fm: FragmentManager) :
-    FragmentPagerAdapter(fm),
-    ITabAdapter<Param, FragmentTab> {
+class FragmentTabAdapter<Param : Any>(
+    pageContext: PageContext,
+    fm: FragmentManager
+) : FragmentPagerAdapter(fm), ITabAdapter<Param, FragmentTab> {
 
     companion object {
         private const val TAG = "FragmentTabAdapter"
     }
 
-    private val baseBaseTabAdapter: BaseTabAdapter<Param, FragmentTab> = object : BaseTabAdapter<Param, FragmentTab>() {
+    private val baseBaseTabAdapter: BaseTabAdapter<Param, FragmentTab> = object : BaseTabAdapter<Param, FragmentTab>(pageContext) {
         override fun notifyDataSetChanged() {
             this@FragmentTabAdapter.notifyDataSetChanged()
         }
@@ -99,8 +101,8 @@ class FragmentTabAdapter<Param : Any>(fm: FragmentManager) :
         _currentPrimaryItem = FragmentTab(fragment)
     }
 
-    override suspend fun submitData(data: TabData<Param, FragmentTab>) {
-        baseBaseTabAdapter.submitData(data)
+    override fun submitData(flow: Flow<TabData<Param, FragmentTab>>) {
+        baseBaseTabAdapter.submitData(flow)
     }
 
     override fun refresh(param: Param) {

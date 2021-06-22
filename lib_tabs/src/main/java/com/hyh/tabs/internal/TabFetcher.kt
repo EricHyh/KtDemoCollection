@@ -22,6 +22,10 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
         override fun refresh(param: Param) {
             state.value = Pair(state.value.first + 1, param)
         }
+
+        override fun close() {
+            onDestroy()
+        }
     }
 
     val flow: Flow<TabData<Param, Tab>> = simpleChannelFlow<TabData<Param, Tab>> {
@@ -65,6 +69,8 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
     abstract suspend fun onLoadResult(params: TabSource.LoadParams<Param, Tab>, result: TabSource.LoadResult<Tab>)
 
     abstract fun getFetchDispatcher(param: Param): CoroutineDispatcher
+
+    abstract fun onDestroy()
 }
 
 

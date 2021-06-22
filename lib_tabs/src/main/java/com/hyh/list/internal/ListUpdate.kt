@@ -21,16 +21,33 @@ sealed class ListOperate {
 
 sealed class ElementOperate<E> {
 
-    data class Activated<E>(val element: E) : ElementOperate<E>()
-
+    data class Added<E>(val element: E) : ElementOperate<E>()
     data class Changed<E>(val oldElement: E, val newElement: E, val payload: Any?) : ElementOperate<E>()
-
-    data class Destroyed<E>(val element: E) : ElementOperate<E>()
+    data class Removed<E>(val element: E) : ElementOperate<E>()
 
 }
 
 
 object ListUpdate {
+
+    fun <E> replaceAll(oldList: List<E>?, newList: List<E>): UpdateResult<E> {
+        if (oldList == null) {
+            return UpdateResult(
+                list = ArrayList(newList),
+                listOperates = listOf(ListOperate.OnAllChanged),
+                elementOperates = newList.map {
+                    ElementOperate.Added(it)
+                }
+            )
+        }
+
+        val listOperates: MutableList<ListOperate> = mutableListOf()
+        listOperates.add(ListOperate.OnRemoved(0, oldList.size))
+        listOperates.add(ListOperate.OnInserted(0, newList.size))
+
+        val elementOperates = oldList.map { ElementOperate.Removed(it) }
+        return UpdateResult(newList, listOperates, elementOperates)
+    }
 
     fun <E> calculateDiff(oldList: List<E>?, newList: List<E>, elementDiff: IElementDiff<E>): UpdateResult<E> {
         if (oldList == null) {
@@ -38,7 +55,7 @@ object ListUpdate {
                 list = ArrayList(newList),
                 listOperates = listOf(ListOperate.OnAllChanged),
                 elementOperates = newList.map {
-                    ElementOperate.Activated(it)
+                    ElementOperate.Added(it)
                 }
             )
         }
@@ -67,8 +84,8 @@ object ListUpdate {
                             elementOperates.add(ElementOperate.Changed(oldElement, newElement, payload))
                         } else {
                             elementStub.element = newElement
-                            elementOperates.add(ElementOperate.Destroyed(oldElement))
-                            elementOperates.add(ElementOperate.Activated(newElement))
+                            elementOperates.add(ElementOperate.Removed(oldElement))
+                            elementOperates.add(ElementOperate.Added(newElement))
                         }
                     }
                 }
@@ -94,14 +111,14 @@ object ListUpdate {
                 list.removeAll(subList)
                 subList.forEach {
                     val element = it.element ?: return@forEach
-                    elementOperates.add(ElementOperate.Destroyed(element))
+                    elementOperates.add(ElementOperate.Removed(element))
                 }
             }
         })
         list.forEachIndexed { index, elementStub ->
             if (elementStub.element == null) {
                 elementStub.element = newList[index]
-                elementOperates.add(ElementOperate.Activated(elementStub.element!!))
+                elementOperates.add(ElementOperate.Added(elementStub.element!!))
             }
         }
         elementChangeBuilders.forEach {
@@ -125,13 +142,13 @@ object ListUpdate {
     fun handleItemDataChanges(elementChanges: List<ElementOperate<ItemData>>) {
         elementChanges.forEach {
             when (it) {
-                is ElementOperate.Activated<ItemData> -> {
+                is ElementOperate.Added<ItemData> -> {
                     it.element.delegate.activate()
                 }
                 is ElementOperate.Changed<ItemData> -> {
                     it.oldElement.delegate.updateItemData(it.newElement)
                 }
-                is ElementOperate.Destroyed<ItemData> -> {
+                is ElementOperate.Removed<ItemData> -> {
                     it.element.delegate.destroy()
                 }
             }
