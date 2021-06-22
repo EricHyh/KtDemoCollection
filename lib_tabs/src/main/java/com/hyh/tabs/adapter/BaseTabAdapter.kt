@@ -21,7 +21,6 @@ import java.util.*
  */
 internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<Param, Tab> {
 
-
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
 
@@ -42,15 +41,15 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<
     override val tabCount: Int
         get() = tabs?.size ?: 0
 
-    fun indexOf(tabInfo: TabInfo<Tab>): Int {
+    internal fun indexOf(tabInfo: TabInfo<Tab>): Int {
         return tabs?.indexOf(tabInfo) ?: -1
     }
 
-    fun getTabInfo(position: Int): TabInfo<Tab>? {
+    internal fun getTabInfo(position: Int): TabInfo<Tab>? {
         return tabs?.get(position)
     }
 
-    fun getTabTitle(position: Int): CharSequence? {
+    internal fun getTabTitle(position: Int): CharSequence? {
         return tabs?.get(position)?.tabTitle
     }
 
@@ -93,5 +92,7 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>() : ITabAdapter<
     override fun refresh(param: Param) {
         receiver?.refresh(param)
     }
+
+    protected abstract fun notifyDataSetChanged()
 }
 

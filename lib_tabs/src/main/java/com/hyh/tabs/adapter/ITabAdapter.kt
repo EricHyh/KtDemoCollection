@@ -26,8 +26,10 @@ interface ITabAdapter<Param : Any, Tab : ITab> {
 
     suspend fun submitData(data: TabData<Param, Tab>)
 
-    fun refresh(param: Param)
+    fun indexOf(tabToken: Any): Int {
+        return tabTokens?.indexOf(tabToken) ?: -1
+    }
 
-    fun notifyDataSetChanged()
+    fun refresh(param: Param)
 
 }
