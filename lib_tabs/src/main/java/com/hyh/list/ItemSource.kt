@@ -58,7 +58,28 @@ abstract class ItemSource<Param : Any> {
         abstract fun initPosition(position: Int)
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
         abstract fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>)
+        abstract fun onItemsTokenChanged(
+            oldItemsToken: Any,
+            oldItems: List<ItemData>,
+            newItemsToken: Any,
+            newItems: List<ItemData>
+        )
+
         abstract fun destroy()
+    }
+
+    interface ItemsStorage {
+
+        fun store(itemsToken: Any, items: List<ItemData>)
+
+        fun isStored(itemsToken: Any): Boolean
+
+        fun take(itemsToken: Any): List<ItemData>
+
+        fun get(itemsToken: Any): List<ItemData>
+
+        fun remove(itemsToken: Any)
+
     }
 
     sealed class PreShowResult {

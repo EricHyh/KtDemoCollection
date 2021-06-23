@@ -173,11 +173,11 @@ class ItemSourceFetcherSnapshot<Param : Any>(
 
         val loadParams = ItemSourceRepository.LoadParams(param, lastCacheResult, lastLoadResult)
         val loadResult: ItemSourceRepository.LoadResult
-        if (fetchDispatcher == null) {
-            loadResult = loader.invoke(loadParams)
+        loadResult = if (fetchDispatcher == null) {
+            loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {
-                loadResult = loader.invoke(loadParams)
+                loader.invoke(loadParams)
             }
         }
         this@ItemSourceFetcherSnapshot.loadResult = loadResult
