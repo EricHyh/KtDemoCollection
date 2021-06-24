@@ -94,7 +94,9 @@ class ItemFetcher<Param : Any>(
                     loader = getLoader(),
                     onItemLoadResult = getOnLoadResult(),
                     fetchDispatcherProvider = getFetchDispatcherProvider(),
-                    lastDisplayedItemsToken = previousSnapshot?.displayItemsToken,
+                    lastDisplayedItemsBucketIds = previousSnapshot?.displayedItemsBucketIds,
+                    lastDisplayedItemsBucketMap = previousSnapshot?.displayedItemsBucketMap,
+                    lastDisplayedItemWrappers = previousSnapshot?.displayedItemWrappers,
                     lastDisplayedItems = previousSnapshot?.displayedItems,
                     onRefreshComplete = uiReceiver::onRefreshComplete
                 )
@@ -162,13 +164,19 @@ class ItemFetcherSnapshot<Param : Any>(
     private val loader: ItemLoader<Param>,
     private val onItemLoadResult: OnItemLoadResult<Param>,
     private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
-    private val lastDisplayedItemsToken: Any?,
+    private val lastDisplayedItemsBucketIds: List<Int>?,
+    private val lastDisplayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?,
+    private val lastDisplayedItemWrappers: List<ItemDataWrapper>?,
     private val lastDisplayedItems: List<ItemData>?,
     private val onRefreshComplete: Invoke
 ) {
 
-    var displayItemsToken: Any? = lastDisplayedItemsToken
+
+    var displayedItemsBucketIds: List<Int>? = lastDisplayedItemsBucketIds
+    var displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>? = lastDisplayedItemsBucketMap
+    var displayedItemWrappers: List<ItemDataWrapper>? = lastDisplayedItemWrappers
     var displayedItems: List<ItemData>? = lastDisplayedItems
+
     var preShowResult: ItemSource.PreShowResult? = null
     var loadResult: ItemSource.LoadResult? = null
 
@@ -201,14 +209,29 @@ class ItemFetcherSnapshot<Param : Any>(
         var preShowing = false
         if (preShowResult is ItemSource.PreShowResult.Success) {
             preShowing = true
+            val itemsBucketIds = preShowResult.itemsBucketIds
+            val wrappers = getItemWrappers(itemsBucketIds, preShowResult.itemsBucketMap)
             val updateResult =
-                ListUpdate.calculateDiff(lastDisplayedItems, preShowResult.items, IElementDiff.ItemDataDiff())
-            val event = SourceEvent.PreShowing(updateResult.list, updateResult.listOperates) {
-                displayedItems = updateResult.list
-                updateResult.list.forEach {
-                    it.delegate.displayedItems = displayedItems
-                }
-                ListUpdate.handleItemDataChanges(updateResult.elementOperates)
+                ListUpdate.calculateDiff(
+                    lastDisplayedItemWrappers,
+                    wrappers,
+                    IElementDiff.ItemDataWrapperDiff()
+                )
+
+
+            val itemsBucketMap = mutableMapOf<Int, ItemSource.ItemsBucket>()
+            updateResult.list.forEach {
+
+            }
+
+            //lastDisplayedItemsBucketIds
+            //新增的与删除的ID
+            //Token发生变化的ID
+
+
+            val items = updateResult.list.map { it.itemData }
+            val event = SourceEvent.PreShowing(items, updateResult.listOperates) {
+                onSuccessEventReceived(itemsBucketIds, itemsBucketMap, updateResult, items)
             }
             sourceEventCh.send(event)
         }
@@ -227,14 +250,18 @@ class ItemFetcherSnapshot<Param : Any>(
 
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
+                val itemsBucketIds = loadResult.itemsBucketIds
+                val itemsBucketMap = loadResult.itemsBucketMap
+                val (itemsTokenMap, wrappers) = getItemWrappers(itemsBucketIds, itemsBucketMap)
                 val updateResult =
-                    ListUpdate.calculateDiff(displayedItems, loadResult.items, IElementDiff.ItemDataDiff())
-                val event = SourceEvent.Success(updateResult.list, updateResult.listOperates) {
-                    displayedItems = updateResult.list
-                    updateResult.list.forEach {
-                        it.delegate.displayedItems = displayedItems
-                    }
-                    ListUpdate.handleItemDataChanges(updateResult.elementOperates)
+                    ListUpdate.calculateDiff(
+                        lastDisplayedItemWrappers,
+                        wrappers,
+                        IElementDiff.ItemDataWrapperDiff()
+                    )
+                val items = updateResult.list.map { it.itemData }
+                val event = SourceEvent.Success(items, updateResult.listOperates) {
+                    onSuccessEventReceived(itemsBucketIds, itemsBucketMap, updateResult, items)
                     onRefreshComplete()
                 }
                 sourceEventCh.send(event)
@@ -256,6 +283,38 @@ class ItemFetcherSnapshot<Param : Any>(
     private fun getDisplayedItemsSnapshot(): List<ItemData>? {
         val displayItems = this.lastDisplayedItems ?: return null
         return ArrayList(displayItems)
+    }
+
+    private fun getItemWrappers(
+        itemsBucketIds: List<Int>,
+        itemsBucketMap: Map<Int, ItemSource.ItemsBucket>
+    ): List<ItemDataWrapper> {
+        val wrappers = mutableListOf<ItemDataWrapper>()
+        itemsBucketIds.forEach { id ->
+            val itemsBucket = itemsBucketMap[id]
+            if (itemsBucket != null) {
+                wrappers.addAll(
+                    itemsBucket.items.map { ItemDataWrapper(id, itemsBucket.itemsToken, it) }
+                )
+            }
+        }
+        return wrappers
+    }
+
+    private fun onSuccessEventReceived(
+        itemsBucketIds: List<Int>,
+        itemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
+        updateResult: ListUpdate.UpdateResult<ItemDataWrapper>,
+        items: List<ItemData>
+    ) {
+        displayedItemsBucketIds = itemsBucketIds
+        displayedItemsBucketMap = itemsBucketMap
+        displayedItemWrappers = updateResult.list
+        displayedItems = items
+        updateResult.list.forEach {
+            it.delegate.displayedItems = displayedItems
+        }
+        ListUpdate.handleItemDataWrapperChanges(updateResult.elementOperates)
     }
 }
 

@@ -9,7 +9,7 @@ abstract class ItemSource<Param : Any> {
 
     companion object {
         const val DEFAULT_ITEMS_BUCKET_ID = -1
-        val NONE_TOKEN = Any()
+        val DEFAULT_ITEMS_TOKEN = Any()
     }
 
     internal val delegate: Delegate<Param> = object : Delegate<Param>() {
@@ -100,24 +100,70 @@ abstract class ItemSource<Param : Any> {
 
         object Unused : PreShowResult()
 
-        data class Success constructor(
-            val items: List<ItemData>,
-            val itemsBucketIds: List<Int>,
-            val itemsBuckets: List<ItemsBucket>
-        ) : PreShowResult()
+        class Success() : PreShowResult() {
+
+            private lateinit var _items: List<ItemData>
+            val items: List<ItemData>
+                get() = _items
+
+            private lateinit var _itemsBucketIds: List<Int>
+            val itemsBucketIds: List<Int>
+                get() = _itemsBucketIds
+
+            private lateinit var _itemsBucketMap: Map<Int, ItemsBucket>
+            val itemsBucketMap: Map<Int, ItemsBucket>
+                get() = _itemsBucketMap
+
+            constructor(items: List<ItemData>) {
+                this._items = items
+                this._itemsBucketIds = listOf(DEFAULT_ITEMS_BUCKET_ID)
+                this._itemsBucketMap = mapOf(
+                    DEFAULT_ITEMS_BUCKET_ID to ItemsBucket(DEFAULT_ITEMS_BUCKET_ID, DEFAULT_ITEMS_TOKEN, items)
+                )
+            }
+
+            constructor(items: List<ItemData>, itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) {
+                this._items = items
+                this._itemsBucketIds = itemsBucketIds
+                this._itemsBucketMap = itemsBucketMap
+            }
+        }
     }
 
     sealed class LoadResult {
 
-        data class Error(
+        class Error(
             val error: Throwable
         ) : LoadResult()
 
-        data class Success constructor(
-            val items: List<ItemData>,
-            val itemsBucketIds: List<Int>,
-            val itemsBuckets: List<ItemsBucket>
-        ) : LoadResult()
+        class Success() : LoadResult() {
+
+            private lateinit var _items: List<ItemData>
+            val items: List<ItemData>
+                get() = _items
+
+            private lateinit var _itemsBucketIds: List<Int>
+            val itemsBucketIds: List<Int>
+                get() = _itemsBucketIds
+
+            private lateinit var _itemsBucketMap: Map<Int, ItemsBucket>
+            val itemsBucketMap: Map<Int, ItemsBucket>
+                get() = _itemsBucketMap
+
+            constructor(items: List<ItemData>) {
+                this._items = items
+                this._itemsBucketIds = listOf(DEFAULT_ITEMS_BUCKET_ID)
+                this._itemsBucketMap = mapOf(
+                    DEFAULT_ITEMS_BUCKET_ID to ItemsBucket(DEFAULT_ITEMS_BUCKET_ID, DEFAULT_ITEMS_TOKEN, items)
+                )
+            }
+
+            constructor(items: List<ItemData>, itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) {
+                this._items = items
+                this._itemsBucketIds = itemsBucketIds
+                this._itemsBucketMap = itemsBucketMap
+            }
+        }
     }
 
     data class ItemsBucket(

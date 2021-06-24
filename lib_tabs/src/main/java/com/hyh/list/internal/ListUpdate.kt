@@ -155,6 +155,10 @@ object ListUpdate {
         }
     }
 
+    fun handleItemDataWrapperChanges(elementChanges: List<ElementOperate<ItemDataWrapper>>) {
+
+    }
+
     fun handleListOperates(listOperates: List<ListOperate>, adapter: RecyclerView.Adapter<*>) {
         listOperates.forEach {
             when (it) {
@@ -241,6 +245,26 @@ interface IElementDiff<E> {
         }
 
         override fun getChangePayload(oldElement: ItemData, newElement: ItemData): Any? {
+            return oldElement.getChangePayload(newElement)
+        }
+    }
+
+    class ItemDataWrapperDiff : IElementDiff<ItemDataWrapper> {
+
+        override fun isSupportUpdateItemData(element: ItemDataWrapper): Boolean {
+            return element.isSupportUpdateItemData()
+        }
+
+        override fun areItemsTheSame(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
+
+            return oldElement.areItemsTheSame(newElement)
+        }
+
+        override fun areContentsTheSame(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
+            return oldElement.areContentsTheSame(newElement)
+        }
+
+        override fun getChangePayload(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Any? {
             return oldElement.getChangePayload(newElement)
         }
     }
