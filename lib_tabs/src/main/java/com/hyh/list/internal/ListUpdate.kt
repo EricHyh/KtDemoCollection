@@ -33,7 +33,7 @@ object ListUpdate {
     fun <E> replaceAll(oldList: List<E>?, newList: List<E>): UpdateResult<E> {
         if (oldList == null) {
             return UpdateResult(
-                list = ArrayList(newList),
+                resultList = ArrayList(newList),
                 listOperates = listOf(ListOperate.OnAllChanged),
                 elementOperates = newList.map {
                     ElementOperate.Added(it)
@@ -52,7 +52,7 @@ object ListUpdate {
     fun <E> calculateDiff(oldList: List<E>?, newList: List<E>, elementDiff: IElementDiff<E>): UpdateResult<E> {
         if (oldList == null) {
             return UpdateResult(
-                list = ArrayList(newList),
+                resultList = ArrayList(newList),
                 listOperates = listOf(ListOperate.OnAllChanged),
                 elementOperates = newList.map {
                     ElementOperate.Added(it)
@@ -186,7 +186,8 @@ object ListUpdate {
     )
 
     class UpdateResult<E>(
-        val list: List<E>,
+        val resultList: List<E>,
+        val
         val listOperates: List<ListOperate>,
         val elementOperates: List<ElementOperate<E>>
     )
@@ -256,7 +257,6 @@ interface IElementDiff<E> {
         }
 
         override fun areItemsTheSame(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
-
             return oldElement.areItemsTheSame(newElement)
         }
 

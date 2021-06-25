@@ -220,7 +220,7 @@ class ItemFetcherSnapshot<Param : Any>(
 
 
             val itemsBucketMap = mutableMapOf<Int, ItemSource.ItemsBucket>()
-            updateResult.list.forEach {
+            updateResult.resultList.forEach {
 
             }
 
@@ -229,7 +229,7 @@ class ItemFetcherSnapshot<Param : Any>(
             //Token发生变化的ID
 
 
-            val items = updateResult.list.map { it.itemData }
+            val items = updateResult.resultList.map { it.itemData }
             val event = SourceEvent.PreShowing(items, updateResult.listOperates) {
                 onSuccessEventReceived(itemsBucketIds, itemsBucketMap, updateResult, items)
             }
@@ -252,14 +252,32 @@ class ItemFetcherSnapshot<Param : Any>(
             is ItemSource.LoadResult.Success -> {
                 val itemsBucketIds = loadResult.itemsBucketIds
                 val itemsBucketMap = loadResult.itemsBucketMap
-                val (itemsTokenMap, wrappers) = getItemWrappers(itemsBucketIds, itemsBucketMap)
+                val wrappers = getItemWrappers(itemsBucketIds, itemsBucketMap)
                 val updateResult =
                     ListUpdate.calculateDiff(
                         lastDisplayedItemWrappers,
                         wrappers,
                         IElementDiff.ItemDataWrapperDiff()
                     )
-                val items = updateResult.list.map { it.itemData }
+
+
+                val resultItemsBucketMap: MutableMap<Int, ItemSource.ItemsBucket> = mutableMapOf()
+                val resultItems = mutableListOf<ItemData>()
+                updateResult.resultList.forEach {
+                    var itemsBucket = resultItemsBucketMap[it.itemsBucketId]
+                    if (itemsBucket == null) {
+                        val items = mutableListOf<ItemData>()
+                        items.add(it.itemData)
+                        itemsBucket = ItemSource.ItemsBucket(it.itemsBucketId, it.itemsToken, items)
+                        resultItemsBucketMap[it.itemsBucketId] = itemsBucket
+                    } else {
+                        (itemsBucket.items as MutableList<ItemData>).add(it.itemData)
+                    }
+                    resultItems.add(it.itemData)
+                }
+
+
+                val items = updateResult.resultList.map { it.itemData }
                 val event = SourceEvent.Success(items, updateResult.listOperates) {
                     onSuccessEventReceived(itemsBucketIds, itemsBucketMap, updateResult, items)
                     onRefreshComplete()
@@ -309,10 +327,10 @@ class ItemFetcherSnapshot<Param : Any>(
     ) {
         displayedItemsBucketIds = itemsBucketIds
         displayedItemsBucketMap = itemsBucketMap
-        displayedItemWrappers = updateResult.list
+        displayedItemWrappers = updateResult.resultList
         displayedItems = items
-        updateResult.list.forEach {
-            it.delegate.displayedItems = displayedItems
+        updateResult.resultList.forEach {
+            it.itemData.delegate.displayedItems = displayedItems
         }
         ListUpdate.handleItemDataWrapperChanges(updateResult.elementOperates)
     }
