@@ -115,17 +115,22 @@ object ListUpdate {
                 }
             }
         })
+
+        val oldElementInResultList: MutableList<E> = mutableListOf()
         list.forEachIndexed { index, elementStub ->
             if (elementStub.element == null) {
                 elementStub.element = newList[index]
                 elementOperates.add(ElementOperate.Added(elementStub.element!!))
+            } else {
+                oldElementInResultList.add(elementStub.element!!)
             }
         }
+
         elementChangeBuilders.forEach {
             it()
         }
 
-        return UpdateResult(list.map { it.element!! }, operates, elementOperates)
+        return UpdateResult(list.map { it.element!! }, oldElementInResultList, operates, elementOperates)
     }
 
     fun <E> move(list: MutableList<E>, sourceIndex: Int, targetIndex: Int): Boolean {
@@ -187,7 +192,7 @@ object ListUpdate {
 
     class UpdateResult<E>(
         val resultList: List<E>,
-        val
+        val oldElementInResultList: List<E>,
         val listOperates: List<ListOperate>,
         val elementOperates: List<ElementOperate<E>>
     )

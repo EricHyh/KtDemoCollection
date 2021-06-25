@@ -210,7 +210,8 @@ class ItemFetcherSnapshot<Param : Any>(
         if (preShowResult is ItemSource.PreShowResult.Success) {
             preShowing = true
             val itemsBucketIds = preShowResult.itemsBucketIds
-            val wrappers = getItemWrappers(itemsBucketIds, preShowResult.itemsBucketMap)
+            val itemsBucketMap = preShowResult.itemsBucketMap
+            val wrappers = getItemWrappers(itemsBucketIds, itemsBucketMap)
             val updateResult =
                 ListUpdate.calculateDiff(
                     lastDisplayedItemWrappers,
@@ -218,10 +219,9 @@ class ItemFetcherSnapshot<Param : Any>(
                     IElementDiff.ItemDataWrapperDiff()
                 )
 
-
-            val itemsBucketMap = mutableMapOf<Int, ItemSource.ItemsBucket>()
-            updateResult.resultList.forEach {
-
+            //val itemsBucketMap = mutableMapOf<Int, ItemSource.ItemsBucket>()
+            updateResult.oldElementInResultList.forEach {
+                itemsBucketMap[it.itemsBucketId]
             }
 
             //lastDisplayedItemsBucketIds

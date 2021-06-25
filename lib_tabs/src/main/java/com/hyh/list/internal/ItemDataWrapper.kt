@@ -35,4 +35,24 @@ class ItemDataWrapper(
      */
     fun getChangePayload(wrapper: ItemDataWrapper): Any? = itemData.getChangePayload(wrapper.itemData)
 
+
+    override fun hashCode(): Int {
+        var result = itemsBucketId
+        result = 31 * result + itemsToken.hashCode()
+        result = 31 * result + itemData.hashCode()
+        return result
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ItemDataWrapper
+
+        if (itemsBucketId != other.itemsBucketId) return false
+        if (itemsToken != other.itemsToken) return false
+        if (itemData != other.itemData) return false
+
+        return true
+    }
 }
