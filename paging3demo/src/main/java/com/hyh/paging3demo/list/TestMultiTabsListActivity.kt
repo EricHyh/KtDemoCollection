@@ -6,6 +6,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.list.ItemSourceDecoration
 import com.hyh.list.SingleItemSourceRepository
 import com.hyh.list.adapter.MultiSourceAdapter
 import com.hyh.page.pageContext
@@ -33,6 +34,8 @@ class TestMultiTabsListActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
+
+        recyclerView.addItemDecoration(ItemSourceDecoration())
 
         Handler().postDelayed({
             multiSourceAdapter.submitData(SingleItemSourceRepository(TestMultiTabsItemSource()).flow)

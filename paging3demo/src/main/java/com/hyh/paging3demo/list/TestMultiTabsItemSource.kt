@@ -139,8 +139,9 @@ class MultiTabsTitleItemData(
     }
 
     override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is MultiTabsTitleItemData) return false
-        return this.selectedTab == newItemData.selectedTab
+        return false
+        /*if (newItemData !is MultiTabsTitleItemData) return false
+        return this.selectedTab == newItemData.selectedTab*/
     }
 
     override fun getChangePayload(newItemData: ItemData): Any? {
@@ -185,10 +186,7 @@ class Tab1ItemData(
     }
 
     override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is Tab1ItemData) return false
-        return this.leftViewColorInt == newItemData.leftViewColorInt
-                && this.title == newItemData.title
-                && this.des == newItemData.des
+        return false
     }
 
     class Tab1ItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -226,7 +224,7 @@ class Tab2ItemData(
     }
 
     override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        return true
+        return false
     }
 
     class Tab2ItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -267,7 +265,7 @@ class Tab3ItemData(
     }
 
     override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        return true
+        return false
     }
 
     class Tab3ItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
