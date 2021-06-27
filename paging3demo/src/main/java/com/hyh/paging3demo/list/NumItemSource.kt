@@ -12,7 +12,6 @@ import com.hyh.list.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import java.util.*
 import kotlin.random.Random
 
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
@@ -77,8 +76,8 @@ class TitleItemData(
         Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
     }
 
-    override fun onDestroyed() {
-        super.onDestroyed()
+    override fun onDetached() {
+        super.onDetached()
         ListConfig.aliveItems--
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onDestroyed: ${ListConfig.aliveItems}")
         activated = false
@@ -146,8 +145,8 @@ class NumItemData(
         Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
     }
 
-    override fun onDestroyed() {
-        super.onDestroyed()
+    override fun onDetached() {
+        super.onDetached()
         ListConfig.aliveItems--
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onDestroyed: ${ListConfig.aliveItems}")
         activated = false

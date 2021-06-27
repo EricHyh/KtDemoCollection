@@ -14,7 +14,8 @@ abstract class ItemSource<Param : Any> {
 
     internal val delegate: Delegate<Param> = object : Delegate<Param>() {
 
-        override fun activate() {
+        override fun attach() {
+            super.attach()
         }
 
         override fun initPosition(position: Int) {
@@ -31,9 +32,19 @@ abstract class ItemSource<Param : Any> {
             onUpdateItemSource(oldPosition, newPosition, newItemSource)
         }
 
-        override fun destroy() {
+        override fun detach() {
+            super.detach()
             _sourcePosition = -1
         }
+
+        override fun onBucketAdded(bucket: ItemsBucket) {}
+
+        override fun shouldCacheBucket(itemsBucket: ItemsBucket): Boolean {
+            return this@ItemSource.shouldCacheBucket(itemsBucket)
+        }
+
+        override fun onBucketRemoved(bucket: ItemsBucket) {}
+
     }
 
     private var _sourcePosition: Int = -1
@@ -44,55 +55,92 @@ abstract class ItemSource<Param : Any> {
     val refreshActuator: RefreshActuator
         get() = _refreshActuator
 
-    private var itemsBucketIds: List<Int> = listOf(DEFAULT_ITEMS_BUCKET_ID)
+    private var _itemsBucketIds: List<Int> = listOf(DEFAULT_ITEMS_BUCKET_ID)
+    protected val itemsBucketIds: List<Int>
+        get() = _itemsBucketIds
+
+    protected open fun onAttached() {}
 
     open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param>) {}
-
     open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
     abstract suspend fun getParam(): Param
     abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
     open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
     abstract suspend fun load(params: LoadParams<Param>): LoadResult
     open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
+
+    protected open fun shouldCacheBucket(itemsBucket: ItemsBucket) = false
+
     open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
+    protected open fun onDetached() {}
 
     protected fun registerItemsBucketIds(itemsBucketIds: List<Int>) {
-
-    }
-
-    protected fun markItems(items: List<ItemData>, itemsToken: Any) {
-
+        this._itemsBucketIds = itemsBucketIds
     }
 
     abstract class Delegate<Param : Any> {
 
-        abstract fun activate()
+        val storage: ItemsBucketStorage = object : ItemsBucketStorage {
+
+            private val cacheMap: MutableMap<Int, MutableMap<Any, ItemsBucket>> = mutableMapOf()
+
+            override fun store(bucket: ItemsBucket) {
+                var mutableMap = cacheMap[bucket.bucketId]
+                if (mutableMap == null) {
+                    mutableMap = mutableMapOf()
+                    cacheMap[bucket.bucketId] = mutableMap
+                }
+                mutableMap[bucket.itemsToken] = bucket
+            }
+
+            override fun take(bucketId: Int, itemsToken: Any): ItemsBucket? {
+                return cacheMap[bucketId]?.remove(itemsToken)
+            }
+
+            override fun get(bucketId: Int, itemsToken: Any): ItemsBucket? {
+                return cacheMap[bucketId]?.get(itemsToken)
+            }
+
+            override fun clear() {
+                val entries = cacheMap.entries
+                val iterator = entries.iterator()
+                while (iterator.hasNext()) {
+                    val next = iterator.next()
+                    next.value.values.forEach { itemsBucket ->
+                        itemsBucket.items.forEach {
+                            it.delegate.onDetached()
+                        }
+                    }
+                    iterator.remove()
+                }
+            }
+        }
+
+        open fun attach() {}
+
         abstract fun initPosition(position: Int)
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
         abstract fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>)
-        abstract fun onBucketItemsTokenChanged(
-            bucketId: Int,
-            oldItemsToken: Any,
-            oldItems: List<ItemData>,
-            newItemsToken: Any,
-            newItems: List<ItemData>
-        )
+        abstract fun onBucketAdded(bucket: ItemsBucket)
+        abstract fun onBucketRemoved(bucket: ItemsBucket)
+        abstract fun shouldCacheBucket(itemsBucket: ItemsBucket): Boolean
 
-        abstract fun destroy()
+        open fun detach() {
+            storage.clear()
+        }
+
     }
 
-    interface ItemsStorage {
+    interface ItemsBucketStorage {
 
-        fun store(itemsToken: Any, items: List<ItemData>)
+        fun store(bucket: ItemsBucket)
 
-        fun isStored(itemsToken: Any): Boolean
+        fun take(bucketId: Int, itemsToken: Any): ItemsBucket?
 
-        fun take(itemsToken: Any): List<ItemData>
+        fun get(bucketId: Int, itemsToken: Any): ItemsBucket?
 
-        fun get(itemsToken: Any): List<ItemData>
-
-        fun remove(itemsToken: Any)
+        fun clear()
 
     }
 
@@ -102,10 +150,6 @@ abstract class ItemSource<Param : Any> {
 
         class Success() : PreShowResult() {
 
-            private lateinit var _items: List<ItemData>
-            val items: List<ItemData>
-                get() = _items
-
             private lateinit var _itemsBucketIds: List<Int>
             val itemsBucketIds: List<Int>
                 get() = _itemsBucketIds
@@ -114,16 +158,14 @@ abstract class ItemSource<Param : Any> {
             val itemsBucketMap: Map<Int, ItemsBucket>
                 get() = _itemsBucketMap
 
-            constructor(items: List<ItemData>) {
-                this._items = items
+            constructor(items: List<ItemData>) : this() {
                 this._itemsBucketIds = listOf(DEFAULT_ITEMS_BUCKET_ID)
                 this._itemsBucketMap = mapOf(
                     DEFAULT_ITEMS_BUCKET_ID to ItemsBucket(DEFAULT_ITEMS_BUCKET_ID, DEFAULT_ITEMS_TOKEN, items)
                 )
             }
 
-            constructor(items: List<ItemData>, itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) {
-                this._items = items
+            constructor(itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) : this() {
                 this._itemsBucketIds = itemsBucketIds
                 this._itemsBucketMap = itemsBucketMap
             }
@@ -138,10 +180,6 @@ abstract class ItemSource<Param : Any> {
 
         class Success() : LoadResult() {
 
-            private lateinit var _items: List<ItemData>
-            val items: List<ItemData>
-                get() = _items
-
             private lateinit var _itemsBucketIds: List<Int>
             val itemsBucketIds: List<Int>
                 get() = _itemsBucketIds
@@ -150,16 +188,14 @@ abstract class ItemSource<Param : Any> {
             val itemsBucketMap: Map<Int, ItemsBucket>
                 get() = _itemsBucketMap
 
-            constructor(items: List<ItemData>) {
-                this._items = items
+            constructor(items: List<ItemData>) : this() {
                 this._itemsBucketIds = listOf(DEFAULT_ITEMS_BUCKET_ID)
                 this._itemsBucketMap = mapOf(
                     DEFAULT_ITEMS_BUCKET_ID to ItemsBucket(DEFAULT_ITEMS_BUCKET_ID, DEFAULT_ITEMS_TOKEN, items)
                 )
             }
 
-            constructor(items: List<ItemData>, itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) {
-                this._items = items
+            constructor(itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) : this() {
                 this._itemsBucketIds = itemsBucketIds
                 this._itemsBucketMap = itemsBucketMap
             }
@@ -174,14 +210,16 @@ abstract class ItemSource<Param : Any> {
 
     class PreShowParams<Param : Any>(
         val param: Param,
-        val displayedItemsSnapshot: List<ItemData>?,
+        var displayedItemsBucketMap: Map<Int, ItemsBucket>?,
+        val displayedItems: List<ItemData>?,
         val lastPreShowResult: PreShowResult?,
         val lastLoadResult: LoadResult?
     )
 
     class LoadParams<Param : Any>(
         val param: Param,
-        val displayedItemsSnapshot: List<ItemData>?,
+        var displayedItemsBucketMap: Map<Int, ItemsBucket>?,
+        val displayedItems: List<ItemData>?,
         val lastPreShowResult: PreShowResult?,
         val lastLoadResult: LoadResult?
     )

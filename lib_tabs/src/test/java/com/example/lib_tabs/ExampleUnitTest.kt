@@ -23,14 +23,22 @@ class ExampleUnitTest {
             TestData(2, "2"),
             TestData(3, "3"),
             TestData(4, "4"),
+            TestData(5, "5"),
+            TestData(6, "6"),
         )
         val newList = listOf<TestData>(
             TestData(0, "00"),
-            TestData(1, "11"),
-            TestData(3, "33"),
-            TestData(4, "44"),
-            TestData(5, "55"),
-            TestData(2, "22"),
+            TestData(1, "1"),
+            TestData(2, "2"),
+            TestData(3, "3"),
+            TestData(4, "4"),
+            TestData(5, "5"),
+            TestData(6, "6"),
+            TestData(7, "7"),
+            TestData(8, "8"),
+            TestData(9, "9"),
+            TestData(10, "10"),
+            TestData(11, "11"),
         )
 
         val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
@@ -44,12 +52,14 @@ class ExampleUnitTest {
             }
 
             override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                return oldList[oldItemPosition].id == newList[newItemPosition].id
+                val areContentsTheSame = oldList[oldItemPosition].id == newList[newItemPosition].id
+                println("areItemsTheSame:$oldItemPosition&$newItemPosition = $areContentsTheSame")
+                return areContentsTheSame
             }
 
             override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
                 val areContentsTheSame = oldList[oldItemPosition].text == newList[newItemPosition].text
-                println("areContentsTheSame:$oldItemPosition&$newItemPosition = $areContentsTheSame")
+                //println("areContentsTheSame:$oldItemPosition&$newItemPosition = $areContentsTheSame")
                 return areContentsTheSame
             }
 

@@ -10,5 +10,12 @@ package com.hyh
 
 typealias Invoke = () -> Unit
 typealias SuspendInvoke = (suspend () -> Unit)
-typealias OnEventReceived = Invoke
+
+typealias InvokeWithParam<T> = (T.() -> Unit)
+typealias SuspendInvokeWithParam<T> = (suspend T.() -> Unit)
+
+typealias OnEventReceived = (suspend () -> Unit)
 typealias RefreshActuator = Invoke
+
+typealias LaunchWith<T> = () -> (((InvokeWithParam<T>)) -> Unit)
+typealias SuspendLaunchWith<T> = () -> (((SuspendInvokeWithParam<T>)) -> Unit)

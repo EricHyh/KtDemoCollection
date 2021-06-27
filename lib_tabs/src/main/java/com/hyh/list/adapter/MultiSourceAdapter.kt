@@ -862,7 +862,7 @@ class SourceAdapterWrapper(
         adapter.unregisterAdapterDataObserver(adapterObserver)
         viewTypeLookup.dispose()
         submitDataJob?.cancel()
-        itemSource.delegate.destroy()
+        itemSource.delegate.detach()
         adapter.destroy()
     }
 

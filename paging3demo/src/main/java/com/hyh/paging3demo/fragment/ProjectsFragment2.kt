@@ -41,7 +41,7 @@ class ProjectsFragment2 : CommonBaseFragment() {
             ContextViewModelFactory(context!!)
         ).get(ProjectChaptersViewModel2::class.java)
 
-        mFragmentTabAdapter = FragmentTabAdapter<Unit>(childFragmentManager)
+        mFragmentTabAdapter = FragmentTabAdapter<Unit>(pageContext, childFragmentManager)
 
 
         pageContext.storage.store(ProjectStore.Num(100))
@@ -119,11 +119,8 @@ class ProjectsFragment2 : CommonBaseFragment() {
     override fun initData() {
         showLoadingView()
         //mFragmentTabAdapter?.refresh(Unit)
-
-        lifecycleScope.launch {
-            mProjectChaptersViewModel?.flow?.collectLatest {
-                mFragmentTabAdapter?.submitData(it)
-            }
+        mProjectChaptersViewModel?.flow?.let {
+            mFragmentTabAdapter?.submitData(it)
         }
     }
 

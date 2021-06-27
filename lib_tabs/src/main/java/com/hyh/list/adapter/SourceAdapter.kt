@@ -158,7 +158,7 @@ class SourceAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     fun destroy() {
         _items?.forEach {
-            it.delegate.destroy()
+            it.delegate.onDetached()
         }
     }
 

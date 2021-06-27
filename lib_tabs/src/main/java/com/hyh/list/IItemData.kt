@@ -2,23 +2,28 @@ package com.hyh.list
 
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import java.text.FieldPosition
 
 
 abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
     internal val delegate = object : Delegate() {
 
-        override fun activate() {
-            onActivated()
+        override fun onAttached() {
+            super.onAttached()
+        }
+
+        override fun onActivated() {
         }
 
         override fun updateItemData(newItemData: ItemData) {
             onUpdateItemData(newItemData)
         }
 
-        override fun destroy() {
-            onDestroyed()
+        override fun onInactivated() {
+        }
+
+        override fun onDetached() {
+            super.onDetached()
         }
     }
 
@@ -44,7 +49,7 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
     abstract fun getItemViewType(): Int
 
-    abstract fun getViewHolderFactory(): ViewHolderFactory
+    abstract fun getViewHolderFactory(): TypedViewHolderFactory<VH>
 
     abstract fun onBindViewHolder(viewHolder: VH)
 
@@ -70,15 +75,32 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
     /**
      * 数据不再使用时回调
      */
-    open fun onDestroyed() {}
+    open fun onDetached() {}
 
     internal abstract class Delegate {
+
+        private var _attached = false
+        val attached
+            get() = _attached
+
+        var cached = false
+
         var displayedItems: List<ItemData>? = null
-        abstract fun activate()
+
+        open fun onAttached() {
+            _attached = true
+        }
+
+        abstract fun onActivated()
         abstract fun updateItemData(newItemData: ItemData)
-        abstract fun destroy()
+        abstract fun onInactivated()
+
+        open fun onDetached() {
+            _attached = false
+        }
     }
 }
 
 typealias ItemData = IItemData<out RecyclerView.ViewHolder>
-typealias ViewHolderFactory = (parent: ViewGroup) -> RecyclerView.ViewHolder
+typealias TypedViewHolderFactory<VH> = (parent: ViewGroup) -> VH
+typealias ViewHolderFactory = TypedViewHolderFactory<out RecyclerView.ViewHolder>

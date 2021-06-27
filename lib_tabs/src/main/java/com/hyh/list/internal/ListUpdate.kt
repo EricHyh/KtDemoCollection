@@ -1,10 +1,12 @@
 package com.hyh.list.internal
 
+import android.util.Log
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.list.ItemData
+import com.hyh.list.ItemSource
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -30,24 +32,7 @@ sealed class ElementOperate<E> {
 
 object ListUpdate {
 
-    fun <E> replaceAll(oldList: List<E>?, newList: List<E>): UpdateResult<E> {
-        if (oldList == null) {
-            return UpdateResult(
-                resultList = ArrayList(newList),
-                listOperates = listOf(ListOperate.OnAllChanged),
-                elementOperates = newList.map {
-                    ElementOperate.Added(it)
-                }
-            )
-        }
-
-        val listOperates: MutableList<ListOperate> = mutableListOf()
-        listOperates.add(ListOperate.OnRemoved(0, oldList.size))
-        listOperates.add(ListOperate.OnInserted(0, newList.size))
-
-        val elementOperates = oldList.map { ElementOperate.Removed(it) }
-        return UpdateResult(newList, listOperates, elementOperates)
-    }
+    private const val TAG = "ListUpdate"
 
     fun <E> calculateDiff(oldList: List<E>?, newList: List<E>, elementDiff: IElementDiff<E>): UpdateResult<E> {
         if (oldList == null) {
@@ -80,7 +65,7 @@ object ListUpdate {
                         val elementStub = listSnapshot[index]
                         val oldElement = elementStub.element!!
                         val newElement = contentsNotSameMap[oldElement]!!
-                        if (elementDiff.isSupportUpdateItemData(oldElement)) {
+                        if (elementDiff.isSupportUpdateItemData(oldElement, newElement)) {
                             elementOperates.add(ElementOperate.Changed(oldElement, newElement, payload))
                         } else {
                             elementStub.element = newElement
@@ -116,13 +101,10 @@ object ListUpdate {
             }
         })
 
-        val oldElementInResultList: MutableList<E> = mutableListOf()
         list.forEachIndexed { index, elementStub ->
             if (elementStub.element == null) {
                 elementStub.element = newList[index]
                 elementOperates.add(ElementOperate.Added(elementStub.element!!))
-            } else {
-                oldElementInResultList.add(elementStub.element!!)
             }
         }
 
@@ -130,7 +112,7 @@ object ListUpdate {
             it()
         }
 
-        return UpdateResult(list.map { it.element!! }, oldElementInResultList, operates, elementOperates)
+        return UpdateResult(list.map { it.element!! }, operates, elementOperates)
     }
 
     fun <E> move(list: MutableList<E>, sourceIndex: Int, targetIndex: Int): Boolean {
@@ -148,20 +130,38 @@ object ListUpdate {
         elementChanges.forEach {
             when (it) {
                 is ElementOperate.Added<ItemData> -> {
-                    it.element.delegate.activate()
+                    it.element.delegate.onActivated()
                 }
                 is ElementOperate.Changed<ItemData> -> {
                     it.oldElement.delegate.updateItemData(it.newElement)
                 }
                 is ElementOperate.Removed<ItemData> -> {
-                    it.element.delegate.destroy()
+                    it.element.delegate.onDetached()
                 }
             }
         }
     }
 
     fun handleItemDataWrapperChanges(elementChanges: List<ElementOperate<ItemDataWrapper>>) {
-
+        elementChanges.forEach {
+            when (it) {
+                is ElementOperate.Added<ItemDataWrapper> -> {
+                    if (!it.element.attached) {
+                        it.element.itemData.delegate.onAttached()
+                    }
+                    it.element.itemData.delegate.onActivated()
+                }
+                is ElementOperate.Changed<ItemDataWrapper> -> {
+                    it.oldElement.itemData.delegate.updateItemData(it.newElement.itemData)
+                }
+                is ElementOperate.Removed<ItemDataWrapper> -> {
+                    it.element.itemData.delegate.onInactivated()
+                    if (!it.element.cached) {
+                        it.element.itemData.delegate.onDetached()
+                    }
+                }
+            }
+        }
     }
 
     fun handleListOperates(listOperates: List<ListOperate>, adapter: RecyclerView.Adapter<*>) {
@@ -171,7 +171,7 @@ object ListUpdate {
                     adapter.notifyDataSetChanged()
                 }
                 is ListOperate.OnChanged -> {
-                    adapter.notifyItemRangeChanged(it.positionStart, it.count)
+                    adapter.notifyItemRangeChanged(it.positionStart, it.count, it.payload)
                 }
                 is ListOperate.OnMoved -> {
                     adapter.notifyItemMoved(it.fromPosition, it.toPosition)
@@ -192,7 +192,6 @@ object ListUpdate {
 
     class UpdateResult<E>(
         val resultList: List<E>,
-        val oldElementInResultList: List<E>,
         val listOperates: List<ListOperate>,
         val elementOperates: List<ElementOperate<E>>
     )
@@ -230,7 +229,7 @@ class DiffCallbackImpl<E>(
 
 interface IElementDiff<E> {
 
-    fun isSupportUpdateItemData(element: E): Boolean
+    fun isSupportUpdateItemData(oldElement: E, newElement: E): Boolean
     fun areItemsTheSame(oldElement: E, newElement: E): Boolean
     fun areContentsTheSame(oldElement: E, newElement: E): Boolean
     fun getChangePayload(oldElement: E, newElement: E): Any?
@@ -238,8 +237,8 @@ interface IElementDiff<E> {
 
     class ItemDataDiff : IElementDiff<ItemData> {
 
-        override fun isSupportUpdateItemData(element: ItemData): Boolean {
-            return element.isSupportUpdateItemData()
+        override fun isSupportUpdateItemData(oldElement: ItemData, newElement: ItemData): Boolean {
+            return oldElement.isSupportUpdateItemData()
         }
 
         override fun areItemsTheSame(oldElement: ItemData, newElement: ItemData): Boolean {
@@ -257,8 +256,8 @@ interface IElementDiff<E> {
 
     class ItemDataWrapperDiff : IElementDiff<ItemDataWrapper> {
 
-        override fun isSupportUpdateItemData(element: ItemDataWrapper): Boolean {
-            return element.isSupportUpdateItemData()
+        override fun isSupportUpdateItemData(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
+            return oldElement.isSupportUpdateItemData(newElement)
         }
 
         override fun areItemsTheSame(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
@@ -274,9 +273,26 @@ interface IElementDiff<E> {
         }
     }
 
+    class BucketDiff : IElementDiff<ItemSource.ItemsBucket> {
+
+        override fun isSupportUpdateItemData(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean = true
+
+        override fun areItemsTheSame(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean {
+            return oldElement.bucketId == newElement.bucketId
+        }
+
+        override fun areContentsTheSame(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean {
+            return oldElement.itemsToken == newElement.itemsToken
+        }
+
+        override fun getChangePayload(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Any? {
+            return newElement.itemsToken
+        }
+    }
+
     class AnyDiff<E> : IElementDiff<E> {
 
-        override fun isSupportUpdateItemData(element: E): Boolean = true
+        override fun isSupportUpdateItemData(oldElement: E, newElement: E): Boolean = true
 
         override fun areItemsTheSame(oldElement: E, newElement: E): Boolean {
             return oldElement == newElement

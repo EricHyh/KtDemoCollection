@@ -11,17 +11,21 @@ import com.hyh.list.ItemData
 class ItemDataWrapper(
     val itemsBucketId: Int,
     val itemsToken: Any,
-    val itemData: ItemData
+    var itemData: ItemData
 ) {
 
+    val attached: Boolean
+        get() = itemData.delegate.attached
+    val cached: Boolean
+        get() = itemData.delegate.cached
 
-    fun isSupportUpdateItemData(): Boolean {
+    fun isSupportUpdateItemData(wrapper: ItemDataWrapper): Boolean {
+        if (itemsBucketId != wrapper.itemsBucketId) return false
+        if (itemsToken != wrapper.itemsToken) return false
         return itemData.isSupportUpdateItemData()
     }
 
     fun areItemsTheSame(wrapper: ItemDataWrapper): Boolean {
-        if (itemsBucketId != wrapper.itemsBucketId) return false
-        if (itemsToken != wrapper.itemsToken) return false
         return itemData.areItemsTheSame(wrapper.itemData)
     }
 

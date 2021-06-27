@@ -1,6 +1,7 @@
 package com.hyh.list.internal
 
 import com.hyh.OnEventReceived
+import com.hyh.SuspendInvoke
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.Deferred
@@ -36,26 +37,26 @@ sealed class RepoEvent(val onReceived: OnEventReceived) {
 
 }
 
-sealed class SourceEvent(val onReceived: OnEventReceived) {
+sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
-    class Loading(onReceived: OnEventReceived = {}) : SourceEvent(onReceived)
+    class Loading(onReceived: (suspend () -> Unit) = {}) : SourceEvent(onReceived)
 
     class PreShowing(
         val items: List<ItemData>,
         val listOperates: List<ListOperate>,
-        onReceived: OnEventReceived = {}
+        onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
     class Success(
         val items: List<ItemData>,
         val listOperates: List<ListOperate>,
-        onReceived: OnEventReceived = {}
+        onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
     class Error(
         val error: Throwable,
         val preShowing: Boolean,
-        onReceived: OnEventReceived = {}
+        onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
 }
@@ -71,5 +72,15 @@ sealed class RefreshStrategy {
     object CancelLast : RefreshStrategy()
     object QueueUp : RefreshStrategy()
     data class DelayedQueueUp(val delay: Int) : RefreshStrategy()
+
+}
+
+sealed class BucketOperate {
+
+    class OnAdded(bucketId: Int)
+
+    class OnItemsTokenChanged(bucketId: Int, oldToken: Any, newToken: Any)
+
+    class OnRemoved(bucketId: Int)
 
 }
