@@ -7,7 +7,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 
-class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
+class MultiTabsItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
 
 
     override fun getRefreshStrategy(): RefreshStrategy {
@@ -23,17 +23,14 @@ class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
     override suspend fun load(param: Unit): LoadResult {
         delay(1000)
         //SystemClock.sleep(1000)
-        val sources = listOf(ItemSourceInfo("A", NumItemSource("A")))
 
-
-
-        /*val sources = ListConfig.randomTypes()
+        val sources = ListConfig.randomTypes()
             .map {
                 ItemSourceInfo(
                     it,
-                    NumItemSource(it)
+                    TestMultiTabsItemSource()
                 )
-            }*/
+            }
         return LoadResult.Success(sources)
     }
 

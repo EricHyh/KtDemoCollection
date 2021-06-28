@@ -2,6 +2,7 @@ package com.hyh.list.adapter
 
 import android.util.Log
 import android.util.SparseArray
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
@@ -436,6 +437,19 @@ class MultiSourceAdapter<Param : Any>(
                     + "adapter:" + adapter)
         }
         return wrapper.adapter.findRelativeAdapterPositionIn(adapter, viewHolder, localPosition)
+    }
+
+    override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
+        val globalPosition = recyclerView.getChildAdapterPosition(view)
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition) ?: return null
+        val wrapper: SourceAdapterWrapper = binderLookup[viewHolder] ?: return null
+
+        val itemsBefore = countItemsBefore(wrapper)
+        val localPosition: Int = globalPosition - itemsBefore
+
+        check(!(localPosition < 0 || localPosition >= wrapper.adapter.itemCount))
+
+        return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount)
     }
 
     override fun setHasStableIds(hasStableIds: Boolean) {

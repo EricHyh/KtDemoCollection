@@ -44,7 +44,7 @@ class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
         when (param) {
             0 -> {
                 val list = mutableListOf<Tab1ItemData>()
-                for (index in 0..5) {
+                for (index in 0..4) {
                     list.add(Tab1ItemData(Color.RED, "条目: $index", "这是条目: $index"))
                 }
                 return ContentResult.Success(list)
@@ -55,7 +55,7 @@ class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
                     list.add(Tab2ItemData("条目: $index", "这是条目: $index"))
                 }*/
                 val list = mutableListOf<Tab1ItemData>()
-                for (index in 0..10) {
+                for (index in 0..7) {
                     list.add(Tab1ItemData(Color.RED, "条目: $index", "这是条目: $index"))
                 }
                 return ContentResult.Success(list)

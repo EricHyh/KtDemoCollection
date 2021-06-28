@@ -14,31 +14,20 @@ import com.hyh.paging3demo.R
 
 class TestMultiTabsListActivity : AppCompatActivity() {
 
-    private val TAG = "ListTestActivity_"
-
-    val handler = Handler()
-    val refreshRunnable = object : Runnable {
-        override fun run() {
-            //testAdapter.refresh()
-            multiSourceAdapter.refreshRepo(Unit)
-            handler.post(this)
-        }
-    }
-
     val multiSourceAdapter = MultiSourceAdapter<Unit>(this.pageContext)
     //val testAdapter = TestAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_test_list)
+        setContentView(R.layout.activity_test_multi_tabs_list)
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
-
-        recyclerView.addItemDecoration(ItemSourceDecoration())
+        recyclerView.itemAnimator = null
+        recyclerView.addItemDecoration(ItemSourceDecoration(40, 20F, 0xFFEEEEEE.toInt()))
 
         Handler().postDelayed({
-            multiSourceAdapter.submitData(SingleItemSourceRepository(TestMultiTabsItemSource()).flow)
+            multiSourceAdapter.submitData(MultiTabsItemSourceRepo().flow)
         }, 2000)
 
 
@@ -49,14 +38,5 @@ class TestMultiTabsListActivity : AppCompatActivity() {
 
     fun refresh(v: View) {
         multiSourceAdapter.refreshRepo(Unit)
-    }
-
-    fun startRefresh(v: View) {
-        handler.removeCallbacks(refreshRunnable)
-        handler.post(refreshRunnable)
-    }
-
-    fun stopRefresh(v: View) {
-        handler.removeCallbacks(refreshRunnable)
     }
 }

@@ -10,17 +10,6 @@
         android:onClick="refresh"
         android:text="刷新一次" />
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="startRefresh"
-        android:text="开始刷新" />
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="stopRefresh"
-        android:text="停止刷新" />
 
     <TextView
         android:id="@+id/last_tv_types"
@@ -28,7 +17,7 @@
         android:textSize="16sp"
         android:textColor="#000"
         android:background="#FFF"
-        android:padding="20dp"
+        android:padding="10dp"
         android:layout_height="wrap_content"/>
 
     <TextView
@@ -37,7 +26,7 @@
         android:textSize="16sp"
         android:textColor="#000"
         android:background="#FFF"
-        android:padding="20dp"
+        android:padding="10dp"
         android:layout_height="wrap_content"/>
 
     <androidx.recyclerview.widget.RecyclerView

@@ -1,5 +1,7 @@
 package com.hyh.list.adapter
 
+import android.view.View
+import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.ItemData
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
@@ -20,6 +22,10 @@ interface IListAdapter<Param : Any> {
     fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<ItemData>
     fun getItemSnapshot(sourceTokenStart: Any, count: Int = 1): List<ItemData>
 
+
+    fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo?
+
+
     fun refreshRepo(param: Param)
 
     fun refreshSources()
@@ -29,3 +35,9 @@ interface IListAdapter<Param : Any> {
     fun refreshSources(sourceTokenStart: Any, count: Int)
 
 }
+
+data class ItemLocalInfo(
+    val sourceToken: Any,
+    val localPosition: Int,
+    val sourceItemCount: Int
+)
