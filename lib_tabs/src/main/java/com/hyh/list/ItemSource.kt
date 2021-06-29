@@ -1,7 +1,7 @@
 package com.hyh.list
 
 import com.hyh.RefreshActuator
-import com.hyh.list.internal.RefreshStrategy
+import com.hyh.base.LoadStrategy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -62,7 +62,7 @@ abstract class ItemSource<Param : Any> {
     protected open fun onAttached() {}
 
     open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param>) {}
-    open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
+    open fun getLoadStrategy(): LoadStrategy = LoadStrategy.CancelLast
     abstract suspend fun getParam(): Param
     abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
     open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}

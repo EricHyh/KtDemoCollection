@@ -1,8 +1,9 @@
 package com.hyh.list.internal
 
-import android.os.SystemClock
 import android.util.Log
 import com.hyh.*
+import com.hyh.base.BaseLoadEventHandler
+import com.hyh.base.LoadStrategy
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
@@ -14,73 +15,34 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
 import kotlin.collections.LinkedHashMap
-import kotlin.math.abs
 
 
 class ItemFetcher<Param : Any>(
     private val itemSource: ItemSource<Param>,
 ) {
 
-    private val sourceDelegateLaunch: LaunchWith<ItemSource.Delegate<Param>> = {
-        {
-            it(itemSource.delegate)
-        }
+
+    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>> = {
+        it.invoke(itemSource.delegate)
     }
 
     private val uiReceiver = object : UiReceiverForSource {
 
-        private val state = MutableStateFlow<Long>(0)
+        private val refreshEventHandler = object : BaseLoadEventHandler<Unit>(Unit) {
 
-        private var cacheState: MutableStateFlow<Long>? = null
-        private var refreshStage = RefreshStage.UNBLOCK
-        private var delay = 0
-        private var timingStart: Long = 0
-
-        val flow = state.asStateFlow()
-
-        override fun refresh() {
-            when (refreshStage) {
-                RefreshStage.UNBLOCK -> {
-                    state.value = state.value + 1
-                    when (val refreshStrategy = getRefreshStrategy()) {
-                        is RefreshStrategy.QueueUp -> {
-                            refreshStage = RefreshStage.BLOCK
-                        }
-                        is RefreshStrategy.DelayedQueueUp -> {
-                            refreshStage = RefreshStage.TIMING
-                            timingStart = SystemClock.elapsedRealtime()
-                            delay = refreshStrategy.delay
-                        }
-                        else -> {
-                        }
-                    }
-                }
-                RefreshStage.TIMING -> {
-                    state.value = state.value + 1
-                    val elapsedRealtime = SystemClock.elapsedRealtime()
-                    if (abs(elapsedRealtime - timingStart) > delay) {
-                        refreshStage = RefreshStage.BLOCK
-                    }
-                }
-                RefreshStage.BLOCK -> {
-                    val cacheState = this.cacheState
-                    if (cacheState != null) {
-                        cacheState.value = cacheState.value + 1
-                    } else {
-                        this.cacheState = MutableStateFlow(0)
-                    }
-                }
+            override fun getLoadStrategy(): LoadStrategy {
+                return this@ItemFetcher.getLoadStrategy()
             }
         }
 
+        val flow = refreshEventHandler.flow.map { it.first }
+
+        override fun refresh(important: Boolean) {
+            refreshEventHandler.onReceiveLoadEvent(false, Unit)
+        }
+
         fun onRefreshComplete() {
-            val cacheState = this.cacheState
-            this.cacheState = null
-            timingStart = 0
-            refreshStage = RefreshStage.UNBLOCK
-            if (cacheState != null) {
-                refresh()
-            }
+            refreshEventHandler.onLoadComplete()
         }
     }
 
@@ -107,7 +69,7 @@ class ItemFetcher<Param : Any>(
                     lastDisplayedItemWrappers = previousSnapshot?.displayedItemWrappers,
                     lastDisplayedItems = previousSnapshot?.displayedItems,
                     onRefreshComplete = uiReceiver::onRefreshComplete,
-                    sourceDelegateLaunch = sourceDelegateLaunch
+                    sourceDelegateRunner = sourceDelegateRunner
                 )
             }
             .filterNotNull()
@@ -120,12 +82,12 @@ class ItemFetcher<Param : Any>(
             }
     }.buffer(Channel.BUFFERED)
 
-    fun refresh() {
+    fun refresh(immediate: Boolean) {
         uiReceiver.refresh()
     }
 
-    private fun getRefreshStrategy(): RefreshStrategy {
-        return itemSource.getRefreshStrategy()
+    private fun getLoadStrategy(): LoadStrategy {
+        return itemSource.getLoadStrategy()
     }
 
     private fun getParamProvider(): ParamProvider<Param> = ::getParam
@@ -160,8 +122,6 @@ class ItemFetcher<Param : Any>(
     private suspend fun onLoadResult(params: ItemSource.LoadParams<Param>, loadResult: ItemSource.LoadResult) {
         itemSource.onLoadResult(params, loadResult)
     }
-
-
 }
 
 
@@ -179,7 +139,7 @@ class ItemFetcherSnapshot<Param : Any>(
     lastDisplayedItemWrappers: List<ItemDataWrapper>?,
     lastDisplayedItems: List<ItemData>?,
     private val onRefreshComplete: Invoke,
-    private val sourceDelegateLaunch: LaunchWith<ItemSource.Delegate<Param>>
+    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>>
 ) {
 
     companion object {
@@ -435,7 +395,7 @@ class ItemFetcherSnapshot<Param : Any>(
             it.itemData.delegate.displayedItems = displayedItems
         }
 
-        sourceDelegateLaunch()() {
+        sourceDelegateRunner {
             processedResult.itemSourceInvoke.forEach {
                 it.invoke(this)
             }

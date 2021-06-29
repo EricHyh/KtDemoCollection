@@ -1,4 +1,4 @@
-package com.hyh.list
+package com.hyh.list.decoration
 
 import android.graphics.*
 import android.view.View
@@ -8,35 +8,22 @@ import com.hyh.list.adapter.IListAdapter
 import com.hyh.list.adapter.ItemLocalInfo
 import kotlin.properties.Delegates
 
-class ItemSourceDecoration private constructor() : RecyclerView.ItemDecoration() {
+abstract class BaseItemSourceFrameDecoration(
+    outRect: Rect,
+    radius: FloatArray,
+    @ColorInt val colorInt: Int
+) : RecyclerView.ItemDecoration() {
 
-
-    private var supportedSources: List<Any>? = null
-    private val sourceOutRect: Rect = Rect()
-    private val radius: FloatArray = FloatArray(4)
-    private var colorInt by Delegates.notNull<Int>()
-
-    constructor(padding: Int, radius: Float, @ColorInt colorInt: Int, supportedSources: List<Any>? = null)
-            : this(Rect().apply { set(padding, padding, padding, padding) }, radius, colorInt, supportedSources)
-
-    constructor(outRect: Rect, radius: Float, @ColorInt colorInt: Int, supportedSources: List<Any>? = null)
-            : this(outRect, FloatArray(4) { radius }, colorInt, supportedSources)
-
-
-    constructor(outRect: Rect, radius: FloatArray, @ColorInt colorInt: Int, supportedSources: List<Any>? = null) : this() {
-        this.sourceOutRect.set(outRect)
-        for (index in 0 until 4) {
-            this.radius[index] = radius[index]
+    private val sourceOutRect: Rect = Rect().apply { set(outRect) }
+    private val radiusArray: FloatArray = radius.apply {
+        check(this.size == 4) {
+            "BaseItemSourceFrameDecoration: radius size must be equal to 4, but now is ${radius.size}"
         }
-        this.colorInt = colorInt
-        this.supportedSources = supportedSources
-    }
-
+    }.copyOf()
 
     private val itemBoundWithDecoration = Rect()
     private val arcRectF = RectF()
     private val tempRect = Rect()
-
     private val path = Path()
 
     private val paint by lazy {
@@ -53,12 +40,10 @@ class ItemSourceDecoration private constructor() : RecyclerView.ItemDecoration()
         val childCount = parent.childCount
         for (index in 0 until childCount) {
             val child = parent.getChildAt(index)
-            val itemLocalInfo = adapter.findItemLocalInfo(child, parent)
+            val itemLocalInfo = adapter.findItemLocalInfo(child, parent) ?: continue
+            if (!shouldDrawOver(itemLocalInfo.sourceToken)) return
+
             parent.getDecoratedBoundsWithMargins(child, itemBoundWithDecoration)
-
-            val itemHeight = itemBoundWithDecoration.bottom - itemBoundWithDecoration.top
-            val outHeight = itemHeight - child.height
-
 
             val itemLeft = itemBoundWithDecoration.left.toFloat() + sourceOutRect.left
             val itemRight = itemBoundWithDecoration.right.toFloat() - sourceOutRect.right
@@ -69,34 +54,13 @@ class ItemSourceDecoration private constructor() : RecyclerView.ItemDecoration()
             if (isSourceFirstItem(itemLocalInfo) && isSourceLastItem(itemLocalInfo)) {
                 val itemTop = child.top.toFloat()
                 val itemBottom = child.bottom.toFloat()
-                /*if (outHeight > sourceOutRect.top) {
-                    itemTop = itemTopWithDecoration + sourceOutRect.top
-                    itemBottom = itemBottomWithDecoration - sourceOutRect.bottom
-                } else if (outHeight == 0) {
-                    itemTop = itemTopWithDecoration
-                    itemBottom = itemBottomWithDecoration
-                } else {
-                    if (sourceOutRect.top == sourceOutRect.bottom) {
-
-
-
-                    } else if (sourceOutRect.top == outHeight) {
-                        itemTop = itemTopWithDecoration + sourceOutRect.top
-                        itemBottom = itemBottomWithDecoration
-                    } else {
-                        itemTop = itemTopWithDecoration
-                        itemBottom = itemBottomWithDecoration - sourceOutRect.bottom
-                    }
-                }*/
                 drawTop(itemTopWithDecoration, itemTop, itemLeft, itemRight, canvas)
                 drawBottom(itemBottomWithDecoration, itemBottom, itemRight, itemLeft, canvas)
             } else if (isSourceFirstItem(itemLocalInfo)) {
                 val itemTop = child.top.toFloat()
-                //val itemTop = itemTopWithDecoration + outHeight
                 drawTop(itemTopWithDecoration, itemTop, itemLeft, itemRight, canvas)
             } else if (isSourceLastItem(itemLocalInfo)) {
                 val itemBottom = child.bottom.toFloat()
-                //val itemBottom = itemBottomWithDecoration - outHeight
                 drawBottom(itemBottomWithDecoration, itemBottom, itemRight, itemLeft, canvas)
             }
 
@@ -123,17 +87,21 @@ class ItemSourceDecoration private constructor() : RecyclerView.ItemDecoration()
     override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
         val adapter = parent.adapter ?: return
         if (adapter !is IListAdapter<*>) return
-        val itemLocalInfo = adapter.findItemLocalInfo(view, parent)
+        val itemLocalInfo = adapter.findItemLocalInfo(view, parent) ?: return
+        if (!shouldDrawOver(itemLocalInfo.sourceToken)) return
+
         if (isSourceFirstItem(itemLocalInfo) && isSourceLastItem(itemLocalInfo)) {
             outRect.set(sourceOutRect.left, sourceOutRect.top, sourceOutRect.right, sourceOutRect.bottom)
         } else if (isSourceFirstItem(itemLocalInfo)) {
             outRect.set(sourceOutRect.left, sourceOutRect.top, sourceOutRect.right, 0)
-        } else if ( isSourceLastItem(itemLocalInfo)) {
+        } else if (isSourceLastItem(itemLocalInfo)) {
             outRect.set(sourceOutRect.left, 0, sourceOutRect.right, sourceOutRect.bottom)
         } else {
             outRect.set(sourceOutRect.left, 0, sourceOutRect.right, 0)
         }
     }
+
+    protected abstract fun shouldDrawOver(sourceToken: Any): Boolean
 
     private fun drawTop(
         itemTopWithDecoration: Float,
@@ -145,23 +113,23 @@ class ItemSourceDecoration private constructor() : RecyclerView.ItemDecoration()
         path.reset()
 
         path.moveTo(itemLeft, itemTopWithDecoration)
-        path.lineTo(itemLeft, itemTop + radius[0])
+        path.lineTo(itemLeft, itemTop + radiusArray[0])
 
         arcRectF.set(
             itemLeft,
             itemTop,
-            itemLeft + radius[0] * 2,
-            itemTop + radius[0] * 2
+            itemLeft + radiusArray[0] * 2,
+            itemTop + radiusArray[0] * 2
         )
         path.arcTo(arcRectF, 180F, 90F)
 
-        path.lineTo(itemRight - radius[0], itemTop)
+        path.lineTo(itemRight - radiusArray[0], itemTop)
 
         arcRectF.set(
-            itemRight - radius[0] * 2,
+            itemRight - radiusArray[0] * 2,
             itemTop,
             itemRight,
-            itemTop + radius[0] * 2
+            itemTop + radiusArray[0] * 2
         )
         path.arcTo(arcRectF, 270F, 90F)
 
@@ -181,22 +149,22 @@ class ItemSourceDecoration private constructor() : RecyclerView.ItemDecoration()
         path.reset()
 
         path.moveTo(itemRight, itemBottomWithDecoration)
-        path.lineTo(itemRight, itemBottom - radius[0])
+        path.lineTo(itemRight, itemBottom - radiusArray[0])
 
         arcRectF.set(
-            itemRight - radius[0] * 2,
-            itemBottom - radius[0] * 2,
+            itemRight - radiusArray[0] * 2,
+            itemBottom - radiusArray[0] * 2,
             itemRight,
             itemBottom
         )
         path.arcTo(arcRectF, 0F, 90F)
 
-        path.lineTo(itemLeft + radius[0], itemBottom)
+        path.lineTo(itemLeft + radiusArray[0], itemBottom)
 
         arcRectF.set(
             itemLeft,
-            itemBottom - radius[0] * 2,
-            itemLeft + radius[0] * 2,
+            itemBottom - radiusArray[0] * 2,
+            itemLeft + radiusArray[0] * 2,
             itemBottom
         )
         path.arcTo(arcRectF, 90F, 90F)

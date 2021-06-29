@@ -1,7 +1,6 @@
 package com.hyh.list.internal
 
 import com.hyh.OnEventReceived
-import com.hyh.SuspendInvoke
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.Deferred
@@ -61,26 +60,3 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
 }
 
-enum class RefreshStage {
-    UNBLOCK,
-    TIMING,
-    BLOCK
-}
-
-sealed class RefreshStrategy {
-
-    object CancelLast : RefreshStrategy()
-    object QueueUp : RefreshStrategy()
-    data class DelayedQueueUp(val delay: Int) : RefreshStrategy()
-
-}
-
-sealed class BucketOperate {
-
-    class OnAdded(bucketId: Int)
-
-    class OnItemsTokenChanged(bucketId: Int, oldToken: Any, newToken: Any)
-
-    class OnRemoved(bucketId: Int)
-
-}

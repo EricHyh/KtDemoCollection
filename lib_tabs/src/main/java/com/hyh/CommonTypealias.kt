@@ -15,7 +15,7 @@ typealias InvokeWithParam<T> = (T.() -> Unit)
 typealias SuspendInvokeWithParam<T> = (suspend T.() -> Unit)
 
 typealias OnEventReceived = (suspend () -> Unit)
-typealias RefreshActuator = Invoke
+typealias RefreshActuator = InvokeWithParam<Boolean>
 
-typealias LaunchWith<T> = () -> (((InvokeWithParam<T>)) -> Unit)
-typealias SuspendLaunchWith<T> = () -> (((SuspendInvokeWithParam<T>)) -> Unit)
+typealias RunWith<T> = (InvokeWithParam<T>) -> Unit
+typealias SuspendRunWith<T> = (SuspendInvokeWithParam<T>) -> Unit

@@ -14,6 +14,6 @@ interface UiReceiverForRepo<Param : Any> {
 
 interface UiReceiverForSource {
 
-    fun refresh()
+    fun refresh(important: Boolean)
 
 }

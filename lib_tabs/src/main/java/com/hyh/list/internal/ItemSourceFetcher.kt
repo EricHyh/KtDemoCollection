@@ -1,8 +1,8 @@
 package com.hyh.list.internal
 
-import android.os.SystemClock
 import com.hyh.Invoke
-import com.hyh.RefreshActuator
+import com.hyh.base.BaseLoadEventHandler
+import com.hyh.base.LoadStrategy
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
@@ -12,66 +12,27 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
-import kotlin.math.abs
 
 
 abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) {
 
     private val uiReceiver = object : UiReceiverForRepo<Param> {
 
-        private val state = MutableStateFlow(Pair<Long, Param?>(0, initialParam))
+        private val refreshEventHandler = object : BaseLoadEventHandler<Param>(initialParam) {
 
-        private var cacheState: MutableStateFlow<Pair<Long, Param>>? = null
-        private var refreshStage = RefreshStage.UNBLOCK
-        private var delay = 0
-        private var timingStart: Long = 0
-
-        val flow = state.map { it.second }
-
-        override fun refresh(param: Param) {
-            when (refreshStage) {
-                RefreshStage.UNBLOCK -> {
-                    state.value = Pair(state.value.first + 1, param)
-                    when (val refreshStrategy = getRefreshStrategy()) {
-                        is RefreshStrategy.QueueUp -> {
-                            refreshStage = RefreshStage.BLOCK
-                        }
-                        is RefreshStrategy.DelayedQueueUp -> {
-                            refreshStage = RefreshStage.TIMING
-                            timingStart = SystemClock.elapsedRealtime()
-                            delay = refreshStrategy.delay
-                        }
-                        else -> {
-                            refreshStage = RefreshStage.UNBLOCK
-                        }
-                    }
-                }
-                RefreshStage.TIMING -> {
-                    state.value = Pair(state.value.first + 1, param)
-                    val elapsedRealtime = SystemClock.elapsedRealtime()
-                    if (abs(elapsedRealtime - timingStart) > delay) {
-                        refreshStage = RefreshStage.BLOCK
-                    }
-                }
-                RefreshStage.BLOCK -> {
-                    val cacheState = this.cacheState
-                    if (cacheState != null) {
-                        cacheState.value = Pair(cacheState.value.first + 1, param)
-                    } else {
-                        this.cacheState = MutableStateFlow(Pair<Long, Param>(0, param))
-                    }
-                }
+            override fun getLoadStrategy(): LoadStrategy {
+                return this@ItemSourceFetcher.getLoadStrategy()
             }
         }
 
+        val flow = refreshEventHandler.flow.map { it.second }
+
+        override fun refresh(param: Param) {
+            refreshEventHandler.onReceiveLoadEvent(false, param)
+        }
+
         fun onRefreshComplete() {
-            val cacheState = this.cacheState
-            this.cacheState = null
-            timingStart = 0
-            refreshStage = RefreshStage.UNBLOCK
-            if (cacheState != null) {
-                refresh(cacheState.value.second)
-            }
+            refreshEventHandler.onLoadComplete()
         }
     }
 
@@ -111,7 +72,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     private fun getLoader(): SourceLoader<Param> = ::load
     private fun geOnLoadResult(): OnSourceLoadResult<Param> = ::onLoadResult
 
-    abstract fun getRefreshStrategy(): RefreshStrategy
+    abstract fun getLoadStrategy(): LoadStrategy
     abstract suspend fun getCache(params: ItemSourceRepository.CacheParams<Param>): ItemSourceRepository.CacheResult
     abstract suspend fun onCacheResult(params: ItemSourceRepository.CacheParams<Param>, cacheResult: ItemSourceRepository.CacheResult)
 

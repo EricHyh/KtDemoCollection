@@ -1,8 +1,7 @@
 package com.hyh.paging3demo.list
 
-import android.os.SystemClock
 import com.hyh.list.SimpleItemSourceRepository
-import com.hyh.list.internal.RefreshStrategy
+import com.hyh.base.LoadStrategy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -10,8 +9,8 @@ import kotlinx.coroutines.delay
 class MultiTabsItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
 
 
-    override fun getRefreshStrategy(): RefreshStrategy {
-        return RefreshStrategy.DelayedQueueUp(5000)
+    override fun getLoadStrategy(): LoadStrategy {
+        return LoadStrategy.DelayedQueueUp(5000)
         //return RefreshStrategy.QueueUp
         //return RefreshStrategy.CancelLast
     }

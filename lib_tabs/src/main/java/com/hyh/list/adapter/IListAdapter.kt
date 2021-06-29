@@ -25,14 +25,13 @@ interface IListAdapter<Param : Any> {
 
     fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo?
 
-
     fun refreshRepo(param: Param)
 
-    fun refreshSources()
-    fun refreshSources(vararg sourceIndexes: Int)
-    fun refreshSources(sourceIndexStart: Int, count: Int)
-    fun refreshSources(vararg sourceTokens: Any)
-    fun refreshSources(sourceTokenStart: Any, count: Int)
+    fun refreshSources(important: Boolean = false)
+    fun refreshSources(vararg sourceIndexes: Int, important: Boolean = false)
+    fun refreshSources(sourceIndexStart: Int, count: Int, important: Boolean = false)
+    fun refreshSources(vararg sourceTokens: Any, important: Boolean = false)
+    fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean = false)
 
 }
 

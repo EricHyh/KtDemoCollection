@@ -216,7 +216,7 @@ private class LifecycleCoroutineScopeImpl(
     }
 }
 
-private class PageContextViewModel : ViewModel() {
+class PageContextViewModel : ViewModel() {
 
     private val pageContextMap: MutableMap<Lifecycle, PageContext> = mutableMapOf()
 

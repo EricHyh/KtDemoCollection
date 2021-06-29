@@ -57,14 +57,15 @@ fun main() {
         return@Comparator i
     })*/
 
-    val list2 = listOf<Int>(0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0,  0, 0,
-        0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 3)
+    val list2 = listOf<Int>(
+        0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 3
+    )
     /*val sortedWith = list2.sortedWith(Comparator { p0, p1 ->
         var i = p0 - p1
         if (i == 0) i = -1
         return@Comparator i
     })*/
-
 
 
     /*val list2 = listOf<Int>(1, 1, 1, 0, 0, 1, 1, 0, 0)
@@ -84,10 +85,14 @@ fun main() {
     treeSet.addAll(list2)
 
 
-
     //x > y
     //x > z
     //y > z
+
+
+
+
+
 
 
 
