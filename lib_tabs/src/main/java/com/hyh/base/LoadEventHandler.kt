@@ -3,7 +3,6 @@ package com.hyh.base
 import android.os.SystemClock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlin.math.abs
 
 /**
@@ -24,8 +23,8 @@ abstract class BaseLoadEventHandler<Param : Any>(initialParam: Param?) {
     val flow = state.asStateFlow()
 
     @Synchronized
-    fun onReceiveLoadEvent(forceLoad: Boolean, param: Param) {
-        if (forceLoad) {
+    fun onReceiveLoadEvent(important: Boolean, param: Param) {
+        if (important) {
             state.value = Pair(state.value.first + 1, param)
             this.cacheState = null
             this.timingStart = 0

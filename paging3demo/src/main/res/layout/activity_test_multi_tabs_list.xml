@@ -10,6 +10,18 @@
         android:onClick="refresh"
         android:text="刷新一次" />
 
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="startRefresh"
+        android:text="开始刷新" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="stopRefresh"
+        android:text="停止刷新" />
+
 
     <TextView
         android:id="@+id/last_tv_types"

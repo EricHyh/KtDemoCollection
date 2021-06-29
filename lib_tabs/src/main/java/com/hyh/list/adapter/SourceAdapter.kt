@@ -152,8 +152,8 @@ class SourceAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
     }
 
-    fun refresh() {
-        receiver?.refresh()
+    fun refresh(important: Boolean) {
+        receiver?.refresh(important)
     }
 
     fun destroy() {

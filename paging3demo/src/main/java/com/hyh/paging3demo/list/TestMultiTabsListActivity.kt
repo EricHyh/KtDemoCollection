@@ -2,10 +2,12 @@ package com.hyh.paging3demo.list
 
 import android.os.Bundle
 import android.os.Handler
+import android.os.HandlerThread
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.list.SingleItemSourceRepository
 import com.hyh.list.decoration.BaseItemSourceFrameDecoration
 import com.hyh.list.adapter.MultiSourceAdapter
 import com.hyh.list.decoration.ItemSourceFrameDecoration
@@ -27,7 +29,8 @@ class TestMultiTabsListActivity : AppCompatActivity() {
         recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
 
         Handler().postDelayed({
-            multiSourceAdapter.submitData(MultiTabsItemSourceRepo().flow)
+            //multiSourceAdapter.submitData(MultiTabsItemSourceRepo().flow)
+            multiSourceAdapter.submitData(SingleItemSourceRepository(TestMultiTabsItemSource()).flow)
         }, 2000)
 
 
@@ -37,6 +40,49 @@ class TestMultiTabsListActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        multiSourceAdapter.refreshRepo(Unit)
+        //multiSourceAdapter.refreshRepo(Unit)
+        handler.post(refreshRunnable1)
+    }
+
+
+    val handlerThread = HandlerThread("Refresh")
+    val handler by lazy {
+        handlerThread.start()
+        Handler(handlerThread.looper)
+    }
+    val refreshRunnable = object : Runnable {
+        override fun run() {
+            //testAdapter.refresh()
+            multiSourceAdapter.refreshRepo(Unit)
+            handler.post(this)
+        }
+    }
+
+    var flag = true
+
+    val refreshRunnable1 = Runnable {
+        multiSourceAdapter.refreshSources(0)
+    }
+
+    fun startRefresh(v: View) {
+        /*handler.removeCallbacks(refreshRunnable)
+        handler.post(refreshRunnable)*/
+        Thread {
+            flag = true
+            while (flag) {
+                handler.post(refreshRunnable1)
+            }
+        }.start()
+
+    }
+
+    fun stopRefresh(v: View) {
+        //handler.removeCallbacks(refreshRunnable)
+        flag = false
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handlerThread.quitSafely()
     }
 }

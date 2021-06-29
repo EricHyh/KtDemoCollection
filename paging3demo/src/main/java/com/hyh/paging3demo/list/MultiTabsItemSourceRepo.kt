@@ -10,9 +10,9 @@ class MultiTabsItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
 
 
     override fun getLoadStrategy(): LoadStrategy {
-        return LoadStrategy.DelayedQueueUp(5000)
-        //return RefreshStrategy.QueueUp
-        //return RefreshStrategy.CancelLast
+        //return LoadStrategy.DelayedQueueUp(5000)
+        //return LoadStrategy.QueueUp
+        return LoadStrategy.CancelLast
     }
 
     override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult {

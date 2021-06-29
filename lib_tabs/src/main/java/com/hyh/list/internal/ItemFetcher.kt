@@ -38,7 +38,7 @@ class ItemFetcher<Param : Any>(
         val flow = refreshEventHandler.flow.map { it.first }
 
         override fun refresh(important: Boolean) {
-            refreshEventHandler.onReceiveLoadEvent(false, Unit)
+            refreshEventHandler.onReceiveLoadEvent(important, Unit)
         }
 
         fun onRefreshComplete() {
@@ -82,8 +82,8 @@ class ItemFetcher<Param : Any>(
             }
     }.buffer(Channel.BUFFERED)
 
-    fun refresh(immediate: Boolean) {
-        uiReceiver.refresh()
+    fun refresh(important: Boolean) {
+        uiReceiver.refresh(important)
     }
 
     private fun getLoadStrategy(): LoadStrategy {

@@ -124,39 +124,39 @@ class MultiSourceAdapter<Param : Any>(
         return itemSnapshot
     }
 
-    override fun refreshSources() {
+    override fun refreshSources(important: Boolean) {
         wrapperMap.forEach {
-            it.value.adapter.refresh()
+            it.value.adapter.refresh(important)
         }
     }
 
-    override fun refreshSources(vararg sourceIndexes: Int) {
+    override fun refreshSources(vararg sourceIndexes: Int, important: Boolean) {
         var index = 0
         val sourceIndexList = sourceIndexes.toMutableList()
         wrapperMap.forEach {
             if (sourceIndexList.isEmpty()) return@refreshSources
             if (sourceIndexList.remove(index)) {
-                it.value.adapter.refresh()
+                it.value.adapter.refresh(important)
             }
             index++
         }
     }
 
-    override fun refreshSources(vararg sourceTokens: Any) {
+    override fun refreshSources(vararg sourceTokens: Any, important: Boolean) {
         sourceTokens.forEach {
-            wrapperMap[it]?.adapter?.refresh()
+            wrapperMap[it]?.adapter?.refresh(important)
         }
     }
 
-    override fun refreshSources(sourceIndexStart: Int, count: Int) {
+    override fun refreshSources(sourceIndexStart: Int, count: Int, important: Boolean) {
         findWrappers(sourceIndexStart, count).forEach {
-            it.adapter.refresh()
+            it.adapter.refresh(important)
         }
     }
 
-    override fun refreshSources(sourceTokenStart: Any, count: Int) {
+    override fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean) {
         findWrappers(sourceTokenStart, count).forEach {
-            it.adapter.refresh()
+            it.adapter.refresh(important)
         }
     }
 
@@ -262,7 +262,6 @@ class MultiSourceAdapter<Param : Any>(
 
         val oldSourceTokens = ArrayList(oldWrapperMap.keys)
         val newSourceTokens = mutableListOf<Any>()
-        //val newWrappers = mutableListOf<SourceAdapterWrapper>()
         val newWrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
         sources.forEach {
             newSourceTokens.add(it.sourceToken)
@@ -273,7 +272,7 @@ class MultiSourceAdapter<Param : Any>(
                     (it.onReuse as (oldItemSource: ItemSource<Any>) -> Unit).invoke(oldWrapper.itemSource)
                 }
                 refreshInvokes.add {
-                    oldWrapper.adapter.refresh()
+                    oldWrapper.adapter.refresh(false)
                 }
             } else {
                 val wrapper = createWrapper(it)
@@ -447,7 +446,10 @@ class MultiSourceAdapter<Param : Any>(
         val itemsBefore = countItemsBefore(wrapper)
         val localPosition: Int = globalPosition - itemsBefore
 
-        check(!(localPosition < 0 || localPosition >= wrapper.adapter.itemCount))
+        if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
+            Log.e(TAG, "findItemLocalInfo error: localPosition=$localPosition, itemCount=${wrapper.adapter.itemCount}", )
+            return null
+        }
 
         return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount)
     }
