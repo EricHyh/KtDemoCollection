@@ -2,6 +2,7 @@ package com.hyh.list.internal
 
 import com.hyh.InvokeWithParam
 import com.hyh.OnEventReceived
+import com.hyh.SuspendInvoke
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.Deferred
@@ -44,12 +45,14 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
     class PreShowing(
         val items: List<ItemData>,
         val listOperates: List<ListOperate>,
+        val processor: ResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
     class Success(
         val items: List<ItemData>,
         val listOperates: List<ListOperate>,
+        val processor: ResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
@@ -61,10 +64,11 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
 }
 
+typealias OnReceived = SuspendInvoke
 
 typealias ResultProcessor = suspend (
-    displayedItemWrappers: List<ItemDataWrapper>,
-    displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>
+    displayedItemWrappers: List<ItemDataWrapper>?,
+    displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?
 ) -> ProcessedResult
 
 
