@@ -239,7 +239,6 @@ class ItemFetcherSnapshot<Param : Any>(
 
             val processedResult = processResult(itemsBucketIds, itemsBucketMap)
 
-
             val onEventReceived: OnEventReceived = {
                 onSuccessEventReceived(
                     itemsBucketIds,
@@ -273,7 +272,7 @@ class ItemFetcherSnapshot<Param : Any>(
     private fun processResult(
         itemsBucketIds: List<Int>,
         itemsBucketMap: Map<Int, ItemSource.ItemsBucket>
-    ): ProcessedResult<Param> {
+    ): XXProcessedResult<Param> {
         val wrappers = getItemWrappers(itemsBucketIds, itemsBucketMap)
         val updateResult =
             ListUpdate.calculateDiff(
@@ -356,7 +355,7 @@ class ItemFetcherSnapshot<Param : Any>(
             }
         }
 
-        return ProcessedResult(
+        return XXProcessedResult(
             resultItemWrappers,
             updateResult.listOperates,
             updateResult.elementOperates,
@@ -385,7 +384,7 @@ class ItemFetcherSnapshot<Param : Any>(
 
     private fun onSuccessEventReceived(
         itemsBucketIds: List<Int>,
-        processedResult: ProcessedResult<Param>
+        processedResult: XXProcessedResult<Param>
     ) {
         displayedItemsBucketIds = itemsBucketIds
         displayedItemsBucketMap = processedResult.resultItemsBucketMap
@@ -405,14 +404,6 @@ class ItemFetcherSnapshot<Param : Any>(
     }
 
 
-    class ProcessedResult<Param : Any>(
-        val resultItemWrappers: List<ItemDataWrapper>,
-        val listOperates: List<ListOperate>,
-        val elementOperates: List<ElementOperate<ItemDataWrapper>>,
-        val resultItemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
-        val resultItems: List<ItemData>,
-        val itemSourceInvoke: List<InvokeWithParam<ItemSource.Delegate<Param>>>
-    )
 }
 
 internal typealias ParamProvider<Param> = (suspend () -> Param)

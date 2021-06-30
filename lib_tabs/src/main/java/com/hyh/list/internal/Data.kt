@@ -1,5 +1,6 @@
 package com.hyh.list.internal
 
+import com.hyh.InvokeWithParam
 import com.hyh.OnEventReceived
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
@@ -60,3 +61,26 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
 }
 
+
+typealias ResultProcessor = suspend (
+    displayedItemWrappers: List<ItemDataWrapper>,
+    displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>
+) -> ProcessedResult
+
+
+data class ProcessedResult(
+    val resultItemWrappers: List<ItemDataWrapper>,
+    val resultItems: List<ItemData>,
+    val resultItemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
+    val listOperates: List<ListOperate>,
+)
+
+
+class XXProcessedResult<Param : Any>(
+    val resultItemWrappers: List<ItemDataWrapper>,
+    val listOperates: List<ListOperate>,
+    val elementOperates: List<ElementOperate<ItemDataWrapper>>,
+    val resultItemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
+    val resultItems: List<ItemData>,
+    val itemSourceInvoke: List<InvokeWithParam<ItemSource.Delegate<Param>>>
+)

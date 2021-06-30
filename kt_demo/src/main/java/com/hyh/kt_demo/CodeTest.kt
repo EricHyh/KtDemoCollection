@@ -3,6 +3,44 @@ package com.hyh.kt_demo
 
 fun main() {
     //MP3MusicPlayer("双截棍").play()
+
+    val marketList = listOf("MARKET_HK", "MARKET_US", "MARKET_SG", "MARKET_JP", "MARKET_SH", "MARKET_SZ")
+    //val marketList = listOf("MARKET_HK")
+    val reduceIndexed = marketList.reduceIndexed { index, acc, s ->
+        if (index == 1) {
+            "($acc|$s"
+        } else if (index == marketList.lastIndex) {
+            "$acc|$s)"
+        } else {
+            "$acc|$s"
+        }
+    }
+
+    val xx1 = "MARKET_HK".matches(Regex(reduceIndexed))
+    val xx11 = "MARKET".matches(Regex(reduceIndexed))
+    val xx2 = "MARKET_US".matches(Regex(reduceIndexed))
+    val xx3 = "MARKET_SZ".matches(Regex(reduceIndexed))
+
+    val regex = Regex(reduceIndexed)
+
+    val test1 = "dfafafasff.MARKET_HK"
+    val test2 = "dfafafasff.MARKET_HK.MARKET_HK"
+    val test3 = "dfafafasff.xxxx.MARKET_HK"
+
+    listOf(test1, test2, test3).forEach {
+        val split = it.split(".")
+        if (split.size >= 2) {
+            val last = split.last()
+            if (last.matches(regex)) {
+                val substring = it.substring(0, it.lastIndexOf("."))
+                println()
+            }
+        }
+    }
+
+
+    println()
+
 }
 
 
