@@ -2,12 +2,10 @@ package com.hyh.list.adapter
 
 import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
-import com.hyh.SuspendInvoke
 import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SingleRunner
 import com.hyh.list.ItemData
@@ -19,8 +17,6 @@ import com.hyh.page.PageContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import java.lang.ref.WeakReference
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 import kotlin.coroutines.CoroutineContext
@@ -45,7 +41,7 @@ class SourceRepoAdapter<Param : Any>(
     private val sourceAdapterCallback = SourceAdapterCallback()
     private var wrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
     private var receiver: UiReceiverForRepo<Param>? = null
-    private val invokeEventCh = Channel<List<SuspendInvoke>>(Channel.BUFFERED)
+    private val invokeEventCh = Channel<List<(suspend () -> Unit)>>(Channel.BUFFERED)
     private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
     override val repoLoadStateFlow: StateFlow<RepoLoadState>
         get() = _loadStateFlow
@@ -245,6 +241,7 @@ class SourceRepoAdapter<Param : Any>(
     }
 
     private suspend fun submitData(wrapper: SourceAdapterWrapper, flow: Flow<SourceData>) {
+        Log.d(TAG, "xxx: xxxx")
         val context: CoroutineContext = SupervisorJob() + mainDispatcher
         val job = CloseableCoroutineScope(context).launch {
             flow.collectLatest {
@@ -258,7 +255,7 @@ class SourceRepoAdapter<Param : Any>(
     private fun updateWrappers(sources: List<LazySourceData<out Any>>): UpdateWrappersResult {
         val reuseInvokes: MutableList<Invoke> = mutableListOf()
         val newInvokes: MutableList<Invoke> = mutableListOf()
-        val refreshInvokes: MutableList<SuspendInvoke> = mutableListOf()
+        val refreshInvokes: MutableList<(suspend () -> Unit)> = mutableListOf()
         val oldWrapperMap = wrapperMap
 
         val oldSourceTokens = ArrayList(oldWrapperMap.keys)
@@ -343,60 +340,22 @@ class SourceRepoAdapter<Param : Any>(
         return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount)
     }
 
-
-    private fun List<SourceAdapterWrapper>.findWrapper(sourceToken: Any): SourceAdapterWrapper? {
-        forEach {
-            if (it.sourceToken == sourceToken) {
-                return it
-            }
-        }
-        return null
-    }
-
     @Suppress("UNCHECKED_CAST")
     private fun createWrapper(sourceData: LazySourceData<out Any>): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
             sourceData.itemSource as ItemSource<Any>,
-            SourceAdapter(),
+            SourceAdapter(pageContext),
             viewTypeStorage,
             sourceAdapterCallback
         )
-    }
-
-    private fun findWrapperAndLocalPosition(globalPosition: Int): WrapperAndLocalPosition {
-        val result: WrapperAndLocalPosition
-        if (reusableHolder.inUse) {
-            result = WrapperAndLocalPosition()
-        } else {
-            reusableHolder.inUse = true
-            result = reusableHolder
-        }
-        var localPosition = globalPosition
-        for (wrapper in wrapperMap) {
-            if (wrapper.value.cachedItemCount > localPosition) {
-                result.wrapper = wrapper.value
-                result.localPosition = localPosition
-                break
-            }
-            localPosition -= wrapper.value.cachedItemCount
-        }
-        requireNotNull(result.wrapper) { "Cannot find wrapper for $globalPosition" }
-        return result
-    }
-
-    private fun releaseWrapperAndLocalPosition(wrapperAndPos: WrapperAndLocalPosition) {
-        wrapperAndPos.inUse = false
-        wrapperAndPos.wrapper = null
-        wrapperAndPos.localPosition = -1
-        reusableHolder = wrapperAndPos
     }
 
     // region inner class
 
     class UpdateWrappersResult(
         val newWrapperMap: LinkedHashMap<Any, SourceAdapterWrapper>,
-        val refreshInvokes: List<SuspendInvoke>
+        val refreshInvokes: List<(suspend () -> Unit)>
     )
 
 

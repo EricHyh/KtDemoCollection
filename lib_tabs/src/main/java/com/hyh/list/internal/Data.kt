@@ -1,5 +1,6 @@
 package com.hyh.list.internal
 
+import com.hyh.Invoke
 import com.hyh.InvokeWithParam
 import com.hyh.OnEventReceived
 import com.hyh.SuspendInvoke
@@ -43,15 +44,11 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
     class Loading(onReceived: (suspend () -> Unit) = {}) : SourceEvent(onReceived)
 
     class PreShowing(
-        val items: List<ItemData>,
-        val listOperates: List<ListOperate>,
         val processor: ResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
     class Success(
-        val items: List<ItemData>,
-        val listOperates: List<ListOperate>,
         val processor: ResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
@@ -64,8 +61,6 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
 }
 
-typealias OnReceived = SuspendInvoke
-
 typealias ResultProcessor = suspend (
     displayedItemWrappers: List<ItemDataWrapper>?,
     displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?
@@ -77,14 +72,12 @@ data class ProcessedResult(
     val resultItems: List<ItemData>,
     val resultItemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
     val listOperates: List<ListOperate>,
+    val onResultUsed: Invoke
 )
 
-
-class XXProcessedResult<Param : Any>(
-    val resultItemWrappers: List<ItemDataWrapper>,
-    val listOperates: List<ListOperate>,
-    val elementOperates: List<ElementOperate<ItemDataWrapper>>,
-    val resultItemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
-    val resultItems: List<ItemData>,
-    val itemSourceInvoke: List<InvokeWithParam<ItemSource.Delegate<Param>>>
+class SourceDisplayedData(
+    var itemsBucketIds: List<Int>? = null,
+    var itemsBucketMap: Map<Int, ItemSource.ItemsBucket>? = null,
+    var itemWrappers: List<ItemDataWrapper>? = null,
+    var items: List<ItemData>? = null,
 )

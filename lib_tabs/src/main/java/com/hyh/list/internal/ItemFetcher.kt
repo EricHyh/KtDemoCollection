@@ -21,6 +21,11 @@ class ItemFetcher<Param : Any>(
     private val itemSource: ItemSource<Param>,
 ) {
 
+    companion object {
+        private const val TAG = "ItemFetcher"
+    }
+
+    private val sourceDisplayedData = SourceDisplayedData()
 
     private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>> = {
         it.invoke(itemSource.delegate)
@@ -38,6 +43,7 @@ class ItemFetcher<Param : Any>(
         val flow = refreshEventHandler.flow.map { it.first }
 
         override fun refresh(important: Boolean) {
+            Log.d(TAG, "refresh: $important")
             refreshEventHandler.onReceiveLoadEvent(important, Unit)
         }
 
@@ -50,12 +56,14 @@ class ItemFetcher<Param : Any>(
         uiReceiver
             .flow
             .onStart {
-                emit(0)
+                //emit(0)
             }
             .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param>?, _: Long ->
+            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param>?, id: Long ->
+                Log.d(TAG, "simpleScan: $id")
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
+                    displayedData = sourceDisplayedData,
                     lastPreShowResult = previousSnapshot?.preShowResult,
                     lastLoadResult = previousSnapshot?.loadResult,
                     paramProvider = getParamProvider(),
@@ -64,10 +72,6 @@ class ItemFetcher<Param : Any>(
                     loader = getLoader(),
                     onItemLoadResult = getOnLoadResult(),
                     fetchDispatcherProvider = getFetchDispatcherProvider(),
-                    lastDisplayedItemsBucketIds = previousSnapshot?.displayedItemsBucketIds,
-                    lastDisplayedItemsBucketMap = previousSnapshot?.displayedItemsBucketMap,
-                    lastDisplayedItemWrappers = previousSnapshot?.displayedItemWrappers,
-                    lastDisplayedItems = previousSnapshot?.displayedItems,
                     onRefreshComplete = uiReceiver::onRefreshComplete,
                     sourceDelegateRunner = sourceDelegateRunner
                 )
@@ -78,6 +82,7 @@ class ItemFetcher<Param : Any>(
                 SourceData(downstreamFlow, uiReceiver)
             }
             .collect {
+                Log.d(TAG, "send sourceData")
                 send(it)
             }
     }.buffer(Channel.BUFFERED)
@@ -125,154 +130,34 @@ class ItemFetcher<Param : Any>(
 }
 
 
-class ItemFetcherSnapshot<Param : Any>(
-    private val lastPreShowResult: ItemSource.PreShowResult? = null,
-    private val lastLoadResult: ItemSource.LoadResult? = null,
-    private val paramProvider: ParamProvider<Param>,
-    private val preShowLoader: PreShowLoader<Param>,
-    private val onPreShowResult: OnPreShowResult<Param>,
-    private val loader: ItemLoader<Param>,
-    private val onItemLoadResult: OnItemLoadResult<Param>,
-    private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
-    lastDisplayedItemsBucketIds: List<Int>?,
-    lastDisplayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?,
-    lastDisplayedItemWrappers: List<ItemDataWrapper>?,
-    lastDisplayedItems: List<ItemData>?,
-    private val onRefreshComplete: Invoke,
-    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>>
+class ResultProcessorGenerator<Param : Any>(
+    private val sourceDisplayedData: SourceDisplayedData,
+    private val itemsBucketIds: List<Int>,
+    private val itemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
+    private val dispatcher: CoroutineDispatcher?,
+    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>>,
 ) {
 
     companion object {
-        private const val TAG = "ItemFetcher"
+        private const val TAG = "ResultProcessor"
     }
 
-    var displayedItemsBucketIds: List<Int>? = lastDisplayedItemsBucketIds
-    var displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>? = lastDisplayedItemsBucketMap
-    var displayedItemWrappers: List<ItemDataWrapper>? = lastDisplayedItemWrappers
-    var displayedItems: List<ItemData>? = lastDisplayedItems
-
-    var preShowResult: ItemSource.PreShowResult? = null
-    var loadResult: ItemSource.LoadResult? = null
-
-    private val sourceEventChannelFlowJob = Job()
-    private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
-
-    val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
-        launch {
-            sourceEventCh.consumeAsFlow().collect {
-                // Protect against races where a subsequent call to submitData invoked close(),
-                // but a tabEvent arrives after closing causing ClosedSendChannelException.
-                try {
-                    send(it)
-                    Log.d(TAG, "send : $it")
-                } catch (e: ClosedSendChannelException) {
-                    // Safe to drop tabEvent here, since collection has been cancelled.
-                }
+    val processor: ResultProcessor = { list: List<ItemDataWrapper>?, map: Map<Int, ItemSource.ItemsBucket>? ->
+        if (dispatcher != null) {
+            withContext(dispatcher) {
+                Log.d(TAG, "processor: processResult1 ${Thread.currentThread().name}")
+                processResult(list, map)
             }
-        }
-
-        sourceEventCh.send(SourceEvent.Loading())
-
-        val param = paramProvider.invoke()
-
-
-        Log.d(TAG, "handlePreShowStep: start")
-        val start = System.currentTimeMillis()
-
-        handlePreShowStep(param) {
-            val end = System.currentTimeMillis()
-            Log.d(TAG, "handlePreShowStep: use time -> ${end - start}")
-            handleLoadStep(param, it)
-        }
-    }
-
-    private suspend fun handleLoadStep(param: Param, preShowing: Boolean) {
-        val fetchDispatcher = fetchDispatcherProvider.invoke(param)
-
-        val loadParams = ItemSource.LoadParams(param, displayedItemsBucketMap, displayedItems, lastPreShowResult, lastLoadResult)
-        val loadResult: ItemSource.LoadResult
-        loadResult = if (fetchDispatcher == null) {
-            loader.invoke(loadParams)
         } else {
-            withContext(fetchDispatcher) {
-                loader.invoke(loadParams)
-            }
+            Log.d(TAG, "processor: processResult2: ${Thread.currentThread().name}")
+            processResult(list, map)
         }
-        this@ItemFetcherSnapshot.loadResult = loadResult
-
-        when (loadResult) {
-            is ItemSource.LoadResult.Success -> {
-                val itemsBucketIds = loadResult.itemsBucketIds
-                val itemsBucketMap = loadResult.itemsBucketMap
-
-                val processedResult = processResult(itemsBucketIds, itemsBucketMap)
-
-                val event = SourceEvent.Success(processedResult.resultItems, processedResult.listOperates) {
-                    onSuccessEventReceived(itemsBucketIds, processedResult)
-                    onRefreshComplete()
-                }
-                sourceEventCh.send(event)
-            }
-            is ItemSource.LoadResult.Error -> {
-                val event = SourceEvent.Error(loadResult.error, preShowing) {
-                    onRefreshComplete()
-                }
-                sourceEventCh.send(event)
-            }
-        }
-        onItemLoadResult(loadParams, loadResult)
-    }
-
-    private suspend fun ItemFetcherSnapshot<Param>.handlePreShowStep(
-        param: Param,
-        nextStepInvoke: (suspend (preShowing: Boolean) -> Unit)
-    ): Boolean {
-        val preShowParams = ItemSource.PreShowParams(param, displayedItemsBucketMap, displayedItems, lastPreShowResult, lastLoadResult)
-        val preShowResult = preShowLoader.invoke(preShowParams)
-        this@ItemFetcherSnapshot.preShowResult = preShowResult
-
-        var preShowing = false
-        if (preShowResult is ItemSource.PreShowResult.Success) {
-            preShowing = true
-            val itemsBucketIds = preShowResult.itemsBucketIds
-            val itemsBucketMap = preShowResult.itemsBucketMap
-
-            val processedResult = processResult(itemsBucketIds, itemsBucketMap)
-
-            val onEventReceived: OnEventReceived = {
-                onSuccessEventReceived(
-                    itemsBucketIds,
-                    processedResult
-                )
-
-                nextStepInvoke(true)
-            }
-
-            val event = SourceEvent.PreShowing(
-                processedResult.resultItems,
-                processedResult.listOperates,
-                onEventReceived
-            )
-
-            sourceEventCh.send(event)
-
-            onPreShowResult(preShowParams, preShowResult)
-        } else {
-            onPreShowResult(preShowParams, preShowResult)
-
-            nextStepInvoke(false)
-        }
-        return preShowing
-    }
-
-    fun close() {
-        sourceEventChannelFlowJob.cancel()
     }
 
     private fun processResult(
-        itemsBucketIds: List<Int>,
-        itemsBucketMap: Map<Int, ItemSource.ItemsBucket>
-    ): XXProcessedResult<Param> {
+        displayedItemWrappers: List<ItemDataWrapper>?,
+        displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?
+    ): ProcessedResult {
         val wrappers = getItemWrappers(itemsBucketIds, itemsBucketMap)
         val updateResult =
             ListUpdate.calculateDiff(
@@ -354,17 +239,32 @@ class ItemFetcherSnapshot<Param : Any>(
                 }
             }
         }
-
-        return XXProcessedResult(
+        return ProcessedResult(
             resultItemWrappers,
-            updateResult.listOperates,
-            updateResult.elementOperates,
-            resultItemsBucketMap,
             resultItems,
-            itemSourceInvoke
-        )
-    }
+            resultItemsBucketMap,
+            updateResult.listOperates,
+        ) {
 
+            Log.d(TAG, "processResult: onResultUsed - ${Thread.currentThread().name}")
+
+
+            resultItemWrappers.forEach {
+                it.itemData.delegate.displayedItems = resultItems
+            }
+            sourceDelegateRunner {
+                itemSourceInvoke.forEach {
+                    it.invoke(this)
+                }
+            }
+            ListUpdate.handleItemDataWrapperChanges(updateResult.elementOperates)
+
+            sourceDisplayedData.itemWrappers = resultItemWrappers
+            sourceDisplayedData.items = resultItems
+            sourceDisplayedData.itemsBucketIds = itemsBucketIds
+            sourceDisplayedData.itemsBucketMap = resultItemsBucketMap
+        }
+    }
 
     private fun getItemWrappers(
         itemsBucketIds: List<Int>,
@@ -381,29 +281,139 @@ class ItemFetcherSnapshot<Param : Any>(
         }
         return wrappers
     }
+}
 
-    private fun onSuccessEventReceived(
-        itemsBucketIds: List<Int>,
-        processedResult: XXProcessedResult<Param>
-    ) {
-        displayedItemsBucketIds = itemsBucketIds
-        displayedItemsBucketMap = processedResult.resultItemsBucketMap
-        displayedItemWrappers = processedResult.resultItemWrappers
-        displayedItems = processedResult.resultItems
-        processedResult.resultItemWrappers.forEach {
-            it.itemData.delegate.displayedItems = displayedItems
-        }
 
-        sourceDelegateRunner {
-            processedResult.itemSourceInvoke.forEach {
-                it.invoke(this)
-            }
-        }
+class ItemFetcherSnapshot<Param : Any>(
+    private val displayedData: SourceDisplayedData,
+    private val lastPreShowResult: ItemSource.PreShowResult? = null,
+    private val lastLoadResult: ItemSource.LoadResult? = null,
+    private val paramProvider: ParamProvider<Param>,
+    private val preShowLoader: PreShowLoader<Param>,
+    private val onPreShowResult: OnPreShowResult<Param>,
+    private val loader: ItemLoader<Param>,
+    private val onItemLoadResult: OnItemLoadResult<Param>,
+    private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
+    private val onRefreshComplete: Invoke,
+    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>>
+) {
 
-        ListUpdate.handleItemDataWrapperChanges(processedResult.elementOperates)
+    companion object {
+        private const val TAG = "ItemFetcher"
     }
 
 
+    var preShowResult: ItemSource.PreShowResult? = null
+    var loadResult: ItemSource.LoadResult? = null
+
+    private val sourceEventChannelFlowJob = Job()
+    private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
+
+    val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
+        launch {
+            sourceEventCh.consumeAsFlow().collect {
+                // Protect against races where a subsequent call to submitData invoked close(),
+                // but a tabEvent arrives after closing causing ClosedSendChannelException.
+                try {
+                    send(it)
+                    Log.d(TAG, "send : $it")
+                } catch (e: ClosedSendChannelException) {
+                    // Safe to drop tabEvent here, since collection has been cancelled.
+                }
+            }
+        }
+
+        sourceEventCh.send(SourceEvent.Loading())
+        val param = paramProvider.invoke()
+
+        val preShowing = handlePreShowStep(param)
+
+        handleLoadStep(param, preShowing)
+    }
+
+    private suspend fun handlePreShowStep(param: Param): Boolean {
+        val preShowParams =
+            ItemSource.PreShowParams(
+                param,
+                displayedData.itemsBucketMap,
+                displayedData.items,
+                lastPreShowResult,
+                lastLoadResult
+            )
+        val preShowResult = preShowLoader.invoke(preShowParams)
+        this@ItemFetcherSnapshot.preShowResult = preShowResult
+
+        var preShowing = false
+        if (preShowResult is ItemSource.PreShowResult.Success) {
+            preShowing = true
+            val itemsBucketIds = preShowResult.itemsBucketIds
+            val itemsBucketMap = preShowResult.itemsBucketMap
+            val event = SourceEvent.PreShowing(
+                ResultProcessorGenerator(
+                    displayedData,
+                    itemsBucketIds,
+                    itemsBucketMap,
+                    null,
+                    sourceDelegateRunner
+                ).processor
+            )
+            sourceEventCh.send(event)
+            onPreShowResult(preShowParams, preShowResult)
+        } else {
+            onPreShowResult(preShowParams, preShowResult)
+        }
+        return preShowing
+    }
+
+    private suspend fun handleLoadStep(param: Param, preShowing: Boolean) {
+        val fetchDispatcher = fetchDispatcherProvider.invoke(param)
+
+        val loadParams = ItemSource.LoadParams(
+            param,
+            displayedData.itemsBucketMap,
+            displayedData.items,
+            lastPreShowResult,
+            lastLoadResult
+        )
+        val loadResult: ItemSource.LoadResult
+        loadResult = if (fetchDispatcher == null) {
+            loader.invoke(loadParams)
+        } else {
+            withContext(fetchDispatcher) {
+                loader.invoke(loadParams)
+            }
+        }
+        this@ItemFetcherSnapshot.loadResult = loadResult
+
+        when (loadResult) {
+            is ItemSource.LoadResult.Success -> {
+                val itemsBucketIds = loadResult.itemsBucketIds
+                val itemsBucketMap = loadResult.itemsBucketMap
+                val event = SourceEvent.Success(
+                    ResultProcessorGenerator(
+                        displayedData,
+                        itemsBucketIds, itemsBucketMap,
+                        fetchDispatcher,
+                        sourceDelegateRunner
+                    ).processor
+                ) {
+                    onRefreshComplete()
+                }
+                sourceEventCh.send(event)
+            }
+            is ItemSource.LoadResult.Error -> {
+                val event = SourceEvent.Error(loadResult.error, preShowing) {
+                    onRefreshComplete()
+                }
+                sourceEventCh.send(event)
+            }
+        }
+        onItemLoadResult(loadParams, loadResult)
+    }
+
+    fun close() {
+        sourceEventChannelFlowJob.cancel()
+    }
 }
 
 internal typealias ParamProvider<Param> = (suspend () -> Param)

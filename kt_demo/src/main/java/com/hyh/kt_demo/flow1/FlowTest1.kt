@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
 
 /**
  * TODO: Add Description
@@ -28,11 +29,12 @@ fun main() {
     //val channel = Channel<Int>(capacity = Channel.RENDEZVOUS)
 
 
-    val state = MutableStateFlow(Pair<Int, Boolean?>(Integer.MIN_VALUE, null))
+    val state = MutableStateFlow(Pair<Int, Boolean?>(0, null))
 
     val flow1 = state.mapNotNull { it.second }
 
-    val flow2 = simpleChannelFlow<Int> {
+
+    /*val flow2 = simpleChannelFlow<Int> {
         println("simpleChannelFlow")
         flow1
             .onStart {
@@ -42,19 +44,39 @@ fun main() {
             send(100)
             println("flow1.collect: $it")
         }
-    }
-
-
+    }*/
 
     runBlocking {
 
 
-        launch(Dispatchers.IO) {
-            flow2.collect {
-                println("flow2.collect: $it")
+        val launch = launch(Dispatchers.IO) {
+            testFlow()
+        }
+
+        launch {
+            repeat(100) {
+                delay(100)
+                println("repeat：$it")
+                state.value = Pair(state.value.first + 1, false)
             }
         }
 
+        launch {
+            delay(3000)
+            launch.cancel()
+            /*launch {
+                state.collect {
+                    println("collect2：$it")
+                }
+            }*/
+        }
+
+
+        /*launch(Dispatchers.IO) {
+            flow2.collect {
+                println("flow2.collect: $it")
+            }
+        }*/
 
         /*state.value = Pair(1, true)
 
@@ -103,6 +125,16 @@ fun main() {
     }*/
 
 
+}
+val state = MutableStateFlow(Pair<Int, Boolean?>(0, null))
+val coroutineScope = CoroutineScope(EmptyCoroutineContext) + SupervisorJob()
+
+suspend fun testFlow() {
+    coroutineScope.launch(Dispatchers.IO) {
+        state.collect {
+            println("collect1：$it")
+        }
+    }
 }
 
 interface A {

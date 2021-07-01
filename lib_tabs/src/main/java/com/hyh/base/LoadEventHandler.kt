@@ -3,6 +3,7 @@ package com.hyh.base
 import android.os.SystemClock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.cancel
 import kotlin.math.abs
 
 /**
