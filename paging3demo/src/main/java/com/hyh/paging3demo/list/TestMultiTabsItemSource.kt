@@ -25,7 +25,7 @@ class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
     private val onTabClick: (tab: Int) -> Unit = {
         if (selectedTab != it) {
             selectedTab = it
-            refreshActuator.invoke(false)
+            refreshActuator.invoke(true)
         }
     }
 

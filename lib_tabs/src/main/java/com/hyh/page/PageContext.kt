@@ -224,6 +224,7 @@ class PageContextViewModel : ViewModel() {
         viewModelStoreOwner: ViewModelStoreOwner,
         lifecycleOwner: LifecycleOwner
     ): PageContext {
+        viewModelScope
         val pageContext = pageContextMap[lifecycleOwner.lifecycle]
         if (pageContext != null) {
             return pageContext

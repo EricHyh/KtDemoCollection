@@ -29,9 +29,9 @@ fun main() {
     //val channel = Channel<Int>(capacity = Channel.RENDEZVOUS)
 
 
-    val state = MutableStateFlow(Pair<Int, Boolean?>(0, null))
+    //val state = MutableStateFlow(Pair<Int, Boolean?>(0, null))
 
-    val flow1 = state.mapNotNull { it.second }
+    //val flow1 = state.mapNotNull { it.second }
 
 
     /*val flow2 = simpleChannelFlow<Int> {
@@ -63,7 +63,8 @@ fun main() {
 
         launch {
             delay(3000)
-            launch.cancel()
+            coroutineScope.cancel()
+            testFlow()
             /*launch {
                 state.collect {
                     println("collect2：$it")
@@ -130,8 +131,8 @@ val state = MutableStateFlow(Pair<Int, Boolean?>(0, null))
 val coroutineScope = CoroutineScope(EmptyCoroutineContext) + SupervisorJob()
 
 suspend fun testFlow() {
-    coroutineScope.launch(Dispatchers.IO) {
-        state.collect {
+    coroutineScope.launch {
+        state.asStateFlow().collect {
             println("collect1：$it")
         }
     }
