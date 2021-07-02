@@ -6,13 +6,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.base.LoadStrategy
 import com.hyh.list.*
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlin.random.Random
-import kotlin.random.nextInt
 
 class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
 
@@ -27,6 +27,10 @@ class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
             selectedTab = it
             refreshActuator.invoke(true)
         }
+    }
+
+    override fun getLoadStrategy(): LoadStrategy {
+        return LoadStrategy.DelayedQueueUp(5000)
     }
 
     override suspend fun getTitlePreShow(tabToken: Any, param: Int): List<ItemData> {

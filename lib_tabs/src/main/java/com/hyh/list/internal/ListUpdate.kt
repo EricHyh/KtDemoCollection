@@ -1,6 +1,5 @@
 package com.hyh.list.internal
 
-import android.util.Log
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
@@ -30,6 +29,13 @@ sealed class ElementOperate<E> {
 }
 
 
+data class ElementOperates<E>(
+    val addedElements: List<E>,
+    val removedElements: List<E>,
+    val changedElements: List<Triple<E, E, Any?>>
+)
+
+
 object ListUpdate {
 
     private const val TAG = "ListUpdate"
@@ -41,9 +47,11 @@ object ListUpdate {
                 listOperates = listOf(ListOperate.OnAllChanged),
                 elementOperates = newList.map {
                     ElementOperate.Added(it)
-                }
+                },
+                newElementOperates = ElementOperates(newList, emptyList(), emptyList())
             )
         }
+
 
         val list = mutableListOf<ElementStub<E>>()
         list.addAll(oldList.map { ElementStub(it) })
@@ -51,7 +59,13 @@ object ListUpdate {
         val contentsNotSameMap: IdentityHashMap<E, E> = IdentityHashMap()
         val diffResult = DiffUtil.calculateDiff(DiffCallbackImpl(oldList, newList, elementDiff, contentsNotSameMap))
         val operates = mutableListOf<ListOperate>()
+
         val elementOperates = mutableListOf<ElementOperate<E>>()
+
+        val addedElements: MutableList<E> = mutableListOf()
+        val removedElements: MutableList<E> = mutableListOf()
+        val changedElements: MutableList<Triple<E, E, Any?>> = mutableListOf()
+
 
         val elementChangeBuilders = mutableListOf<Invoke>()
 
@@ -67,10 +81,15 @@ object ListUpdate {
                         val newElement = contentsNotSameMap[oldElement]!!
                         if (elementDiff.isSupportUpdateItemData(oldElement, newElement)) {
                             elementOperates.add(ElementOperate.Changed(oldElement, newElement, payload))
+
+                            changedElements.add(Triple(oldElement, newElement, payload))
                         } else {
                             elementStub.element = newElement
                             elementOperates.add(ElementOperate.Removed(oldElement))
                             elementOperates.add(ElementOperate.Added(newElement))
+
+                            addedElements.add(newElement)
+                            removedElements.add(oldElement)
                         }
                     }
                 }
@@ -97,6 +116,8 @@ object ListUpdate {
                 subList.forEach {
                     val element = it.element ?: return@forEach
                     elementOperates.add(ElementOperate.Removed(element))
+
+                    removedElements.add(element)
                 }
             }
         })
@@ -105,6 +126,8 @@ object ListUpdate {
             if (elementStub.element == null) {
                 elementStub.element = newList[index]
                 elementOperates.add(ElementOperate.Added(elementStub.element!!))
+
+                addedElements.add(elementStub.element!!)
             }
         }
 
@@ -112,7 +135,12 @@ object ListUpdate {
             it()
         }
 
-        return UpdateResult(list.map { it.element!! }, operates, elementOperates)
+        return UpdateResult(
+            list.map { it.element!! },
+            operates,
+            elementOperates,
+            ElementOperates(addedElements, removedElements, changedElements)
+        )
     }
 
     fun <E> move(list: MutableList<E>, sourceIndex: Int, targetIndex: Int): Boolean {
@@ -133,13 +161,25 @@ object ListUpdate {
                     it.element.delegate.onActivated()
                 }
                 is ElementOperate.Changed<ItemData> -> {
-                    it.oldElement.delegate.updateItemData(it.newElement)
+                    it.oldElement.delegate.updateItemData(it.newElement,)
                 }
                 is ElementOperate.Removed<ItemData> -> {
                     it.element.delegate.onDetached()
                 }
             }
         }
+    }
+
+    fun handleItemDataWrapperOperates(delegate: ItemSource.Delegate<*>, elementOperates: ElementOperates<ItemDataWrapper>) {
+        delegate.onItemsDisplayed(elementOperates.addedElements.map { it.itemData })
+        delegate.onItemsRecycled(elementOperates.removedElements.map { it.itemData })
+        delegate.onItemsChanged(elementOperates.changedElements.map { Triple(it.first.itemData, it.second.itemData, it.third) })
+    }
+
+    fun handleItemDataOperates(delegate: ItemSource.Delegate<*>, elementOperates: ElementOperates<ItemData>) {
+        delegate.onItemsDisplayed(elementOperates.addedElements)
+        delegate.onItemsRecycled(elementOperates.removedElements)
+        delegate.onItemsChanged(elementOperates.changedElements)
     }
 
     fun handleItemDataWrapperChanges(elementChanges: List<ElementOperate<ItemDataWrapper>>) {
@@ -152,7 +192,7 @@ object ListUpdate {
                     it.element.itemData.delegate.onActivated()
                 }
                 is ElementOperate.Changed<ItemDataWrapper> -> {
-                    it.oldElement.itemData.delegate.updateItemData(it.newElement.itemData)
+                    it.oldElement.itemData.delegate.updateItemData(it.newElement.itemData, it.payload)
                 }
                 is ElementOperate.Removed<ItemDataWrapper> -> {
                     it.element.itemData.delegate.onInactivated()
@@ -193,7 +233,8 @@ object ListUpdate {
     class UpdateResult<E>(
         val resultList: List<E>,
         val listOperates: List<ListOperate>,
-        val elementOperates: List<ElementOperate<E>>
+        val elementOperates: List<ElementOperate<E>>,
+        val newElementOperates: ElementOperates<E>
     )
 }
 

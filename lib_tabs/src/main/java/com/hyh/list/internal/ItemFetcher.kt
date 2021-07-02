@@ -256,7 +256,9 @@ class ResultProcessorGenerator<Param : Any>(
                 itemSourceInvoke.forEach {
                     it.invoke(this)
                 }
+                ListUpdate.handleItemDataWrapperOperates(this, updateResult.newElementOperates)
             }
+
             ListUpdate.handleItemDataWrapperChanges(updateResult.elementOperates)
 
             sourceDisplayedData.itemWrappers = resultItemWrappers

@@ -15,7 +15,7 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
         override fun onActivated() {
         }
 
-        override fun updateItemData(newItemData: ItemData) {
+        override fun updateItemData(newItemData: ItemData, payload: Any?) {
             onUpdateItemData(newItemData)
         }
 
@@ -92,7 +92,7 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
         }
 
         abstract fun onActivated()
-        abstract fun updateItemData(newItemData: ItemData)
+        abstract fun updateItemData(newItemData: ItemData, payload: Any?)
         abstract fun onInactivated()
 
         open fun onDetached() {

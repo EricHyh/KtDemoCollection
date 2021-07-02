@@ -45,6 +45,18 @@ abstract class ItemSource<Param : Any> {
 
         override fun onBucketRemoved(bucket: ItemsBucket) {}
 
+        override fun onItemsDisplayed(items: List<ItemData>) {
+            return this@ItemSource.onItemsDisplayed(items)
+        }
+
+
+        override fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>) {
+            return this@ItemSource.onItemsChanged(changes)
+        }
+
+        override fun onItemsRecycled(items: List<ItemData>) {
+            return this@ItemSource.onItemsRecycled(items)
+        }
     }
 
     private var _sourcePosition: Int = -1
@@ -68,6 +80,31 @@ abstract class ItemSource<Param : Any> {
     open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
     abstract suspend fun load(params: LoadParams<Param>): LoadResult
     open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
+
+
+    protected open fun onItemsDisplayed(items: List<ItemData>) {
+        for (item in items) {
+            if (!item.delegate.attached) {
+                item.delegate.onAttached()
+            }
+            item.delegate.onActivated()
+        }
+    }
+
+    protected open fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>) {
+        changes.forEach {
+            it.first.delegate.updateItemData(it.second, it.third)
+        }
+    }
+
+    protected open fun onItemsRecycled(items: List<ItemData>) {
+        for (item in items) {
+            item.delegate.onInactivated()
+            if (item.delegate.attached) {
+                item.delegate.onDetached()
+            }
+        }
+    }
 
     protected open fun shouldCacheBucket(itemsBucket: ItemsBucket) = false
 
@@ -125,6 +162,10 @@ abstract class ItemSource<Param : Any> {
         abstract fun onBucketAdded(bucket: ItemsBucket)
         abstract fun onBucketRemoved(bucket: ItemsBucket)
         abstract fun shouldCacheBucket(itemsBucket: ItemsBucket): Boolean
+
+        abstract fun onItemsDisplayed(items: List<ItemData>)
+        abstract fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>)
+        abstract fun onItemsRecycled(items: List<ItemData>)
 
         open fun detach() {
             storage.clear()
