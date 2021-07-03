@@ -161,44 +161,10 @@ object ListUpdate {
                     it.element.delegate.onActivated()
                 }
                 is ElementOperate.Changed<ItemData> -> {
-                    it.oldElement.delegate.updateItemData(it.newElement,)
+                    it.oldElement.delegate.updateItemData(it.newElement, it.payload)
                 }
                 is ElementOperate.Removed<ItemData> -> {
                     it.element.delegate.onDetached()
-                }
-            }
-        }
-    }
-
-    fun handleItemDataWrapperOperates(delegate: ItemSource.Delegate<*>, elementOperates: ElementOperates<ItemDataWrapper>) {
-        delegate.onItemsDisplayed(elementOperates.addedElements.map { it.itemData })
-        delegate.onItemsRecycled(elementOperates.removedElements.map { it.itemData })
-        delegate.onItemsChanged(elementOperates.changedElements.map { Triple(it.first.itemData, it.second.itemData, it.third) })
-    }
-
-    fun handleItemDataOperates(delegate: ItemSource.Delegate<*>, elementOperates: ElementOperates<ItemData>) {
-        delegate.onItemsDisplayed(elementOperates.addedElements)
-        delegate.onItemsRecycled(elementOperates.removedElements)
-        delegate.onItemsChanged(elementOperates.changedElements)
-    }
-
-    fun handleItemDataWrapperChanges(elementChanges: List<ElementOperate<ItemDataWrapper>>) {
-        elementChanges.forEach {
-            when (it) {
-                is ElementOperate.Added<ItemDataWrapper> -> {
-                    if (!it.element.attached) {
-                        it.element.itemData.delegate.onAttached()
-                    }
-                    it.element.itemData.delegate.onActivated()
-                }
-                is ElementOperate.Changed<ItemDataWrapper> -> {
-                    it.oldElement.itemData.delegate.updateItemData(it.newElement.itemData, it.payload)
-                }
-                is ElementOperate.Removed<ItemDataWrapper> -> {
-                    it.element.itemData.delegate.onInactivated()
-                    if (!it.element.cached) {
-                        it.element.itemData.delegate.onDetached()
-                    }
                 }
             }
         }

@@ -46,7 +46,6 @@ class SourceRepoAdapter<Param : Any>(
     override val repoLoadStateFlow: StateFlow<RepoLoadState>
         get() = _loadStateFlow
 
-    private var reusableHolder: WrapperAndLocalPosition = WrapperAndLocalPosition()
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage.SharedIdRangeViewTypeStorage()
 
     override fun getViewTypeStorage(): ViewTypeStorage {
@@ -252,7 +251,7 @@ class SourceRepoAdapter<Param : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun updateWrappers(sources: List<LazySourceData<out Any>>): UpdateWrappersResult {
+    private fun updateWrappers(sources: List<LazySourceData>): UpdateWrappersResult {
         val reuseInvokes: MutableList<Invoke> = mutableListOf()
         val newInvokes: MutableList<Invoke> = mutableListOf()
         val refreshInvokes: MutableList<(suspend () -> Unit)> = mutableListOf()
@@ -267,7 +266,7 @@ class SourceRepoAdapter<Param : Any>(
             if (oldWrapper != null) {
                 newWrapperMap[it.sourceToken] = oldWrapper
                 reuseInvokes.add {
-                    (it.onReuse as (oldItemSource: ItemSource<Any>) -> Unit).invoke(oldWrapper.itemSource)
+                    it.onReuse.invoke(oldWrapper.itemSource)
                 }
                 refreshInvokes.add {
                     oldWrapper.sourceAdapter.refresh(false)
@@ -341,10 +340,10 @@ class SourceRepoAdapter<Param : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun createWrapper(sourceData: LazySourceData<out Any>): SourceAdapterWrapper {
+    private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
-            sourceData.itemSource as ItemSource<Any>,
+            sourceData.itemSource,
             SourceAdapter(pageContext),
             viewTypeStorage,
             sourceAdapterCallback
@@ -653,7 +652,7 @@ object SimpleDispatchUpdatesHelper {
 
 class SourceAdapterWrapper(
     val sourceToken: Any,
-    var itemSource: ItemSource<Any>,
+    var itemSource: ItemSource<*, *>,
     val sourceAdapter: SourceAdapter,
     viewTypeStorage: ViewTypeStorage,
     callback: Callback

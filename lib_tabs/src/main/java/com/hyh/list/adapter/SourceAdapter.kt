@@ -31,9 +31,6 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
     val items: List<ItemData>?
         get() = _items
 
-    private var itemWrappers: List<ItemDataWrapper>? = null
-    private var itemsBucketMap: Map<Int, ItemSource.ItemsBucket>? = null
-
     private val _loadStateFlow: MutableStateFlow<SourceLoadState> = MutableStateFlow(SourceLoadState.Initial)
     val loadStateFlow: StateFlow<SourceLoadState>
         get() = _loadStateFlow.asStateFlow()
@@ -106,23 +103,19 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
                 when (sourceEvent) {
                     is SourceEvent.PreShowing -> {
                         Log.d(TAG, "submitData: SourceEvent PreShowing")
-                        val processedResult = sourceEvent.processor.invoke(itemWrappers, itemsBucketMap)
+                        val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
-                        itemWrappers = processedResult.resultItemWrappers
-                        itemsBucketMap = processedResult.resultItemsBucketMap
                         ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
-                        _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItemWrappers.size)
+                        _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItems.size)
                         processedResult.onResultUsed()
                         sourceEvent.onReceived()
                     }
                     is SourceEvent.Success -> {
                         Log.d(TAG, "submitData: SourceEvent Success")
-                        val processedResult = sourceEvent.processor.invoke(itemWrappers, itemsBucketMap)
+                        val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
-                        itemWrappers = processedResult.resultItemWrappers
-                        itemsBucketMap = processedResult.resultItemsBucketMap
                         ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
-                        _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItemWrappers.size)
+                        _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
                         processedResult.onResultUsed()
                         sourceEvent.onReceived()
                     }

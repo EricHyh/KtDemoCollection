@@ -17,19 +17,19 @@ import kotlin.random.Random
 class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
 
-    companion object{
+    companion object {
         const val TAG = "NumItemSource"
     }
 
 
     private var lastNums: List<Int> = emptyList()
 
-    override suspend fun getPreShowWhenTheFirstTime(param: Unit): PreShowResult {
+    override suspend fun getPreShow(param: Unit): PreShowResult<ItemData> {
         val titleItemData = TitleItemData(type, lastNums, emptyList())
         return PreShowResult.Success(listOf(titleItemData))
     }
 
-    override suspend fun load(param: Unit): LoadResult {
+    override suspend fun load(param: Unit): LoadResult<ItemData> {
         delay(1000)
         val items = mutableListOf<ItemData>()
         val random = Random(SystemClock.currentThreadTimeMillis())

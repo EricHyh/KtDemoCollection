@@ -1,31 +1,60 @@
 package com.hyh.list
 
+import com.hyh.list.internal.IElementDiff
+
 /**
- * 实现了只在第一次获取缓存的逻辑
+ * 实现了只在还未展示数据时，获取缓存的逻辑
  *
  * @author eriche
  * @data 2021/6/17
  */
-abstract class SimpleItemSource<Param : Any> : ItemSource<Param>() {
+abstract class SimpleItemSource<Param : Any> : ItemSource<Param, ItemData>() {
 
-    final override suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult {
-        return if (params.lastLoadResult == null && params.lastPreShowResult == null) {
-            getPreShowWhenTheFirstTime(params.param)
-        } else {
-            PreShowResult.Unused
+    final override fun getElementDiff(): IElementDiff<ItemData> {
+        return IElementDiff.ItemDataDiff()
+    }
+
+    final override fun mapItems(items: List<ItemData>): List<ItemData> {
+        return items
+    }
+
+    final override fun onItemsDisplayed(items: List<ItemData>) {
+        items.forEach {
+            if (!it.delegate.attached) {
+                it.delegate.onAttached()
+            }
+            it.delegate.onActivated()
         }
     }
 
-    final override suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
+    final override fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>) {
+        changes.forEach {
+            it.first.delegate.updateItemData(it.second, it.third)
+        }
+    }
 
-    final override suspend fun load(params: LoadParams<Param>): LoadResult {
+    final override fun onItemsRecycled(items: List<ItemData>) {
+        items.forEach {
+            it.delegate.onInactivated()
+            if (it.delegate.attached) {
+                it.delegate.onDetached()
+            }
+        }
+    }
+
+    override suspend fun getPreShow(params: PreShowParams<Param, ItemData>): PreShowResult<ItemData> {
+        return if (params.displayedData.items == null) {
+            getPreShow(params.param)
+        } else {
+            PreShowResult.Unused()
+        }
+    }
+
+    override suspend fun load(params: LoadParams<Param, ItemData>): LoadResult<ItemData> {
         return load(params.param)
     }
 
-    final override suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
-
-    protected abstract suspend fun getPreShowWhenTheFirstTime(param: Param): PreShowResult
-
-    protected abstract suspend fun load(param: Param): LoadResult
+    protected abstract suspend fun getPreShow(param: Param): PreShowResult<ItemData>
+    protected abstract suspend fun load(param: Param): LoadResult<ItemData>
 
 }

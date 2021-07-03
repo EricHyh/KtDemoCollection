@@ -1,6 +1,6 @@
 package com.hyh.list
 
-class SingleItemSourceRepository(private val itemSource: ItemSource<*>) : SimpleItemSourceRepository<Unit>(Unit) {
+class SingleItemSourceRepository(private val itemSource: ItemSource<*, *>) : SimpleItemSourceRepository<Unit>(Unit) {
 
     override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult {
         return CacheResult.Success(

@@ -1,9 +1,7 @@
 package com.hyh.list.internal
 
 import com.hyh.Invoke
-import com.hyh.InvokeWithParam
 import com.hyh.OnEventReceived
-import com.hyh.SuspendInvoke
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.Deferred
@@ -14,11 +12,11 @@ data class RepoData<Param : Any>(
     val receiver: UiReceiverForRepo<Param>
 )
 
-data class LazySourceData<Param : Any>(
+data class LazySourceData(
     val sourceToken: Any,
-    val itemSource: ItemSource<Param>,
+    val itemSource: ItemSource<out Any, out Any>,
     val lazyFlow: Deferred<Flow<SourceData>>,
-    val onReuse: (oldItemSource: ItemSource<Param>) -> Unit
+    val onReuse: (oldItemSource: ItemSource<out Any, out Any>) -> Unit
 )
 
 data class SourceData(
@@ -31,9 +29,9 @@ sealed class RepoEvent(val onReceived: OnEventReceived) {
 
     class Loading(onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
-    class UsingCache(val sources: List<LazySourceData<out Any>>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
+    class UsingCache(val sources: List<LazySourceData>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
-    class Success(val sources: List<LazySourceData<out Any>>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
+    class Success(val sources: List<LazySourceData>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
     class Error(val error: Throwable, val usingCache: Boolean, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
@@ -61,23 +59,20 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
 }
 
-typealias ResultProcessor = suspend (
-    displayedItemWrappers: List<ItemDataWrapper>?,
-    displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?
-) -> ProcessedResult
+typealias ResultProcessor = suspend () -> ProcessedResult
 
 
 data class ProcessedResult(
-    val resultItemWrappers: List<ItemDataWrapper>,
     val resultItems: List<ItemData>,
-    val resultItemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
     val listOperates: List<ListOperate>,
     val onResultUsed: Invoke
 )
 
-class SourceDisplayedData(
-    var itemsBucketIds: List<Int>? = null,
-    var itemsBucketMap: Map<Int, ItemSource.ItemsBucket>? = null,
-    var itemWrappers: List<ItemDataWrapper>? = null,
-    var items: List<ItemData>? = null,
+class SourceDisplayedData<Item : Any>(
+    @Volatile
+    var items: List<Item>? = null,
+    @Volatile
+    var itemDataList: List<ItemData>? = null,
+    @Volatile
+    var resultExtra: Any? = null
 )

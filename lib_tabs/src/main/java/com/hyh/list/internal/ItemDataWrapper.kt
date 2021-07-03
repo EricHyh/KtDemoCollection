@@ -11,7 +11,7 @@ import com.hyh.list.ItemData
 class ItemDataWrapper(
     val itemsBucketId: Int,
     val itemsToken: Any,
-    var itemData: ItemData
+    val itemData: ItemData
 ) {
 
     val attached: Boolean
@@ -32,7 +32,11 @@ class ItemDataWrapper(
     /**
      * 判断内容是否改变
      */
-    fun areContentsTheSame(wrapper: ItemDataWrapper): Boolean = itemData.areContentsTheSame(wrapper.itemData)
+    fun areContentsTheSame(wrapper: ItemDataWrapper): Boolean {
+        if (itemsBucketId != wrapper.itemsBucketId) return false
+        if (itemsToken != wrapper.itemsToken) return false
+        return itemData.areContentsTheSame(wrapper.itemData)
+    }
 
     /**
      * 获取数据变动部分

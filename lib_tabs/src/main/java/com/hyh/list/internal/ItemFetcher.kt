@@ -8,28 +8,22 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
-import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
-import kotlin.collections.LinkedHashMap
 
 
-class ItemFetcher<Param : Any>(
-    private val itemSource: ItemSource<Param>,
+class ItemFetcher<Param : Any, Item : Any>(
+    private val itemSource: ItemSource<Param, Item>,
 ) {
 
     companion object {
         private const val TAG = "ItemFetcher"
     }
 
-    private val sourceDisplayedData = SourceDisplayedData()
-
-    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>> = {
-        it.invoke(itemSource.delegate)
-    }
+    private val sourceDisplayedData = SourceDisplayedData<Item>()
 
     private val uiReceiver = object : UiReceiverForSource {
 
@@ -43,7 +37,6 @@ class ItemFetcher<Param : Any>(
         val flow = refreshEventHandler.flow.map { it.first }
 
         override fun refresh(important: Boolean) {
-            Log.d(TAG, "refresh: $important")
             refreshEventHandler.onReceiveLoadEvent(important, Unit)
         }
 
@@ -59,30 +52,24 @@ class ItemFetcher<Param : Any>(
                 //emit(0)
             }
             .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param>?, id: Long ->
-                Log.d(TAG, "simpleScan: $id")
+            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param, Item>?, _: Long ->
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
                     displayedData = sourceDisplayedData,
-                    lastPreShowResult = previousSnapshot?.preShowResult,
-                    lastLoadResult = previousSnapshot?.loadResult,
                     paramProvider = getParamProvider(),
                     preShowLoader = getPreShowLoader(),
-                    onPreShowResult = getOnPreShowResult(),
                     loader = getLoader(),
-                    onItemLoadResult = getOnLoadResult(),
                     fetchDispatcherProvider = getFetchDispatcherProvider(),
                     onRefreshComplete = uiReceiver::onRefreshComplete,
-                    sourceDelegateRunner = sourceDelegateRunner
+                    delegate = itemSource.delegate
                 )
             }
             .filterNotNull()
-            .simpleMapLatest { snapshot ->
+            .simpleMapLatest { snapshot: ItemFetcherSnapshot<Param, Item> ->
                 val downstreamFlow = snapshot.sourceEventFlow
                 SourceData(downstreamFlow, uiReceiver)
             }
             .collect {
-                Log.d(TAG, "send sourceData")
                 send(it)
             }
     }.buffer(Channel.BUFFERED)
@@ -97,12 +84,8 @@ class ItemFetcher<Param : Any>(
 
     private fun getParamProvider(): ParamProvider<Param> = ::getParam
     private fun getFetchDispatcherProvider(): FetchDispatcherProvider<Param> = ::getFetchDispatcher
-
-    private fun getPreShowLoader(): PreShowLoader<Param> = ::getPreShow
-    private fun getOnPreShowResult(): OnPreShowResult<Param> = ::onPreShowResult
-
-    private fun getLoader(): ItemLoader<Param> = ::load
-    private fun getOnLoadResult(): OnItemLoadResult<Param> = ::onLoadResult
+    private fun getPreShowLoader(): PreShowLoader<Param, Item> = ::getPreShow
+    private fun getLoader(): ItemLoader<Param, Item> = ::load
 
     private suspend fun getParam(): Param {
         return itemSource.getParam()
@@ -112,192 +95,83 @@ class ItemFetcher<Param : Any>(
         return itemSource.getFetchDispatcher(param)
     }
 
-    private suspend fun getPreShow(params: ItemSource.PreShowParams<Param>): ItemSource.PreShowResult {
+    private suspend fun getPreShow(params: ItemSource.PreShowParams<Param, Item>): ItemSource.PreShowResult<Item> {
         return itemSource.getPreShow(params)
     }
 
-    private suspend fun onPreShowResult(params: ItemSource.PreShowParams<Param>, preShowResult: ItemSource.PreShowResult) {
-        itemSource.onPreShowResult(params, preShowResult)
-    }
-
-    private suspend fun load(params: ItemSource.LoadParams<Param>): ItemSource.LoadResult {
+    private suspend fun load(params: ItemSource.LoadParams<Param, Item>): ItemSource.LoadResult<Item> {
         return itemSource.load(params)
-    }
-
-    private suspend fun onLoadResult(params: ItemSource.LoadParams<Param>, loadResult: ItemSource.LoadResult) {
-        itemSource.onLoadResult(params, loadResult)
     }
 }
 
 
-class ResultProcessorGenerator<Param : Any>(
-    private val sourceDisplayedData: SourceDisplayedData,
-    private val itemsBucketIds: List<Int>,
-    private val itemsBucketMap: Map<Int, ItemSource.ItemsBucket>,
+class ResultProcessorGenerator<Param : Any, Item : Any>(
+    private val sourceDisplayedData: SourceDisplayedData<Item>,
+    private val items: List<Item>,
+    private val resultExtra: Any?,
     private val dispatcher: CoroutineDispatcher?,
-    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>>,
+    private val delegate: ItemSource.Delegate<Param, Item>,
 ) {
 
     companion object {
         private const val TAG = "ResultProcessor"
     }
 
-    val processor: ResultProcessor = { list: List<ItemDataWrapper>?, map: Map<Int, ItemSource.ItemsBucket>? ->
+    val processor: ResultProcessor = {
         if (dispatcher != null) {
             withContext(dispatcher) {
-                Log.d(TAG, "processor: processResult1 ${Thread.currentThread().name}")
-                processResult(list, map)
+                processResult()
             }
         } else {
-            Log.d(TAG, "processor: processResult2: ${Thread.currentThread().name}")
-            processResult(list, map)
+            processResult()
         }
     }
 
-    private fun processResult(
-        displayedItemWrappers: List<ItemDataWrapper>?,
-        displayedItemsBucketMap: Map<Int, ItemSource.ItemsBucket>?
-    ): ProcessedResult {
-        val wrappers = getItemWrappers(itemsBucketIds, itemsBucketMap)
-        val updateResult =
-            ListUpdate.calculateDiff(
-                displayedItemWrappers,
-                wrappers,
-                IElementDiff.ItemDataWrapperDiff()
-            )
+    private fun processResult(): ProcessedResult {
 
-
-        val resultItemsBucketMap: MutableMap<Int, ItemSource.ItemsBucket> = LinkedHashMap()
-        itemsBucketIds.forEach {
-            val items = mutableListOf<ItemData>()
-            resultItemsBucketMap[it] = ItemSource.ItemsBucket(it, ItemSource.DEFAULT_ITEMS_TOKEN, items)
-        }
-
-        val resultItemWrappers = mutableListOf<ItemDataWrapper>()
-        val resultItems = mutableListOf<ItemData>()
-
-
-        updateResult.resultList.forEachIndexed { index, wrapper ->
-            val newWrapper = wrappers[index]
-            newWrapper.itemData = wrapper.itemData
-
-            var itemsBucket = resultItemsBucketMap[newWrapper.itemsBucketId]
-            if (itemsBucket == null || itemsBucket.itemsToken != newWrapper.itemsToken) {
-                val items = mutableListOf<ItemData>()
-                items.add(newWrapper.itemData)
-
-                itemsBucket = ItemSource.ItemsBucket(newWrapper.itemsBucketId, newWrapper.itemsToken, items)
-                resultItemsBucketMap[newWrapper.itemsBucketId] = itemsBucket
-            } else {
-                (itemsBucket.items as MutableList<ItemData>).add(newWrapper.itemData)
-            }
-
-            resultItemWrappers.add(newWrapper)
-            resultItems.add(newWrapper.itemData)
-        }
-
-        val oldItemsBuckets = displayedItemsBucketMap?.values?.toList() ?: emptyList()
-        val newItemsBuckets = resultItemsBucketMap.values.toList()
-
-        val itemsBucketsResult = ListUpdate.calculateDiff(
-            oldItemsBuckets,
-            newItemsBuckets,
-            IElementDiff.BucketDiff()
+        val updateResult = ListUpdate.calculateDiff(
+            sourceDisplayedData.items,
+            items,
+            delegate.getElementDiff()
         )
 
-        val itemSourceInvoke: MutableList<InvokeWithParam<ItemSource.Delegate<Param>>> = mutableListOf()
+        val itemDataList = delegate.mapItems(updateResult.resultList)
 
-        itemsBucketsResult.elementOperates.forEach { operate ->
-            when (operate) {
-                is ElementOperate.Added<ItemSource.ItemsBucket> -> {
-                    itemSourceInvoke.add {
-                        this.onBucketAdded(operate.element)
-                    }
-                }
-                is ElementOperate.Changed<ItemSource.ItemsBucket> -> {
-                    itemSourceInvoke.add {
-                        if (this.shouldCacheBucket(operate.oldElement)) {
-                            storage.take(
-                                operate.oldElement.bucketId,
-                                operate.oldElement.itemsToken
-                            )?.items?.forEach {
-                                it.delegate.cached = false
-                            }
+        delegate.onProcessResult(
+            updateResult.resultList,
+            resultExtra,
+            sourceDisplayedData
+        )
 
-                            storage.store(operate.oldElement)
+        return ProcessedResult(itemDataList, updateResult.listOperates) {
+            sourceDisplayedData.items = updateResult.resultList
+            sourceDisplayedData.itemDataList = itemDataList
+            sourceDisplayedData.resultExtra = resultExtra
 
-                            operate.oldElement.items.forEach {
-                                it.delegate.cached = true
-                            }
-                        }
-                    }
-                }
-                is ElementOperate.Removed<ItemSource.ItemsBucket> -> {
-                    itemSourceInvoke.add {
-                        this.onBucketRemoved(operate.element)
-                    }
-                }
+            itemDataList.forEach {
+                it.delegate.displayedItems = itemDataList
             }
+
+            delegate.run {
+                onItemsRecycled(updateResult.newElementOperates.removedElements)
+                onItemsChanged(updateResult.newElementOperates.changedElements)
+                onItemsDisplayed(updateResult.newElementOperates.addedElements)
+            }
+
+            delegate.onResultDisplayed(sourceDisplayedData)
         }
-        return ProcessedResult(
-            resultItemWrappers,
-            resultItems,
-            resultItemsBucketMap,
-            updateResult.listOperates,
-        ) {
-
-            Log.d(TAG, "processResult: onResultUsed - ${Thread.currentThread().name}")
-
-
-            resultItemWrappers.forEach {
-                it.itemData.delegate.displayedItems = resultItems
-            }
-            sourceDelegateRunner {
-                itemSourceInvoke.forEach {
-                    it.invoke(this)
-                }
-                ListUpdate.handleItemDataWrapperOperates(this, updateResult.newElementOperates)
-            }
-
-            ListUpdate.handleItemDataWrapperChanges(updateResult.elementOperates)
-
-            sourceDisplayedData.itemWrappers = resultItemWrappers
-            sourceDisplayedData.items = resultItems
-            sourceDisplayedData.itemsBucketIds = itemsBucketIds
-            sourceDisplayedData.itemsBucketMap = resultItemsBucketMap
-        }
-    }
-
-    private fun getItemWrappers(
-        itemsBucketIds: List<Int>,
-        itemsBucketMap: Map<Int, ItemSource.ItemsBucket>
-    ): List<ItemDataWrapper> {
-        val wrappers = mutableListOf<ItemDataWrapper>()
-        itemsBucketIds.forEach { id ->
-            val itemsBucket = itemsBucketMap[id]
-            if (itemsBucket != null) {
-                wrappers.addAll(
-                    itemsBucket.items.map { ItemDataWrapper(id, itemsBucket.itemsToken, it) }
-                )
-            }
-        }
-        return wrappers
     }
 }
 
 
-class ItemFetcherSnapshot<Param : Any>(
-    private val displayedData: SourceDisplayedData,
-    private val lastPreShowResult: ItemSource.PreShowResult? = null,
-    private val lastLoadResult: ItemSource.LoadResult? = null,
+class ItemFetcherSnapshot<Param : Any, Item : Any>(
+    private val displayedData: SourceDisplayedData<Item>,
     private val paramProvider: ParamProvider<Param>,
-    private val preShowLoader: PreShowLoader<Param>,
-    private val onPreShowResult: OnPreShowResult<Param>,
-    private val loader: ItemLoader<Param>,
-    private val onItemLoadResult: OnItemLoadResult<Param>,
+    private val preShowLoader: PreShowLoader<Param, Item>,
+    private val loader: ItemLoader<Param, Item>,
     private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
     private val onRefreshComplete: Invoke,
-    private val sourceDelegateRunner: RunWith<ItemSource.Delegate<Param>>
+    private val delegate: ItemSource.Delegate<Param, Item>
 ) {
 
     companion object {
@@ -305,8 +179,8 @@ class ItemFetcherSnapshot<Param : Any>(
     }
 
 
-    var preShowResult: ItemSource.PreShowResult? = null
-    var loadResult: ItemSource.LoadResult? = null
+    var preShowResult: ItemSource.PreShowResult<Item>? = null
+    var loadResult: ItemSource.LoadResult<Item>? = null
 
     private val sourceEventChannelFlowJob = Job()
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
@@ -337,32 +211,24 @@ class ItemFetcherSnapshot<Param : Any>(
         val preShowParams =
             ItemSource.PreShowParams(
                 param,
-                displayedData.itemsBucketMap,
-                displayedData.items,
-                lastPreShowResult,
-                lastLoadResult
+                displayedData
             )
         val preShowResult = preShowLoader.invoke(preShowParams)
         this@ItemFetcherSnapshot.preShowResult = preShowResult
 
         var preShowing = false
-        if (preShowResult is ItemSource.PreShowResult.Success) {
+        if (preShowResult is ItemSource.PreShowResult.Success<Item>) {
             preShowing = true
-            val itemsBucketIds = preShowResult.itemsBucketIds
-            val itemsBucketMap = preShowResult.itemsBucketMap
             val event = SourceEvent.PreShowing(
                 ResultProcessorGenerator(
                     displayedData,
-                    itemsBucketIds,
-                    itemsBucketMap,
+                    preShowResult.items,
+                    preShowResult.resultExtra,
                     null,
-                    sourceDelegateRunner
+                    delegate
                 ).processor
             )
             sourceEventCh.send(event)
-            onPreShowResult(preShowParams, preShowResult)
-        } else {
-            onPreShowResult(preShowParams, preShowResult)
         }
         return preShowing
     }
@@ -372,12 +238,9 @@ class ItemFetcherSnapshot<Param : Any>(
 
         val loadParams = ItemSource.LoadParams(
             param,
-            displayedData.itemsBucketMap,
-            displayedData.items,
-            lastPreShowResult,
-            lastLoadResult
+            displayedData
         )
-        val loadResult: ItemSource.LoadResult
+        val loadResult: ItemSource.LoadResult<Item>
         loadResult = if (fetchDispatcher == null) {
             loader.invoke(loadParams)
         } else {
@@ -389,14 +252,13 @@ class ItemFetcherSnapshot<Param : Any>(
 
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
-                val itemsBucketIds = loadResult.itemsBucketIds
-                val itemsBucketMap = loadResult.itemsBucketMap
                 val event = SourceEvent.Success(
                     ResultProcessorGenerator(
                         displayedData,
-                        itemsBucketIds, itemsBucketMap,
+                        loadResult.items,
+                        loadResult.resultExtra,
                         fetchDispatcher,
-                        sourceDelegateRunner
+                        delegate
                     ).processor
                 ) {
                     onRefreshComplete()
@@ -410,7 +272,6 @@ class ItemFetcherSnapshot<Param : Any>(
                 sourceEventCh.send(event)
             }
         }
-        onItemLoadResult(loadParams, loadResult)
     }
 
     fun close() {
@@ -419,8 +280,6 @@ class ItemFetcherSnapshot<Param : Any>(
 }
 
 internal typealias ParamProvider<Param> = (suspend () -> Param)
-internal typealias PreShowLoader<Param> = (suspend (params: ItemSource.PreShowParams<Param>) -> ItemSource.PreShowResult)
-internal typealias OnPreShowResult<Param> = (suspend (ItemSource.PreShowParams<Param>, ItemSource.PreShowResult) -> Unit)
-internal typealias ItemLoader<Param> = (suspend (param: ItemSource.LoadParams<Param>) -> ItemSource.LoadResult)
-internal typealias OnItemLoadResult<Param> = (suspend (ItemSource.LoadParams<Param>, ItemSource.LoadResult) -> Unit)
+internal typealias PreShowLoader<Param, Item> = (suspend (params: ItemSource.PreShowParams<Param, Item>) -> ItemSource.PreShowResult<Item>)
+internal typealias ItemLoader<Param, Item> = (suspend (param: ItemSource.LoadParams<Param, Item>) -> ItemSource.LoadResult<Item>)
 internal typealias FetchDispatcherProvider<Param> = ((Param) -> CoroutineDispatcher?)

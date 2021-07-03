@@ -165,11 +165,11 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun newSources(sources: List<ItemSourceRepository.ItemSourceInfo>): List<LazySourceData<Any>> {
+    private fun newSources(sources: List<ItemSourceRepository.ItemSourceInfo>): List<LazySourceData> {
         return sources
             .mapIndexed { index, itemSourceInfo ->
                 val sourceToken: Any = itemSourceInfo.sourceToken
-                val newItemSource = itemSourceInfo.source as ItemSource<Any>
+                val newItemSource = itemSourceInfo.source as ItemSource<Any, Any>
                 newItemSource.delegate.initPosition(index)
                 val lazyFlow: Deferred<Flow<SourceData>> = GlobalScope.async(Dispatchers.Unconfined, start = CoroutineStart.LAZY) {
                     val itemFetcher = ItemFetcher(newItemSource)
@@ -177,7 +177,8 @@ class ItemSourceFetcherSnapshot<Param : Any>(
                     itemFetcher.flow
                 }
                 LazySourceData(sourceToken, newItemSource, lazyFlow) { oldItemSource ->
-                    oldItemSource.delegate.updateItemSource(index, newItemSource)
+                    (oldItemSource.delegate as ItemSource.Delegate<Any, Any>)
+                        .updateItemSource(index, newItemSource)
                 }
             }
     }

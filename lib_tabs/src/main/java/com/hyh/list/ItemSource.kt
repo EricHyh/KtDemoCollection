@@ -2,20 +2,17 @@ package com.hyh.list
 
 import com.hyh.RefreshActuator
 import com.hyh.base.LoadStrategy
+import com.hyh.list.internal.IElementDiff
+import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
-abstract class ItemSource<Param : Any> {
+abstract class ItemSource<Param : Any, Item : Any> {
 
-    companion object {
-        const val DEFAULT_ITEMS_BUCKET_ID = -1
-        val DEFAULT_ITEMS_TOKEN = Any()
-    }
-
-    internal val delegate: Delegate<Param> = object : Delegate<Param>() {
+    internal val delegate: Delegate<Param, Item> = object : Delegate<Param, Item>() {
 
         override fun attach() {
-            super.attach()
+            this@ItemSource.onAttached()
         }
 
         override fun initPosition(position: Int) {
@@ -26,36 +23,47 @@ abstract class ItemSource<Param : Any> {
             _refreshActuator = refreshActuator
         }
 
-        override fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>) {
+        override fun getElementDiff(): IElementDiff<Item> {
+            return this@ItemSource.getElementDiff()
+        }
+
+        override fun mapItems(items: List<Item>): List<ItemData> {
+            return this@ItemSource.mapItems(items)
+        }
+
+        override fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param, Item>) {
             val oldPosition = _sourcePosition
             _sourcePosition = newPosition
             onUpdateItemSource(oldPosition, newPosition, newItemSource)
         }
 
-        override fun detach() {
-            super.detach()
-            _sourcePosition = -1
-        }
-
-        override fun onBucketAdded(bucket: ItemsBucket) {}
-
-        override fun shouldCacheBucket(itemsBucket: ItemsBucket): Boolean {
-            return this@ItemSource.shouldCacheBucket(itemsBucket)
-        }
-
-        override fun onBucketRemoved(bucket: ItemsBucket) {}
-
-        override fun onItemsDisplayed(items: List<ItemData>) {
+        override fun onItemsDisplayed(items: List<Item>) {
             return this@ItemSource.onItemsDisplayed(items)
         }
 
-
-        override fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>) {
+        override fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>) {
             return this@ItemSource.onItemsChanged(changes)
         }
 
-        override fun onItemsRecycled(items: List<ItemData>) {
+        override fun onItemsRecycled(items: List<Item>) {
             return this@ItemSource.onItemsRecycled(items)
+        }
+
+        override fun onProcessResult(
+            resultItems: List<Item>,
+            resultExtra: Any?,
+            displayedData: SourceDisplayedData<Item>
+        ) {
+            return this@ItemSource.onProcessResult(resultItems, resultExtra, displayedData)
+        }
+
+        override fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {
+            return this@ItemSource.onResultDisplayed(displayedData)
+        }
+
+        override fun detach() {
+            _sourcePosition = -1
+            this@ItemSource.onDetached()
         }
     }
 
@@ -67,178 +75,102 @@ abstract class ItemSource<Param : Any> {
     val refreshActuator: RefreshActuator
         get() = _refreshActuator
 
-    private var _itemsBucketIds: List<Int> = listOf(DEFAULT_ITEMS_BUCKET_ID)
-    protected val itemsBucketIds: List<Int>
-        get() = _itemsBucketIds
-
     protected open fun onAttached() {}
+    protected open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param, Item>) {}
 
-    open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param>) {}
+    protected abstract fun getElementDiff(): IElementDiff<Item>
+    protected abstract fun mapItems(items: List<Item>): List<ItemData>
+    protected abstract fun onItemsDisplayed(items: List<Item>)
+    protected abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)
+    protected abstract fun onItemsRecycled(items: List<Item>)
+
     open fun getLoadStrategy(): LoadStrategy = LoadStrategy.CancelLast
     abstract suspend fun getParam(): Param
-    abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult
-    open suspend fun onPreShowResult(params: PreShowParams<Param>, preShowResult: PreShowResult) {}
-    abstract suspend fun load(params: LoadParams<Param>): LoadResult
-    open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
+    abstract suspend fun getPreShow(params: PreShowParams<Param, Item>): PreShowResult<Item>
+    abstract suspend fun load(params: LoadParams<Param, Item>): LoadResult<Item>
 
-
-    protected open fun onItemsDisplayed(items: List<ItemData>) {
-        for (item in items) {
-            if (!item.delegate.attached) {
-                item.delegate.onAttached()
-            }
-            item.delegate.onActivated()
-        }
+    protected open fun onProcessResult(
+        resultItems: List<Item>,
+        resultExtra: Any?,
+        displayedData: SourceDisplayedData<Item>
+    ) {
     }
 
-    protected open fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>) {
-        changes.forEach {
-            it.first.delegate.updateItemData(it.second, it.third)
-        }
-    }
-
-    protected open fun onItemsRecycled(items: List<ItemData>) {
-        for (item in items) {
-            item.delegate.onInactivated()
-            if (item.delegate.attached) {
-                item.delegate.onDetached()
-            }
-        }
-    }
-
-    protected open fun shouldCacheBucket(itemsBucket: ItemsBucket) = false
+    protected open fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {}
 
     open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
     protected open fun onDetached() {}
 
-    protected fun registerItemsBucketIds(itemsBucketIds: List<Int>) {
-        this._itemsBucketIds = itemsBucketIds
-    }
+    abstract class Delegate<Param : Any, Item : Any> {
 
-    abstract class Delegate<Param : Any> {
-
-        val storage: ItemsBucketStorage = object : ItemsBucketStorage {
-
-            private val cacheMap: MutableMap<Int, MutableMap<Any, ItemsBucket>> = mutableMapOf()
-
-            override fun store(bucket: ItemsBucket) {
-                var mutableMap = cacheMap[bucket.bucketId]
-                if (mutableMap == null) {
-                    mutableMap = mutableMapOf()
-                    cacheMap[bucket.bucketId] = mutableMap
-                }
-                mutableMap[bucket.itemsToken] = bucket
-            }
-
-            override fun take(bucketId: Int, itemsToken: Any): ItemsBucket? {
-                return cacheMap[bucketId]?.remove(itemsToken)
-            }
-
-            override fun get(bucketId: Int, itemsToken: Any): ItemsBucket? {
-                return cacheMap[bucketId]?.get(itemsToken)
-            }
-
-            override fun clear() {
-                val entries = cacheMap.entries
-                val iterator = entries.iterator()
-                while (iterator.hasNext()) {
-                    val next = iterator.next()
-                    next.value.values.forEach { itemsBucket ->
-                        itemsBucket.items.forEach {
-                            it.delegate.onDetached()
-                        }
-                    }
-                    iterator.remove()
-                }
-            }
-        }
-
-        open fun attach() {}
+        abstract fun attach()
 
         abstract fun initPosition(position: Int)
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
-        abstract fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param>)
-        abstract fun onBucketAdded(bucket: ItemsBucket)
-        abstract fun onBucketRemoved(bucket: ItemsBucket)
-        abstract fun shouldCacheBucket(itemsBucket: ItemsBucket): Boolean
 
-        abstract fun onItemsDisplayed(items: List<ItemData>)
-        abstract fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>)
-        abstract fun onItemsRecycled(items: List<ItemData>)
+        abstract fun getElementDiff(): IElementDiff<Item>
+        abstract fun mapItems(items: List<Item>): List<ItemData>
 
-        open fun detach() {
-            storage.clear()
-        }
+        abstract fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param, Item>)
 
-    }
+        abstract fun onItemsDisplayed(items: List<Item>)
+        abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)
+        abstract fun onItemsRecycled(items: List<Item>)
 
-    interface ItemsBucketStorage {
+        abstract fun onProcessResult(
+            resultItems: List<Item>,
+            resultExtra: Any?,
+            displayedData: SourceDisplayedData<Item>
+        )
 
-        fun store(bucket: ItemsBucket)
+        abstract fun onResultDisplayed(displayedData: SourceDisplayedData<Item>)
 
-        fun take(bucketId: Int, itemsToken: Any): ItemsBucket?
-
-        fun get(bucketId: Int, itemsToken: Any): ItemsBucket?
-
-        fun clear()
+        abstract fun detach()
 
     }
 
-    sealed class PreShowResult {
+    sealed class PreShowResult<Item : Any> {
 
-        object Unused : PreShowResult()
+        class Unused<Item : Any> : PreShowResult<Item>()
 
-        class Success() : PreShowResult() {
+        class Success<Item : Any>() : PreShowResult<Item>() {
 
-            private lateinit var _itemsBucketIds: List<Int>
-            val itemsBucketIds: List<Int>
-                get() = _itemsBucketIds
+            private lateinit var _items: List<Item>
+            val items: List<Item>
+                get() = _items
 
-            private lateinit var _itemsBucketMap: Map<Int, ItemsBucket>
-            val itemsBucketMap: Map<Int, ItemsBucket>
-                get() = _itemsBucketMap
 
-            constructor(items: List<ItemData>) : this() {
-                this._itemsBucketIds = listOf(DEFAULT_ITEMS_BUCKET_ID)
-                this._itemsBucketMap = mapOf(
-                    DEFAULT_ITEMS_BUCKET_ID to ItemsBucket(DEFAULT_ITEMS_BUCKET_ID, DEFAULT_ITEMS_TOKEN, items)
-                )
-            }
+            private var _resultExtra: Any? = null
+            val resultExtra: Any?
+                get() = _resultExtra
 
-            constructor(itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) : this() {
-                this._itemsBucketIds = itemsBucketIds
-                this._itemsBucketMap = itemsBucketMap
+            constructor(items: List<Item>, resultExtra: Any? = null) : this() {
+                this._items = items
+                this._resultExtra = resultExtra
             }
         }
     }
 
-    sealed class LoadResult {
+    sealed class LoadResult<Item : Any> {
 
-        class Error(
+        class Error<Item : Any>(
             val error: Throwable
-        ) : LoadResult()
+        ) : LoadResult<Item>()
 
-        class Success() : LoadResult() {
+        class Success<Item : Any>() : LoadResult<Item>() {
 
-            private lateinit var _itemsBucketIds: List<Int>
-            val itemsBucketIds: List<Int>
-                get() = _itemsBucketIds
+            private lateinit var _items: List<Item>
+            val items: List<Item>
+                get() = _items
 
-            private lateinit var _itemsBucketMap: Map<Int, ItemsBucket>
-            val itemsBucketMap: Map<Int, ItemsBucket>
-                get() = _itemsBucketMap
+            private var _resultExtra: Any? = null
+            val resultExtra: Any?
+                get() = _resultExtra
 
-            constructor(items: List<ItemData>) : this() {
-                this._itemsBucketIds = listOf(DEFAULT_ITEMS_BUCKET_ID)
-                this._itemsBucketMap = mapOf(
-                    DEFAULT_ITEMS_BUCKET_ID to ItemsBucket(DEFAULT_ITEMS_BUCKET_ID, DEFAULT_ITEMS_TOKEN, items)
-                )
-            }
-
-            constructor(itemsBucketIds: List<Int>, itemsBucketMap: Map<Int, ItemsBucket>) : this() {
-                this._itemsBucketIds = itemsBucketIds
-                this._itemsBucketMap = itemsBucketMap
+            constructor(items: List<Item>, resultExtra: Any? = null) : this() {
+                this._items = items
+                this._resultExtra = resultExtra
             }
         }
     }
@@ -249,19 +181,13 @@ abstract class ItemSource<Param : Any> {
         val items: List<ItemData>,
     )
 
-    class PreShowParams<Param : Any>(
+    class PreShowParams<Param : Any, Item : Any>(
         val param: Param,
-        var displayedItemsBucketMap: Map<Int, ItemsBucket>?,
-        val displayedItems: List<ItemData>?,
-        val lastPreShowResult: PreShowResult?,
-        val lastLoadResult: LoadResult?
+        val displayedData: SourceDisplayedData<Item>
     )
 
-    class LoadParams<Param : Any>(
+    class LoadParams<Param : Any, Item : Any>(
         val param: Param,
-        var displayedItemsBucketMap: Map<Int, ItemsBucket>?,
-        val displayedItems: List<ItemData>?,
-        val lastPreShowResult: PreShowResult?,
-        val lastLoadResult: LoadResult?
+        val displayedData: SourceDisplayedData<Item>
     )
 }
