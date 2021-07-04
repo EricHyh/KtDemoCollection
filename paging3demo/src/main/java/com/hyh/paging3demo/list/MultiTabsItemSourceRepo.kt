@@ -1,12 +1,12 @@
 package com.hyh.paging3demo.list
 
-import com.hyh.list.SimpleItemSourceRepository
+import com.hyh.list.SimpleItemSourceRepo
 import com.hyh.base.LoadStrategy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 
-class MultiTabsItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
+class MultiTabsItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
 
 
     override fun getLoadStrategy(): LoadStrategy {
@@ -15,7 +15,7 @@ class MultiTabsItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
         return LoadStrategy.CancelLast
     }
 
-    override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult {
+    override suspend fun getCache(param: Unit): CacheResult {
         return CacheResult.Unused
     }
 
@@ -25,10 +25,7 @@ class MultiTabsItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
 
         val sources = ListConfig.randomTypes()
             .map {
-                ItemSourceInfo(
-                    it,
-                    TestMultiTabsItemSource()
-                )
+                TestMultiTabsItemSource(it)
             }
         return LoadResult.Success(sources)
     }

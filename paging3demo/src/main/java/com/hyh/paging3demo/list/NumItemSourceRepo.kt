@@ -1,12 +1,12 @@
 package com.hyh.paging3demo.list
 
-import com.hyh.list.SimpleItemSourceRepository
+import com.hyh.list.SimpleItemSourceRepo
 import com.hyh.base.LoadStrategy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 
-class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
+class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
 
 
     override fun getLoadStrategy(): LoadStrategy {
@@ -15,15 +15,14 @@ class NumItemSourceRepo : SimpleItemSourceRepository<Unit>(Unit) {
         //return RefreshStrategy.CancelLast
     }
 
-    override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult {
+    override suspend fun getCache(param: Unit): CacheResult {
         return CacheResult.Unused
     }
 
     override suspend fun load(param: Unit): LoadResult {
         delay(1000)
         //SystemClock.sleep(1000)
-        val sources = listOf(ItemSourceInfo("A", NumItemSource("A")))
-
+        val sources = listOf(NumItemSource("A"))
 
 
         /*val sources = ListConfig.randomTypes()

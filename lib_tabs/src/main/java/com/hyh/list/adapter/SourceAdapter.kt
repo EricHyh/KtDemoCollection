@@ -92,6 +92,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
         _items?.forEach {
             it.delegate.onDetached()
         }
+        receiver?.close()
     }
 
     inner class ResultProcessorSnapshot(private val sourceEvent: SourceEvent) {
@@ -102,21 +103,19 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
             coroutineScope.launch {
                 when (sourceEvent) {
                     is SourceEvent.PreShowing -> {
-                        Log.d(TAG, "submitData: SourceEvent PreShowing")
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
+                        processedResult.onResultUsed()
                         ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
                         _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItems.size)
-                        processedResult.onResultUsed()
                         sourceEvent.onReceived()
                     }
                     is SourceEvent.Success -> {
-                        Log.d(TAG, "submitData: SourceEvent Success")
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
+                        processedResult.onResultUsed()
                         ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
                         _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
-                        processedResult.onResultUsed()
                         sourceEvent.onReceived()
                     }
                     else -> {

@@ -4,7 +4,6 @@ import com.hyh.Invoke
 import com.hyh.OnEventReceived
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.flow.Flow
 
 data class RepoData<Param : Any>(
@@ -13,10 +12,8 @@ data class RepoData<Param : Any>(
 )
 
 data class LazySourceData(
-    val sourceToken: Any,
     val itemSource: ItemSource<out Any, out Any>,
-    val lazyFlow: Deferred<Flow<SourceData>>,
-    val onReuse: (oldItemSource: ItemSource<out Any, out Any>) -> Unit
+    val lazyFlow: Lazy<Flow<SourceData>>
 )
 
 data class SourceData(
@@ -24,30 +21,51 @@ data class SourceData(
     val receiver: UiReceiverForSource
 )
 
-
 sealed class RepoEvent(val onReceived: OnEventReceived) {
 
     class Loading(onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
-    class UsingCache(val sources: List<LazySourceData>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
+    class UsingCache(
+        val processor: RepoResultProcessor,
+        onReceived: OnEventReceived = {}
+    ) : RepoEvent(onReceived)
 
-    class Success(val sources: List<LazySourceData>, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
+    class Success(
+        val processor: RepoResultProcessor,
+        onReceived: OnEventReceived = {}
+    ) : RepoEvent(onReceived)
 
     class Error(val error: Throwable, val usingCache: Boolean, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
 
 }
+
+typealias RepoResultProcessor = suspend () -> RepoProcessedResult
+
+data class RepoProcessedResult(
+    val resultSources: List<LazySourceData>,
+    val listOperates: List<ListOperate>,
+    val onResultUsed: Invoke
+)
+
+class RepoDisplayedData(
+    @Volatile
+    var lazySources: List<LazySourceData>? = null,
+    @Volatile
+    var resultExtra: Any? = null
+)
+
 
 sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
     class Loading(onReceived: (suspend () -> Unit) = {}) : SourceEvent(onReceived)
 
     class PreShowing(
-        val processor: ResultProcessor,
+        val processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
     class Success(
-        val processor: ResultProcessor,
+        val processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
@@ -56,13 +74,11 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
         val preShowing: Boolean,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
-
 }
 
-typealias ResultProcessor = suspend () -> ProcessedResult
+typealias SourceResultProcessor = suspend () -> SourceProcessedResult
 
-
-data class ProcessedResult(
+data class SourceProcessedResult(
     val resultItems: List<ItemData>,
     val listOperates: List<ListOperate>,
     val onResultUsed: Invoke

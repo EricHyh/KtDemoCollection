@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
+class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSource<Int>() {
 
     companion object {
         private const val TAG = "TestMultiTabsItemSource"
@@ -29,9 +29,9 @@ class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
         }
     }
 
-    override fun getLoadStrategy(): LoadStrategy {
+    /*override fun getLoadStrategy(): LoadStrategy {
         return LoadStrategy.DelayedQueueUp(5000)
-    }
+    }*/
 
     override suspend fun getTitlePreShow(tabToken: Any, param: Int): List<ItemData> {
         return listOf(MultiTabsTitleItemData(param, onTabClick))
@@ -43,7 +43,7 @@ class TestMultiTabsItemSource() : MultiTabsItemSource<Int>() {
 
     override suspend fun getContent(tabToken: Any, param: Int): ContentResult {
         Log.d(TAG, "getContent delay1: $tabToken ${Thread.currentThread()}")
-        delay(2000)
+        //delay(2000)
         Log.d(TAG, "getContent delay2: $tabToken ${Thread.currentThread()}")
         when (param) {
             0 -> {

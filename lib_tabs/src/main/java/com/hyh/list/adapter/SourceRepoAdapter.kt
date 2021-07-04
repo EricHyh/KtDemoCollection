@@ -2,8 +2,6 @@ package com.hyh.list.adapter
 
 import android.util.Log
 import android.view.View
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.coroutine.CloseableCoroutineScope
@@ -15,11 +13,9 @@ import com.hyh.list.SourceLoadState
 import com.hyh.list.internal.*
 import com.hyh.page.PageContext
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
-import kotlin.coroutines.CoroutineContext
 
 /**
  * 管理多个[SourceAdapter]
@@ -41,7 +37,6 @@ class SourceRepoAdapter<Param : Any>(
     private val sourceAdapterCallback = SourceAdapterCallback()
     private var wrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
     private var receiver: UiReceiverForRepo<Param>? = null
-    private val invokeEventCh = Channel<List<(suspend () -> Unit)>>(Channel.BUFFERED)
     private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
     override val repoLoadStateFlow: StateFlow<RepoLoadState>
         get() = _loadStateFlow
@@ -61,6 +56,7 @@ class SourceRepoAdapter<Param : Any>(
             wrapperMap.forEach {
                 it.value.destroy()
             }
+            receiver?.close()
         }
     }
 
@@ -202,24 +198,21 @@ class SourceRepoAdapter<Param : Any>(
 
     private suspend fun submitData(data: RepoData<Param>) {
         collectFromRunner.runInIsolation {
-            pageContext
-                .lifecycleScope.launch {
-                    invokeEventCh
-                        .receiveAsFlow()
-                        .collect { array ->
-                            array.forEach {
-                                it()
-                            }
-                        }
-                }
             receiver = data.receiver
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
                         is RepoEvent.UsingCache -> {
-                            val result = updateWrappers(event.sources)
+                            val processedResult = event.processor.invoke()
+                            processedResult.onResultUsed()
+                            val result = updateWrappers(
+                                processedResult.resultSources,
+                                processedResult.listOperates
+                            )
+                            result.refreshInvokes.forEach {
+                                it.invoke()
+                            }
                             _loadStateFlow.value = RepoLoadState.UsingCache(result.newWrapperMap.size)
-                            invokeEventCh.send(result.refreshInvokes)
                         }
                         is RepoEvent.Loading -> {
                             _loadStateFlow.value = RepoLoadState.Loading
@@ -228,9 +221,16 @@ class SourceRepoAdapter<Param : Any>(
                             _loadStateFlow.value = RepoLoadState.Error(event.error, event.usingCache)
                         }
                         is RepoEvent.Success -> {
-                            val result = updateWrappers(event.sources)
+                            val processedResult = event.processor.invoke()
+                            processedResult.onResultUsed()
+                            val result = updateWrappers(
+                                processedResult.resultSources,
+                                processedResult.listOperates
+                            )
+                            result.refreshInvokes.forEach {
+                                it.invoke()
+                            }
                             _loadStateFlow.value = RepoLoadState.Success(result.newWrapperMap.size)
-                            invokeEventCh.send(result.refreshInvokes)
                         }
                     }
                     event.onReceived()
@@ -239,46 +239,38 @@ class SourceRepoAdapter<Param : Any>(
         }
     }
 
-    private suspend fun submitData(wrapper: SourceAdapterWrapper, flow: Flow<SourceData>) {
-        Log.d(TAG, "xxx: xxxx")
-        val context: CoroutineContext = SupervisorJob() + mainDispatcher
-        val job = CloseableCoroutineScope(context).launch {
-            flow.collectLatest {
-                wrapper.sourceAdapter.submitData(it)
-            }
-        }
-        wrapper.submitDataJob = job
-    }
-
     @Suppress("UNCHECKED_CAST")
-    private fun updateWrappers(sources: List<LazySourceData>): UpdateWrappersResult {
+    private fun updateWrappers(
+        sources: List<LazySourceData>,
+        listOperates: List<ListOperate>
+    ): UpdateWrappersResult {
         val reuseInvokes: MutableList<Invoke> = mutableListOf()
         val newInvokes: MutableList<Invoke> = mutableListOf()
         val refreshInvokes: MutableList<(suspend () -> Unit)> = mutableListOf()
         val oldWrapperMap = wrapperMap
 
-        val oldSourceTokens = ArrayList(oldWrapperMap.keys)
         val newSourceTokens = mutableListOf<Any>()
         val newWrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
-        sources.forEach {
-            newSourceTokens.add(it.sourceToken)
-            val oldWrapper = oldWrapperMap[it.sourceToken]
+
+        sources.forEachIndexed { index, data ->
+            newSourceTokens.add(data.itemSource.sourceToken)
+            val oldWrapper = oldWrapperMap[data.itemSource.sourceToken]
             if (oldWrapper != null) {
-                newWrapperMap[it.sourceToken] = oldWrapper
+                newWrapperMap[data.itemSource.sourceToken] = oldWrapper
                 reuseInvokes.add {
-                    it.onReuse.invoke(oldWrapper.itemSource)
+                    oldWrapper.reuse(index, data.itemSource)
                 }
                 refreshInvokes.add {
-                    oldWrapper.sourceAdapter.refresh(false)
+                    oldWrapper.refresh()
                 }
             } else {
-                val wrapper = createWrapper(it)
-                newWrapperMap[it.sourceToken] = wrapper
+                val wrapper = createWrapper(data)
+                newWrapperMap[data.itemSource.sourceToken] = wrapper
                 newInvokes.add {
                     onAdapterAdded(wrapper)
                 }
                 refreshInvokes.add {
-                    submitData(wrapper, it.lazyFlow.await())
+                    wrapper.submitData(data.lazyFlow.value)
                 }
             }
         }
@@ -299,11 +291,8 @@ class SourceRepoAdapter<Param : Any>(
             }
             notifyDataSetChanged()
         } else {
-            val diffResult = DiffUtil.calculateDiff(DiffUtilCallback(oldSourceTokens, newSourceTokens))
-            val listOperateOperates: MutableList<ListOperate> = mutableListOf()
-            diffResult.dispatchUpdatesTo(SourceWrappersUpdateCallback(listOperateOperates))
             SimpleDispatchUpdatesHelper.dispatch(
-                listOperateOperates,
+                listOperates,
                 ArrayList(oldWrapperMap.values),
                 ArrayList(newWrapperMap.values),
                 removedWrappers
@@ -336,13 +325,12 @@ class SourceRepoAdapter<Param : Any>(
             return null
         }
 
-        return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount)
+        return ItemLocalInfo(wrapper.itemSource.sourceToken, localPosition, wrapper.cachedItemCount)
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
-            sourceData.sourceToken,
             sourceData.itemSource,
             SourceAdapter(pageContext),
             viewTypeStorage,
@@ -357,73 +345,7 @@ class SourceRepoAdapter<Param : Any>(
         val refreshInvokes: List<(suspend () -> Unit)>
     )
 
-
-    private class DiffUtilCallback(
-        private val oldSourceTokens: List<Any>,
-        private val newSourceTokens: List<Any>
-    ) : DiffUtil.Callback() {
-
-        override fun getOldListSize(): Int {
-            return oldSourceTokens.size
-        }
-
-        override fun getNewListSize(): Int {
-            return newSourceTokens.size
-        }
-
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            val (oldSourceToken, newSourceToken) = getSourceToken(oldItemPosition, newItemPosition)
-            return oldSourceToken == newSourceToken
-        }
-
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            val (oldSourceToken, newSourceToken) = getSourceToken(oldItemPosition, newItemPosition)
-            return oldSourceToken == newSourceToken
-        }
-
-        private fun getSourceToken(oldItemPosition: Int, newItemPosition: Int): Pair<Any?, Any?> {
-            val oldSourceToken = if (oldItemPosition in oldSourceTokens.indices) {
-                oldSourceTokens[oldItemPosition]
-            } else {
-                null
-            }
-            val newSourceToken = if (newItemPosition in newSourceTokens.indices) {
-                newSourceTokens[newItemPosition]
-            } else {
-                null
-            }
-            return Pair(oldSourceToken, newSourceToken)
-        }
-    }
-
-    private data class WrapperAndLocalPosition(
-        var wrapper: AdapterWrapper? = null,
-        var localPosition: Int = -1,
-        var inUse: Boolean = false
-    )
-
     // endregion
-}
-
-class SourceWrappersUpdateCallback(
-    private val listOperateOperates: MutableList<ListOperate>,
-) : ListUpdateCallback {
-
-    override fun onChanged(position: Int, count: Int, payload: Any?) {
-        listOperateOperates.add(ListOperate.OnChanged(position, count))
-    }
-
-    override fun onMoved(fromPosition: Int, toPosition: Int) {
-        listOperateOperates.add(ListOperate.OnMoved(fromPosition, toPosition))
-    }
-
-    override fun onInserted(position: Int, count: Int) {
-        listOperateOperates.add(ListOperate.OnInserted(position, count))
-    }
-
-    override fun onRemoved(position: Int, count: Int) {
-        listOperateOperates.add(ListOperate.OnRemoved(position, count))
-    }
 }
 
 object SimpleDispatchUpdatesHelper {
@@ -651,18 +573,41 @@ object SimpleDispatchUpdatesHelper {
 
 
 class SourceAdapterWrapper(
-    val sourceToken: Any,
-    var itemSource: ItemSource<*, *>,
+    var itemSource: ItemSource<out Any, out Any>,
     val sourceAdapter: SourceAdapter,
     viewTypeStorage: ViewTypeStorage,
     callback: Callback
 ) : AdapterWrapper(sourceAdapter, viewTypeStorage, callback) {
 
-    var submitDataJob: Job? = null
+    private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    suspend fun submitData(flow: Flow<SourceData>) {
+
+        itemSource.delegate.attach()
+        coroutineScope.launch {
+            flow.collectLatest {
+                sourceAdapter.submitData(it)
+            }
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun reuse(newPosition: Int, newItemSource: ItemSource<out Any, out Any>) {
+        itemSource.delegate.sourcePosition = newPosition
+        (itemSource.delegate as ItemSource.Delegate<Any, Any>)
+            .updateItemSource((newItemSource as ItemSource<Any, Any>))
+    }
+
+    fun refresh() {
+        sourceAdapter.refresh(false)
+    }
 
     override fun destroy() {
-        submitDataJob?.cancel()
-        itemSource.delegate.detach()
+        super.destroy()
+        coroutineScope.cancel()
         sourceAdapter.destroy()
+        itemSource.delegate.sourcePosition = -1
+        itemSource.delegate.detach()
     }
+
 }

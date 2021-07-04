@@ -11,12 +11,17 @@ abstract class ItemSource<Param : Any, Item : Any> {
 
     internal val delegate: Delegate<Param, Item> = object : Delegate<Param, Item>() {
 
+        override var sourcePosition: Int = -1
+            set(value) {
+                val oldPosition = field
+                field = value
+                if (oldPosition != value) {
+                    onSourcePositionChanged(oldPosition, value)
+                }
+            }
+
         override fun attach() {
             this@ItemSource.onAttached()
-        }
-
-        override fun initPosition(position: Int) {
-            _sourcePosition = position
         }
 
         override fun injectRefreshActuator(refreshActuator: RefreshActuator) {
@@ -31,10 +36,8 @@ abstract class ItemSource<Param : Any, Item : Any> {
             return this@ItemSource.mapItems(items)
         }
 
-        override fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param, Item>) {
-            val oldPosition = _sourcePosition
-            _sourcePosition = newPosition
-            onUpdateItemSource(oldPosition, newPosition, newItemSource)
+        override fun updateItemSource(newItemSource: ItemSource<Param, Item>) {
+            onUpdateItemSource(newItemSource)
         }
 
         override fun onItemsDisplayed(items: List<Item>) {
@@ -62,21 +65,23 @@ abstract class ItemSource<Param : Any, Item : Any> {
         }
 
         override fun detach() {
-            _sourcePosition = -1
             this@ItemSource.onDetached()
         }
     }
 
-    private var _sourcePosition: Int = -1
+    abstract val sourceToken: Any
+
     val sourcePosition: Int
-        get() = _sourcePosition
+        get() = delegate.sourcePosition
 
     private lateinit var _refreshActuator: RefreshActuator
     val refreshActuator: RefreshActuator
         get() = _refreshActuator
 
     protected open fun onAttached() {}
-    protected open fun onUpdateItemSource(oldPosition: Int, newPosition: Int, newItemSource: ItemSource<Param, Item>) {}
+
+    protected open fun onSourcePositionChanged(oldPosition: Int, newPosition: Int) {}
+    protected open fun onUpdateItemSource(newItemSource: ItemSource<Param, Item>) {}
 
     protected abstract fun getElementDiff(): IElementDiff<Item>
     protected abstract fun mapItems(items: List<Item>): List<ItemData>
@@ -104,15 +109,16 @@ abstract class ItemSource<Param : Any, Item : Any> {
 
     abstract class Delegate<Param : Any, Item : Any> {
 
+        abstract var sourcePosition: Int
+
         abstract fun attach()
 
-        abstract fun initPosition(position: Int)
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
 
         abstract fun getElementDiff(): IElementDiff<Item>
         abstract fun mapItems(items: List<Item>): List<ItemData>
 
-        abstract fun updateItemSource(newPosition: Int, newItemSource: ItemSource<Param, Item>)
+        abstract fun updateItemSource(newItemSource: ItemSource<Param, Item>)
 
         abstract fun onItemsDisplayed(items: List<Item>)
         abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)

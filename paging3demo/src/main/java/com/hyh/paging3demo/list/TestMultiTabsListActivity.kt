@@ -7,7 +7,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.list.SingleItemSourceRepository
+import com.hyh.list.SingleItemSourceRepo
 import com.hyh.list.adapter.SourceRepoAdapter
 import com.hyh.list.decoration.ItemSourceFrameDecoration
 import com.hyh.page.pageContext
@@ -29,7 +29,7 @@ class TestMultiTabsListActivity : AppCompatActivity() {
 
         Handler().postDelayed({
             //multiSourceAdapter.submitData(MultiTabsItemSourceRepo().flow)
-            multiSourceAdapter.submitData(SingleItemSourceRepository(TestMultiTabsItemSource()).flow)
+            multiSourceAdapter.submitData(SingleItemSourceRepo(TestMultiTabsItemSource("")).flow)
         }, 2000)
 
 
@@ -39,10 +39,11 @@ class TestMultiTabsListActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        //multiSourceAdapter.refreshRepo(Unit)
-        handler.post(refreshRunnable1)
+        multiSourceAdapter.refreshRepo(Unit)
+        //handler.post(refreshRunnable1)
     }
 
+    private val TAG = "TestMultiTabsList"
 
     val handlerThread = HandlerThread("Refresh")
     val handler by lazy {
@@ -53,30 +54,44 @@ class TestMultiTabsListActivity : AppCompatActivity() {
         override fun run() {
             //testAdapter.refresh()
             multiSourceAdapter.refreshRepo(Unit)
-            handler.post(this)
+            //Log.d(TAG, "refreshRunnable run: ")
+            if (flag) {
+                handler.post(this)
+            }
         }
     }
 
-    var flag = true
+    var flag = false
 
     val refreshRunnable1 = Runnable {
         multiSourceAdapter.refreshSources(0)
     }
 
+    val refreshRunnable11 = object : Runnable {
+
+        override fun run() {
+            multiSourceAdapter.refreshSources(0)
+            if (flag) {
+                handler.post(this)
+            }
+        }
+    }
+
     fun startRefresh(v: View) {
-        /*handler.removeCallbacks(refreshRunnable)
-        handler.post(refreshRunnable)*/
-        Thread {
+        flag = true
+        handler.removeCallbacks(refreshRunnable11)
+        handler.post(refreshRunnable11)
+        /*Thread {
             flag = true
             while (flag) {
                 handler.post(refreshRunnable1)
             }
-        }.start()
+        }.start()*/
 
     }
 
     fun stopRefresh(v: View) {
-        //handler.removeCallbacks(refreshRunnable)
+        handler.removeCallbacks(refreshRunnable11)
         flag = false
     }
 

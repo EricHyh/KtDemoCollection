@@ -3,31 +3,26 @@ package com.hyh.list
 import com.hyh.list.internal.ItemSourceFetcher
 import com.hyh.base.LoadStrategy
 import com.hyh.list.internal.RepoData
+import com.hyh.list.internal.RepoDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
-abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
+abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
 
     private val itemSourceFetcher = object : ItemSourceFetcher<Param>(initialParam) {
 
         override fun getLoadStrategy(): LoadStrategy =
-            this@ItemSourceRepository.getLoadStrategy()
+            this@ItemSourceRepo.getLoadStrategy()
 
         override suspend fun getCache(params: CacheParams<Param>): CacheResult =
-            this@ItemSourceRepository.getCache(params)
-
-        override suspend fun onCacheResult(params: CacheParams<Param>, cacheResult: CacheResult) =
-            this@ItemSourceRepository.onCacheResult(params, cacheResult)
+            this@ItemSourceRepo.getCache(params)
 
         override suspend fun load(params: LoadParams<Param>): LoadResult =
-            this@ItemSourceRepository.load(params)
-
-        override suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) =
-            this@ItemSourceRepository.onLoadResult(params, loadResult)
+            this@ItemSourceRepo.load(params)
 
         override fun getFetchDispatcher(param: Param): CoroutineDispatcher =
-            this@ItemSourceRepository.getFetchDispatcher(param)
+            this@ItemSourceRepo.getFetchDispatcher(param)
 
     }
 
@@ -37,11 +32,7 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
 
     protected abstract suspend fun getCache(params: CacheParams<Param>): CacheResult
 
-    protected open suspend fun onCacheResult(params: CacheParams<Param>, cacheResult: CacheResult) {}
-
     protected abstract suspend fun load(params: LoadParams<Param>): LoadResult
-
-    protected open suspend fun onLoadResult(params: LoadParams<Param>, loadResult: LoadResult) {}
 
     protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 
@@ -50,7 +41,8 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
         object Unused : CacheResult()
 
         class Success(
-            val sources: List<ItemSourceInfo>,
+            val sources: List<ItemSource<out Any, out Any>>,
+            val resultExtra: Any? = null
         ) : CacheResult()
     }
 
@@ -59,24 +51,19 @@ abstract class ItemSourceRepository<Param : Any>(initialParam: Param?) {
         class Error(val error: Throwable) : LoadResult()
 
         class Success(
-            val sources: List<ItemSourceInfo>,
+            val sources: List<ItemSource<out Any, out Any>>,
+            val resultExtra: Any? = null
+
         ) : LoadResult()
     }
 
-    data class ItemSourceInfo(
-        val sourceToken: Any,
-        val source: ItemSource<out Any, out Any>,
-    )
-
     class CacheParams<Param : Any>(
         val param: Param,
-        val lastCacheResult: CacheResult?,
-        val lastLoadResult: LoadResult?
+        val displayedData: RepoDisplayedData
     )
 
     class LoadParams<Param : Any>(
         val param: Param,
-        val lastCacheResult: CacheResult?,
-        val lastLoadResult: LoadResult?
+        val displayedData: RepoDisplayedData
     )
 }

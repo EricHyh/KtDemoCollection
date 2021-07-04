@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
+class NumItemSource(private val type: String, override val sourceToken: Any = type) : SimpleItemSource<Unit>() {
 
 
     companion object {

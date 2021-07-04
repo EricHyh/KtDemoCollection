@@ -45,10 +45,7 @@ object ListUpdate {
             return UpdateResult(
                 resultList = ArrayList(newList),
                 listOperates = listOf(ListOperate.OnAllChanged),
-                elementOperates = newList.map {
-                    ElementOperate.Added(it)
-                },
-                newElementOperates = ElementOperates(newList, emptyList(), emptyList())
+                elementOperates = ElementOperates(newList, emptyList(), emptyList())
             )
         }
 
@@ -60,12 +57,9 @@ object ListUpdate {
         val diffResult = DiffUtil.calculateDiff(DiffCallbackImpl(oldList, newList, elementDiff, contentsNotSameMap))
         val operates = mutableListOf<ListOperate>()
 
-        val elementOperates = mutableListOf<ElementOperate<E>>()
-
         val addedElements: MutableList<E> = mutableListOf()
         val removedElements: MutableList<E> = mutableListOf()
         val changedElements: MutableList<Triple<E, E, Any?>> = mutableListOf()
-
 
         val elementChangeBuilders = mutableListOf<Invoke>()
 
@@ -80,14 +74,9 @@ object ListUpdate {
                         val oldElement = elementStub.element!!
                         val newElement = contentsNotSameMap[oldElement]!!
                         if (elementDiff.isSupportUpdateItemData(oldElement, newElement)) {
-                            elementOperates.add(ElementOperate.Changed(oldElement, newElement, payload))
-
                             changedElements.add(Triple(oldElement, newElement, payload))
                         } else {
                             elementStub.element = newElement
-                            elementOperates.add(ElementOperate.Removed(oldElement))
-                            elementOperates.add(ElementOperate.Added(newElement))
-
                             addedElements.add(newElement)
                             removedElements.add(oldElement)
                         }
@@ -115,8 +104,6 @@ object ListUpdate {
                 list.removeAll(subList)
                 subList.forEach {
                     val element = it.element ?: return@forEach
-                    elementOperates.add(ElementOperate.Removed(element))
-
                     removedElements.add(element)
                 }
             }
@@ -125,8 +112,6 @@ object ListUpdate {
         list.forEachIndexed { index, elementStub ->
             if (elementStub.element == null) {
                 elementStub.element = newList[index]
-                elementOperates.add(ElementOperate.Added(elementStub.element!!))
-
                 addedElements.add(elementStub.element!!)
             }
         }
@@ -138,7 +123,6 @@ object ListUpdate {
         return UpdateResult(
             list.map { it.element!! },
             operates,
-            elementOperates,
             ElementOperates(addedElements, removedElements, changedElements)
         )
     }
@@ -152,22 +136,6 @@ object ListUpdate {
         }
         list.add(targetIndex, list.removeAt(sourceIndex))
         return true
-    }
-
-    fun handleItemDataChanges(elementChanges: List<ElementOperate<ItemData>>) {
-        elementChanges.forEach {
-            when (it) {
-                is ElementOperate.Added<ItemData> -> {
-                    it.element.delegate.onActivated()
-                }
-                is ElementOperate.Changed<ItemData> -> {
-                    it.oldElement.delegate.updateItemData(it.newElement, it.payload)
-                }
-                is ElementOperate.Removed<ItemData> -> {
-                    it.element.delegate.onDetached()
-                }
-            }
-        }
     }
 
     fun handleListOperates(listOperates: List<ListOperate>, adapter: RecyclerView.Adapter<*>) {
@@ -199,8 +167,7 @@ object ListUpdate {
     class UpdateResult<E>(
         val resultList: List<E>,
         val listOperates: List<ListOperate>,
-        val elementOperates: List<ElementOperate<E>>,
-        val newElementOperates: ElementOperates<E>
+        val elementOperates: ElementOperates<E>
     )
 }
 
@@ -294,6 +261,23 @@ interface IElementDiff<E> {
 
         override fun getChangePayload(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Any? {
             return newElement.itemsToken
+        }
+    }
+
+    class ItemSourceDiff : IElementDiff<LazySourceData> {
+
+        override fun isSupportUpdateItemData(oldElement: LazySourceData, newElement: LazySourceData): Boolean = true
+
+        override fun areItemsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
+            return oldElement.itemSource.sourceToken == newElement.itemSource.sourceToken
+        }
+
+        override fun areContentsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
+            return oldElement.itemSource.sourceToken == newElement.itemSource.sourceToken
+        }
+
+        override fun getChangePayload(oldElement: LazySourceData, newElement: LazySourceData): Any? {
+            return null
         }
     }
 

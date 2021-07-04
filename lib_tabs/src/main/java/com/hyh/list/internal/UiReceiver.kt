@@ -10,10 +10,13 @@ interface UiReceiverForRepo<Param : Any> {
 
     fun refresh(param: Param)
 
+    fun close()
+
 }
 
 interface UiReceiverForSource {
 
     fun refresh(important: Boolean)
 
+    fun close()
 }

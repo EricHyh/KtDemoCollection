@@ -124,21 +124,20 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
 
         val invokes: MutableList<Invoke> = mutableListOf()
 
-        itemsBucketsResult.elementOperates.forEach { operate ->
-            if (operate is ElementOperate.Changed<ItemsBucket>) {
-                invokes.add {
-                    storage.take(
-                        operate.oldElement.bucketId,
-                        operate.oldElement.itemsToken
-                    )?.items?.forEach {
-                        it.delegate.cached = false
-                    }
 
-                    storage.store(operate.oldElement)
+        itemsBucketsResult.elementOperates.changedElements.forEach { change ->
+            invokes.add {
+                storage.take(
+                    change.first.bucketId,
+                    change.first.itemsToken
+                )?.items?.forEach {
+                    it.delegate.cached = false
+                }
 
-                    operate.oldElement.items.forEach {
-                        it.delegate.cached = true
-                    }
+                storage.store(change.first)
+
+                change.first.items.forEach {
+                    it.delegate.cached = true
                 }
             }
         }

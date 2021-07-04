@@ -19,10 +19,6 @@ class ItemFetcher<Param : Any, Item : Any>(
     private val itemSource: ItemSource<Param, Item>,
 ) {
 
-    companion object {
-        private const val TAG = "ItemFetcher"
-    }
-
     private val sourceDisplayedData = SourceDisplayedData<Item>()
 
     private val uiReceiver = object : UiReceiverForSource {
@@ -43,16 +39,16 @@ class ItemFetcher<Param : Any, Item : Any>(
         fun onRefreshComplete() {
             refreshEventHandler.onLoadComplete()
         }
+
+        override fun close() {
+        }
     }
 
     val flow: Flow<SourceData> = simpleChannelFlow<SourceData> {
         uiReceiver
             .flow
-            .onStart {
-                //emit(0)
-            }
             .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param, Item>?, _: Long ->
+            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param, Item>?, id: Long ->
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
                     displayedData = sourceDisplayedData,
@@ -105,7 +101,7 @@ class ItemFetcher<Param : Any, Item : Any>(
 }
 
 
-class ResultProcessorGenerator<Param : Any, Item : Any>(
+class SourceResultProcessorGenerator<Param : Any, Item : Any>(
     private val sourceDisplayedData: SourceDisplayedData<Item>,
     private val items: List<Item>,
     private val resultExtra: Any?,
@@ -117,7 +113,7 @@ class ResultProcessorGenerator<Param : Any, Item : Any>(
         private const val TAG = "ResultProcessor"
     }
 
-    val processor: ResultProcessor = {
+    val processor: SourceResultProcessor = {
         if (dispatcher != null) {
             withContext(dispatcher) {
                 processResult()
@@ -127,7 +123,7 @@ class ResultProcessorGenerator<Param : Any, Item : Any>(
         }
     }
 
-    private fun processResult(): ProcessedResult {
+    private fun processResult(): SourceProcessedResult {
 
         val updateResult = ListUpdate.calculateDiff(
             sourceDisplayedData.items,
@@ -143,7 +139,7 @@ class ResultProcessorGenerator<Param : Any, Item : Any>(
             sourceDisplayedData
         )
 
-        return ProcessedResult(itemDataList, updateResult.listOperates) {
+        return SourceProcessedResult(itemDataList, updateResult.listOperates) {
             sourceDisplayedData.items = updateResult.resultList
             sourceDisplayedData.itemDataList = itemDataList
             sourceDisplayedData.resultExtra = resultExtra
@@ -153,9 +149,9 @@ class ResultProcessorGenerator<Param : Any, Item : Any>(
             }
 
             delegate.run {
-                onItemsRecycled(updateResult.newElementOperates.removedElements)
-                onItemsChanged(updateResult.newElementOperates.changedElements)
-                onItemsDisplayed(updateResult.newElementOperates.addedElements)
+                onItemsRecycled(updateResult.elementOperates.removedElements)
+                onItemsChanged(updateResult.elementOperates.changedElements)
+                onItemsDisplayed(updateResult.elementOperates.addedElements)
             }
 
             delegate.onResultDisplayed(sourceDisplayedData)
@@ -220,7 +216,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
         if (preShowResult is ItemSource.PreShowResult.Success<Item>) {
             preShowing = true
             val event = SourceEvent.PreShowing(
-                ResultProcessorGenerator(
+                SourceResultProcessorGenerator(
                     displayedData,
                     preShowResult.items,
                     preShowResult.resultExtra,
@@ -253,7 +249,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
                 val event = SourceEvent.Success(
-                    ResultProcessorGenerator(
+                    SourceResultProcessorGenerator(
                         displayedData,
                         loadResult.items,
                         loadResult.resultExtra,
