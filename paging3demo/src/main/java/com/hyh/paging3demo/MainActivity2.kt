@@ -13,6 +13,10 @@ import com.hyh.paging3demo.fragment.ProjectsFragment2
 
 class MainActivity2 : AppCompatActivity() {
 
+
+    private val fragment2 = ProjectsFragment2()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -56,9 +60,11 @@ class MainActivity2 : AppCompatActivity() {
 
     private fun openList(type: Int) {
         Global.sourceType = type
+
         supportFragmentManager
             .beginTransaction()
-            .add(android.R.id.content, ProjectsFragment2::class.java, Bundle())
+            .add(android.R.id.content, fragment2)
+            /*.add(android.R.id.content, ProjectsFragment2::class.java, Bundle())*/
             .addToBackStack(null)
             .commitAllowingStateLoss()
     }

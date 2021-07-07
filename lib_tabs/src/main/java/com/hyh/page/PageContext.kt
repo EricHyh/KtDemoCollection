@@ -38,17 +38,24 @@ abstract class PageContext(
                     return LazyPageContext(viewModelStoreOwner, lifecycleOwner)
                 }
             } else if (viewModelStoreOwner is Fragment) {
-                if (!viewModelStoreOwner.isAdded) {
+                if (viewModelStoreOwner.fragmentManager == null) {
                     return LazyPageContext(viewModelStoreOwner, lifecycleOwner)
                 }
             }
-            val viewModel = ViewModelProvider(viewModelStoreOwner).get(PageContextViewModel::class.java)
-            val cachePageContext = LazyPageContext.getCachePageContext(lifecycleOwner)
-            return if (cachePageContext != null) {
-                viewModel.setPageContext(lifecycleOwner.lifecycle, cachePageContext)
-                cachePageContext
+            val result = viewModelStoreOwner.runCatching {
+                ViewModelProvider(viewModelStoreOwner).get(PageContextViewModel::class.java)
+            }
+            val viewModel = result.getOrNull()
+            return if (viewModel != null) {
+                val cachePageContext = LazyPageContext.getCachePageContext(lifecycleOwner)
+                if (cachePageContext != null) {
+                    viewModel.setPageContext(lifecycleOwner.lifecycle, cachePageContext)
+                    cachePageContext
+                } else {
+                    viewModel.getPageContext(viewModelStoreOwner, lifecycleOwner)
+                }
             } else {
-                viewModel.getPageContext(viewModelStoreOwner, lifecycleOwner)
+                LazyPageContext(viewModelStoreOwner, lifecycleOwner)
             }
         }
     }
