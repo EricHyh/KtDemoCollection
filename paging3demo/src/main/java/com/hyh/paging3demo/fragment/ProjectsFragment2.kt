@@ -47,16 +47,19 @@ class ProjectsFragment2 : CommonBaseFragment() {
         pageContext.storage.store(ProjectStore.Num(100))
 
         Log.d(TAG, "onCreate: $pageContext")
+        Log.d(TAG, "onCreate: $viewModelStore")
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy: $pageContext")
+        Log.d(TAG, "onDestroy: $viewModelStore")
     }
 
     override fun onDetach() {
         super.onDetach()
         Log.d(TAG, "onDetach: $pageContext")
+        Log.d(TAG, "onDetach: $viewModelStore")
     }
 
     override fun getContentView(inflater: LayoutInflater, container: ViewGroup?): View {
