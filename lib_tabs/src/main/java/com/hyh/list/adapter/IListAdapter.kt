@@ -2,6 +2,7 @@ package com.hyh.list.adapter
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.list.ItemData
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
@@ -11,12 +12,12 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface IListAdapter<Param : Any> {
 
-    val repoLoadStateFlow: StateFlow<RepoLoadState>
+    val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
 
     fun submitData(flow: Flow<RepoData<Param>>)
 
-    fun getSourceLoadState(sourceIndex: Int): StateFlow<SourceLoadState>?
-    fun getSourceLoadState(sourceToken: Any): StateFlow<SourceLoadState>?
+    fun getSourceLoadState(sourceIndex: Int): SimpleStateFlow<SourceLoadState>?
+    fun getSourceLoadState(sourceToken: Any): SimpleStateFlow<SourceLoadState>?
 
     fun getItemSnapshot(): List<ItemData>
     fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<ItemData>

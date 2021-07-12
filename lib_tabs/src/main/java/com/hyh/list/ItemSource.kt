@@ -1,7 +1,7 @@
 package com.hyh.list
 
 import com.hyh.RefreshActuator
-import com.hyh.base.LoadStrategy
+import com.hyh.base.RefreshStrategy
 import com.hyh.list.internal.IElementDiff
 import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
@@ -89,7 +89,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
     protected abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)
     protected abstract fun onItemsRecycled(items: List<Item>)
 
-    open fun getLoadStrategy(): LoadStrategy = LoadStrategy.CancelLast
+    open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
     abstract suspend fun getParam(): Param
     abstract suspend fun getPreShow(params: PreShowParams<Param, Item>): PreShowResult<Item>
     abstract suspend fun load(params: LoadParams<Param, Item>): LoadResult<Item>

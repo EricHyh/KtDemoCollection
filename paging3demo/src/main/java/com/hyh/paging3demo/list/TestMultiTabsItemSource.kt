@@ -6,12 +6,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.base.LoadStrategy
+import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlin.random.Random
 
 class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSource<Int>() {
@@ -29,9 +28,9 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
         }
     }
 
-    /*override fun getLoadStrategy(): LoadStrategy {
-        return LoadStrategy.DelayedQueueUp(5000)
-    }*/
+    override fun getRefreshStrategy(): RefreshStrategy {
+        return RefreshStrategy.DelayedQueueUp(5000)
+    }
 
     override suspend fun getTitlePreShow(tabToken: Any, param: Int): List<ItemData> {
         return listOf(MultiTabsTitleItemData(param, onTabClick))

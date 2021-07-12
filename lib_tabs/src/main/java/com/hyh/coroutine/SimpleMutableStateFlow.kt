@@ -1,8 +1,8 @@
 package com.hyh.coroutine
 
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.flow.*
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicReference
  * @author eriche
  * @data 2021/6/21
  */
-internal class SimpleMutableStateFlow<T : Any>(initialValue: T) {
+class SimpleMutableStateFlow<T : Any>(initialValue: T) {
 
     private val channel: ConflatedBroadcastChannel<T> = ConflatedBroadcastChannel(initialValue)
 
@@ -26,15 +26,42 @@ internal class SimpleMutableStateFlow<T : Any>(initialValue: T) {
             updateValue(safeValue, value)
         }
 
-    val flow = channel.openSubscription().consumeAsFlow()
-
     private fun updateValue(oldValue: T, newValue: T) {
         synchronized(valueRef) {
             if (oldValue == newValue) return
             if (!channel.isClosedForSend) {
-                channel.offer(newValue)
-                valueRef.set(newValue)
+                channel.runCatching {
+                    channel.offer(newValue)
+                    valueRef.set(newValue)
+                }
             }
         }
     }
+
+    fun asStateFlow(): SimpleStateFlow<T> {
+        return SimpleStateFlowImpl(this)
+    }
+
+    fun close() {
+        channel.runCatching {
+            channel.close()
+        }
+    }
+
+    class SimpleStateFlowImpl<T : Any>(private val stateFlow: SimpleMutableStateFlow<T>) : SimpleStateFlow<T> {
+
+        override val value: T
+            get() = stateFlow.value
+
+        @InternalCoroutinesApi
+        override suspend fun collect(collector: FlowCollector<T>) {
+            stateFlow.channel.openSubscription().receiveAsFlow().collect(collector)
+        }
+    }
+}
+
+interface SimpleStateFlow<T : Any> : Flow<T> {
+
+    val value: T
+
 }

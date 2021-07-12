@@ -2,8 +2,8 @@ package com.hyh.list.internal
 
 import android.util.Log
 import com.hyh.*
-import com.hyh.base.BaseLoadEventHandler
-import com.hyh.base.LoadStrategy
+import com.hyh.base.RefreshEventHandler
+import com.hyh.base.RefreshStrategy
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
@@ -23,24 +23,25 @@ class ItemFetcher<Param : Any, Item : Any>(
 
     private val uiReceiver = object : UiReceiverForSource {
 
-        private val refreshEventHandler = object : BaseLoadEventHandler<Unit>(Unit) {
+        private val refreshEventHandler = object : RefreshEventHandler<Unit>(Unit) {
 
-            override fun getLoadStrategy(): LoadStrategy {
-                return this@ItemFetcher.getLoadStrategy()
+            override fun getRefreshStrategy(): RefreshStrategy {
+                return this@ItemFetcher.getRefreshStrategy()
             }
         }
 
         val flow = refreshEventHandler.flow.map { it.first }
 
         override fun refresh(important: Boolean) {
-            refreshEventHandler.onReceiveLoadEvent(important, Unit)
+            refreshEventHandler.onReceiveRefreshEvent(important, Unit)
         }
 
         fun onRefreshComplete() {
-            refreshEventHandler.onLoadComplete()
+            refreshEventHandler.onRefreshComplete()
         }
 
         override fun close() {
+            refreshEventHandler.onDestroy()
         }
     }
 
@@ -74,8 +75,8 @@ class ItemFetcher<Param : Any, Item : Any>(
         uiReceiver.refresh(important)
     }
 
-    private fun getLoadStrategy(): LoadStrategy {
-        return itemSource.getLoadStrategy()
+    private fun getRefreshStrategy(): RefreshStrategy {
+        return itemSource.getRefreshStrategy()
     }
 
     private fun getParamProvider(): ParamProvider<Param> = ::getParam

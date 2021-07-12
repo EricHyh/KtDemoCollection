@@ -1,7 +1,7 @@
 package com.hyh.list.adapter
 
 import android.util.Log
-import com.hyh.coroutine.CloseableCoroutineScope
+import com.hyh.coroutine.*
 import com.hyh.coroutine.SingleRunner
 import com.hyh.coroutine.simpleScan
 import com.hyh.list.*
@@ -31,8 +31,8 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
     val items: List<ItemData>?
         get() = _items
 
-    private val _loadStateFlow: MutableStateFlow<SourceLoadState> = MutableStateFlow(SourceLoadState.Initial)
-    val loadStateFlow: StateFlow<SourceLoadState>
+    private val _loadStateFlow: SimpleMutableStateFlow<SourceLoadState> = SimpleMutableStateFlow(SourceLoadState.Initial)
+    val loadStateFlow: SimpleStateFlow<SourceLoadState>
         get() = _loadStateFlow.asStateFlow()
 
     private val resultFlow: MutableStateFlow<Pair<Long, SourceEvent?>> = MutableStateFlow<Pair<Long, SourceEvent?>>(Pair(0, null))

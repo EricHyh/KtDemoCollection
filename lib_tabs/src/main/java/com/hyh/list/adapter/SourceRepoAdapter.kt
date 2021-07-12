@@ -5,6 +5,8 @@ import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.coroutine.CloseableCoroutineScope
+import com.hyh.coroutine.SimpleMutableStateFlow
+import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.coroutine.SingleRunner
 import com.hyh.list.ItemData
 import com.hyh.list.ItemSource
@@ -37,9 +39,10 @@ class SourceRepoAdapter<Param : Any>(
     private val sourceAdapterCallback = SourceAdapterCallback()
     private var wrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
     private var receiver: UiReceiverForRepo<Param>? = null
-    private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
-    override val repoLoadStateFlow: StateFlow<RepoLoadState>
-        get() = _loadStateFlow
+    //private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
+    private val _loadStateFlow: SimpleMutableStateFlow<RepoLoadState> = SimpleMutableStateFlow(RepoLoadState.Initial)
+    override val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
+        get() = _loadStateFlow.asStateFlow()
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage.SharedIdRangeViewTypeStorage()
 
@@ -74,7 +77,7 @@ class SourceRepoAdapter<Param : Any>(
         receiver?.refresh(param)
     }
 
-    override fun getSourceLoadState(sourceIndex: Int): StateFlow<SourceLoadState>? {
+    override fun getSourceLoadState(sourceIndex: Int): SimpleStateFlow<SourceLoadState>? {
         if (sourceIndex !in 0 until wrapperMap.size) {
             return null
         }
@@ -88,7 +91,7 @@ class SourceRepoAdapter<Param : Any>(
         return null
     }
 
-    override fun getSourceLoadState(sourceToken: Any): StateFlow<SourceLoadState>? {
+    override fun getSourceLoadState(sourceToken: Any): SimpleStateFlow<SourceLoadState>? {
         val wrapper = wrapperMap[sourceToken] ?: return null
         return wrapper.sourceAdapter.loadStateFlow
     }

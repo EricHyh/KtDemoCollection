@@ -1,8 +1,8 @@
 package com.hyh.list.internal
 
 import com.hyh.Invoke
-import com.hyh.base.BaseLoadEventHandler
-import com.hyh.base.LoadStrategy
+import com.hyh.base.RefreshEventHandler
+import com.hyh.base.RefreshStrategy
 import com.hyh.coroutine.*
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
@@ -21,24 +21,25 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
     private val uiReceiver = object : UiReceiverForRepo<Param> {
 
-        private val refreshEventHandler = object : BaseLoadEventHandler<Param>(initialParam) {
+        private val refreshEventHandler = object : RefreshEventHandler<Param>(initialParam) {
 
-            override fun getLoadStrategy(): LoadStrategy {
-                return this@ItemSourceFetcher.getLoadStrategy()
+            override fun getRefreshStrategy(): RefreshStrategy {
+                return this@ItemSourceFetcher.getRefreshStrategy()
             }
         }
 
         val flow = refreshEventHandler.flow.map { it.second }
 
         override fun refresh(param: Param) {
-            refreshEventHandler.onReceiveLoadEvent(false, param)
+            refreshEventHandler.onReceiveRefreshEvent(false, param)
         }
 
         fun onRefreshComplete() {
-            refreshEventHandler.onLoadComplete()
+            refreshEventHandler.onRefreshComplete()
         }
 
         override fun close() {
+            refreshEventHandler.onDestroy()
             destroy()
         }
     }
@@ -74,7 +75,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     private fun getCacheLoader(): SourceCacheLoader<Param> = ::getCache
     private fun getLoader(): SourceLoader<Param> = ::load
 
-    abstract fun getLoadStrategy(): LoadStrategy
+    abstract fun getRefreshStrategy(): RefreshStrategy
     abstract suspend fun getCache(params: ItemSourceRepo.CacheParams<Param>): ItemSourceRepo.CacheResult
 
     abstract suspend fun load(params: ItemSourceRepo.LoadParams<Param>): ItemSourceRepo.LoadResult

@@ -1,7 +1,7 @@
 package com.hyh.list
 
 import com.hyh.list.internal.ItemSourceFetcher
-import com.hyh.base.LoadStrategy
+import com.hyh.base.RefreshStrategy
 import com.hyh.list.internal.RepoData
 import com.hyh.list.internal.RepoDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,8 +12,8 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
 
     private val itemSourceFetcher = object : ItemSourceFetcher<Param>(initialParam) {
 
-        override fun getLoadStrategy(): LoadStrategy =
-            this@ItemSourceRepo.getLoadStrategy()
+        override fun getRefreshStrategy(): RefreshStrategy =
+            this@ItemSourceRepo.getRefreshStrategy()
 
         override suspend fun getCache(params: CacheParams<Param>): CacheResult =
             this@ItemSourceRepo.getCache(params)
@@ -28,7 +28,7 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
 
     val flow: Flow<RepoData<Param>> = itemSourceFetcher.flow
 
-    protected open fun getLoadStrategy(): LoadStrategy = LoadStrategy.CancelLast
+    protected open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
 
     protected abstract suspend fun getCache(params: CacheParams<Param>): CacheResult
 

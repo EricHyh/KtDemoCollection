@@ -1,7 +1,7 @@
 package com.hyh.paging3demo.list
 
 import com.hyh.list.SimpleItemSourceRepo
-import com.hyh.base.LoadStrategy
+import com.hyh.base.RefreshStrategy
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -9,8 +9,8 @@ import kotlinx.coroutines.delay
 class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
 
 
-    override fun getLoadStrategy(): LoadStrategy {
-        return LoadStrategy.DelayedQueueUp(5000)
+    override fun getRefreshStrategy(): RefreshStrategy {
+        return RefreshStrategy.DelayedQueueUp(5000)
         //return RefreshStrategy.QueueUp
         //return RefreshStrategy.CancelLast
     }
