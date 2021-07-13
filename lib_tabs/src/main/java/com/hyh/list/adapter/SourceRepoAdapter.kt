@@ -39,6 +39,7 @@ class SourceRepoAdapter<Param : Any>(
     private val sourceAdapterCallback = SourceAdapterCallback()
     private var wrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
     private var receiver: UiReceiverForRepo<Param>? = null
+
     //private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
     private val _loadStateFlow: SimpleMutableStateFlow<RepoLoadState> = SimpleMutableStateFlow(RepoLoadState.Initial)
     override val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
@@ -317,18 +318,36 @@ class SourceRepoAdapter<Param : Any>(
 
     override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
         val globalPosition = recyclerView.getChildAdapterPosition(view)
-        val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition) ?: return null
-        val wrapper: SourceAdapterWrapper = binderLookup[viewHolder] as? SourceAdapterWrapper ?: return null
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition)
+        val wrapper: SourceAdapterWrapper? = binderLookup[viewHolder] as? SourceAdapterWrapper
+        if (wrapper != null) {
+            val itemsBefore = countItemsBefore(wrapper)
+            val localPosition: Int = globalPosition - itemsBefore
+            if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
+                return findItemLocalInfo(globalPosition)
+            }
+            return ItemLocalInfo(wrapper.itemSource.sourceToken, localPosition, wrapper.cachedItemCount)
+        }
+        return findItemLocalInfo(globalPosition)
+    }
 
-        val itemsBefore = countItemsBefore(wrapper)
-        val localPosition: Int = globalPosition - itemsBefore
 
-        if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
-            Log.e(TAG, "findItemLocalInfo error: localPosition=$localPosition, itemCount=${wrapper.adapter.itemCount}",)
+    private fun findItemLocalInfo(globalPosition: Int): ItemLocalInfo? {
+        var resultWrapper: SourceAdapterWrapper? = null
+        var localPosition: Int = globalPosition
+        for (wrapperEntry in wrapperMap) {
+            if (wrapperEntry.value.cachedItemCount > localPosition) {
+                resultWrapper = wrapperEntry.value
+                break
+            }
+            localPosition -= wrapperEntry.value.cachedItemCount
+        }
+        if (resultWrapper == null) return null
+        if (localPosition < 0 || localPosition >= resultWrapper.cachedItemCount) {
+            Log.e(TAG, "findItemLocalInfo error: localPosition=$localPosition, itemCount=${resultWrapper.adapter.itemCount}")
             return null
         }
-
-        return ItemLocalInfo(wrapper.itemSource.sourceToken, localPosition, wrapper.cachedItemCount)
+        return ItemLocalInfo(resultWrapper.itemSource.sourceToken, localPosition, resultWrapper.cachedItemCount)
     }
 
     @Suppress("UNCHECKED_CAST")

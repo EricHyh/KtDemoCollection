@@ -28,10 +28,10 @@ abstract class RefreshEventHandler<Param : Any>(initialParam: Param?) {
     @Synchronized
     fun onReceiveRefreshEvent(important: Boolean, param: Param) {
         if (important) {
+            loadStage = RefreshStage.BLOCK
             state.value = Pair(state.value.first + 1, param)
             this.cacheState = null
             this.timingStart = 0
-            loadStage = RefreshStage.BLOCK
             return
         }
         when (loadStage) {
