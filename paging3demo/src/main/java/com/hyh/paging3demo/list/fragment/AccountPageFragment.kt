@@ -1,23 +1,77 @@
-package com.hyh.paging3demo.list
+package com.hyh.paging3demo.list.fragment
 
 import android.graphics.Color
-import android.util.Log
+import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.RefreshActuator
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
+import com.hyh.list.adapter.SourceRepoAdapter
+import com.hyh.list.decoration.ItemSourceFrameDecoration
+import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSource<Int>() {
+class AccountPageFragment : Fragment() {
 
     companion object {
-        private const val TAG = "TestMultiTabsItemSource"
+        private const val TAG = "AccountPageFragment"
+
+        var withItemAnimator = false
     }
+
+
+    private val sourceRepoAdapter: SourceRepoAdapter<Unit> by lazy {
+        SourceRepoAdapter<Unit>(pageContext)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.fragment_trade_tab_page, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        view.findViewById<View>(R.id.btn_refresh).setOnClickListener {
+            sourceRepoAdapter.refreshRepo(Unit)
+        }
+        val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)
+        recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+        if (!withItemAnimator) {
+            recyclerView.itemAnimator = null
+        }
+
+        recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
+        recyclerView.adapter = sourceRepoAdapter
+        //sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)
+        sourceRepoAdapter.submitData(
+            ListItemSourceRepo(
+                listOf(AccountItemSource(true), AccountItemSource(false))
+            ).flow
+        )
+    }
+}
+
+
+class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<Int>() {
+
+    override val sourceToken: Any = testEmpty
+
+    private val random = Random(System.currentTimeMillis())
 
     private var selectedTab: Int = 0
 
@@ -29,7 +83,17 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
     }
 
     override fun getRefreshStrategy(): RefreshStrategy {
-        return RefreshStrategy.DelayedQueueUp(5000)
+        //return RefreshStrategy.DelayedQueueUp(5000)
+        return RefreshStrategy.CancelLast
+    }
+
+
+    override fun isEmptyContent(items: List<ItemData>): Boolean {
+        if (items.isEmpty()) return true
+        if (items.size == 1 && items[0] is EmptyItemData) {
+            return true
+        }
+        return false
     }
 
     override suspend fun getTitlePreShow(tabToken: Any, param: Int): List<ItemData> {
@@ -37,15 +101,22 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
     }
 
     override suspend fun getContentPreShow(tabToken: Any, param: Int): List<ItemData> {
-        return emptyList()
+        return if (testEmpty) {
+            listOf(LoadingItemData())
+        } else {
+            emptyList()
+        }
     }
 
     override suspend fun getContent(tabToken: Any, param: Int): ContentResult {
-        Log.d(TAG, "getContent delay1: $tabToken ${Thread.currentThread()}")
-        //delay(2000)
-        Log.d(TAG, "getContent delay2: $tabToken ${Thread.currentThread()}")
+        if (testEmpty) {
+            delay(3000)
+        }
         when (param) {
             0 -> {
+                if (testEmpty) {
+                    return ContentResult.Success(listOf(EmptyItemData(refreshActuator)))
+                }
                 val list = mutableListOf<Tab1ItemData>()
                 for (index in 0..4) {
                     list.add(Tab1ItemData(getRandomColor(), "条目: $index", "这是条目: $index"))
@@ -53,13 +124,9 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
                 return ContentResult.Success(list)
             }
             1 -> {
-                /*val list = mutableListOf<Tab2ItemData>()
+                val list = mutableListOf<Tab2ItemData>()
                 for (index in 0..9) {
                     list.add(Tab2ItemData("条目: $index", "这是条目: $index"))
-                }*/
-                val list = mutableListOf<Tab1ItemData>()
-                for (index in 0..7) {
-                    list.add(Tab1ItemData(getRandomColor(), "条目: $index", "这是条目: $index"))
                 }
                 return ContentResult.Success(list)
             }
@@ -90,14 +157,11 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
         val colorIntList = listOf(
             Color.WHITE, Color.GRAY, Color.BLACK, Color.RED, Color.BLUE, Color.CYAN, Color.LTGRAY, Color.YELLOW, Color.MAGENTA
         )
-        val random = Random(System.currentTimeMillis())
         return colorIntList[random.nextInt(0, colorIntList.size)]
     }
 
-    override fun isEmptyContent(items: List<ItemData>): Boolean {
-        return false
-    }
 }
+
 
 class MultiTabsTitleItemData(
     private var selectedTab: Int,
@@ -161,6 +225,75 @@ class MultiTabsTitleItemData(
         val tvTab3: TextView = itemView.findViewById(R.id.tv_tab3)
     }
 }
+
+
+class LoadingItemData() : IItemData<LoadingItemData.LoadingItemHolder>() {
+
+
+    override fun getItemViewType(): Int {
+        return R.layout.item_loading
+    }
+
+    override fun getViewHolderFactory(): TypedViewHolderFactory<LoadingItemHolder> {
+        return {
+            val view = LayoutInflater.from(it.context).inflate(R.layout.item_loading, it, false)
+            LoadingItemHolder(view)
+        }
+    }
+
+    override fun onBindViewHolder(viewHolder: LoadingItemHolder) {
+    }
+
+    override fun areItemsTheSame(newItemData: ItemData): Boolean {
+        if (newItemData !is LoadingItemData) return false
+        return true
+    }
+
+    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+        return true
+    }
+
+
+    class LoadingItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val progressBar: ProgressBar = itemView.findViewById(R.id.progress_bar)
+    }
+}
+
+
+class EmptyItemData(val refresh: RefreshActuator) : IItemData<EmptyItemData.EmptyItemHolder>() {
+
+    override fun getItemViewType(): Int {
+        return R.layout.item_empty
+    }
+
+    override fun getViewHolderFactory(): TypedViewHolderFactory<EmptyItemHolder> {
+        return {
+            val view = LayoutInflater.from(it.context).inflate(R.layout.item_empty, it, false)
+            EmptyItemHolder(view)
+        }
+    }
+
+    override fun onBindViewHolder(viewHolder: EmptyItemHolder) {
+        viewHolder.btnRefresh.setOnClickListener {
+            refresh.invoke(true)
+        }
+    }
+
+    override fun areItemsTheSame(newItemData: ItemData): Boolean {
+        if (newItemData !is EmptyItemData) return false
+        if (refresh != newItemData.refresh) return false
+        return true
+    }
+
+    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+        return true
+    }
+
+    class EmptyItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val btnRefresh: Button = itemView.findViewById(R.id.btn_refresh)
+    }
+}
+
 
 class Tab1ItemData(
     private val leftViewColorInt: Int,

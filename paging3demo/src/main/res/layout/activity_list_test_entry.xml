@@ -8,8 +8,14 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="仿交易Tab首页"
+        android:text="仿交易Tab首页(无列表动画)"
         android:onClick="openTradeTabPage"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="仿交易Tab首页(保留列表动画)"
+        android:onClick="openTradeTabPageWithItemAnim"/>
 
     <Button
         android:layout_width="match_parent"

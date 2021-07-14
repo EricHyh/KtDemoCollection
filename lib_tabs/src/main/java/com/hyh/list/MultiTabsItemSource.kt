@@ -16,14 +16,29 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
         displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?
     ): BucketPreShowResult {
         val tabToken = getTabTokenFromParam(param)
-        val displayedContentItemsToken = displayedItemsBucketMap?.get(CONTENT_BUCKET_ID)?.itemsToken
+        val contentBucket = displayedItemsBucketMap?.get(CONTENT_BUCKET_ID)
+        val displayedContentItemsToken = contentBucket?.itemsToken
         if (tabToken == displayedContentItemsToken) {
-            return BucketPreShowResult.Unused
+            return if (isEmptyContent(contentBucket.items)) {
+                val titleItems = getTitlePreShow(tabToken, param)
+                val contentItems = getContentPreShow(tabToken, param)
+                val itemsBucketMap: MutableMap<Int, ItemsBucket> = mutableMapOf()
+                itemsBucketMap[TITLE_BUCKET_ID] = ItemsBucket(TITLE_BUCKET_ID, DEFAULT_ITEMS_TOKEN, titleItems)
+                itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, tabToken, contentItems)
+                BucketPreShowResult.Success(itemsBucketIds, itemsBucketMap)
+            } else {
+                BucketPreShowResult.Unused
+            }
         }
         val titleItems = getTitlePreShow(tabToken, param)
         val contentItemsBucket = storage.get(CONTENT_BUCKET_ID, tabToken)
-        val contentItems = contentItemsBucket?.items ?: getContentPreShow(tabToken, param)
+        val items = contentItemsBucket?.items
 
+        val contentItems = if (items == null || isEmptyContent(items)) {
+            getContentPreShow(tabToken, param)
+        } else {
+            items
+        }
         val itemsBucketMap: MutableMap<Int, ItemsBucket> = mutableMapOf()
         itemsBucketMap[TITLE_BUCKET_ID] = ItemsBucket(TITLE_BUCKET_ID, DEFAULT_ITEMS_TOKEN, titleItems)
         itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, tabToken, contentItems)
@@ -50,6 +65,7 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
         }
     }
 
+    protected abstract fun isEmptyContent(items: List<ItemData>): Boolean
     protected abstract suspend fun getTitlePreShow(tabToken: Any, param: Param): List<ItemData>
     protected abstract suspend fun getContentPreShow(tabToken: Any, param: Param): List<ItemData>
     protected abstract suspend fun getContent(tabToken: Any, param: Param): ContentResult

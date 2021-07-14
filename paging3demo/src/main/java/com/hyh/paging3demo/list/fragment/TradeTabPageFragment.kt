@@ -25,7 +25,12 @@ import kotlin.random.Random
 
 class TradeTabPageFragment : Fragment() {
 
-    private val TAG = "TradeTabPageFragment"
+    companion object {
+        private const val TAG = "TradeTabPageFragment"
+
+        var withItemAnimator = false
+    }
+
 
     private val sourceRepoAdapter: SourceRepoAdapter<Unit> by lazy {
         SourceRepoAdapter<Unit>(pageContext)
@@ -46,6 +51,10 @@ class TradeTabPageFragment : Fragment() {
         }
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+        if (!withItemAnimator) {
+            recyclerView.itemAnimator = null
+        }
+
         recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
         recyclerView.adapter = sourceRepoAdapter
         sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)
@@ -61,6 +70,7 @@ class TradeTabPageFragment : Fragment() {
             sourceRepoAdapter.repoLoadStateFlow.collect {
                 Log.d(TAG, "onViewCreated repoLoadStateFlow 2: $it")
                 if (it is RepoLoadState.Success) {
+                    recyclerView.scrollToPosition(0)
                     lifecycleScope.launch {
                         sourceRepoAdapter.getSourceLoadState(0)?.collect {
                             Log.d(TAG, "onViewCreated SourceLoadState 1: $it")
@@ -75,8 +85,6 @@ class TradeTabPageFragment : Fragment() {
                 }
             }
         }
-
-
 
 
     }
@@ -113,14 +121,14 @@ class TradeTabItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
         }
 
         val sources = newAccountNames.map {
-            AccountItemSource(it)
+            AccountCardItemSource(it)
         }
         return LoadResult.Success(sources)
     }
 }
 
 
-class AccountItemSource(private val accountName: String) : SimpleItemSource<Unit>() {
+class AccountCardItemSource(private val accountName: String) : SimpleItemSource<Unit>() {
 
     private val accountSettingInfo = AccountSettingInfo()
 
