@@ -46,7 +46,8 @@ class TradeTabPageFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.findViewById<View>(R.id.btn_refresh).setOnClickListener {
+        view.findViewById<TextView>(R.id.btn_refresh).text = "刷新账户列表\n(随机生成账户卡片列表)"
+        view.findViewById<TextView>(R.id.btn_refresh).setOnClickListener {
             sourceRepoAdapter.refreshRepo(Unit)
         }
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)

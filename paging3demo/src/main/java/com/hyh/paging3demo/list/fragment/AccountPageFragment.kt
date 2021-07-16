@@ -110,7 +110,7 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<In
 
     override suspend fun getContent(tabToken: Any, param: Int): ContentResult {
         if (testEmpty) {
-            delay(3000)
+            delay(2000)
         }
         when (param) {
             0 -> {
