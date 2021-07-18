@@ -269,11 +269,11 @@ interface IElementDiff<E> {
         override fun isSupportUpdateItemData(oldElement: LazySourceData, newElement: LazySourceData): Boolean = true
 
         override fun areItemsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
-            return oldElement.itemSource.sourceToken == newElement.itemSource.sourceToken
+            return oldElement.sourceToken == newElement.sourceToken
         }
 
         override fun areContentsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
-            return oldElement.itemSource.sourceToken == newElement.itemSource.sourceToken
+            return oldElement.sourceToken == newElement.sourceToken
         }
 
         override fun getChangePayload(oldElement: LazySourceData, newElement: LazySourceData): Any? {

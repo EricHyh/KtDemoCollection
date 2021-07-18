@@ -10,7 +10,7 @@ interface UiReceiverForRepo<Param : Any> {
 
     fun refresh(param: Param)
 
-    fun close()
+    fun destroy()
 
 }
 
@@ -18,5 +18,7 @@ interface UiReceiverForSource {
 
     fun refresh(important: Boolean)
 
-    fun close()
+    fun accessItem(position: Int) {}
+
+    fun destroy()
 }

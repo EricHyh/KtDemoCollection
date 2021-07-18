@@ -12,7 +12,7 @@ data class RepoData<Param : Any>(
 )
 
 data class LazySourceData(
-    val itemSource: ItemSource<out Any, out Any>,
+    val sourceToken: Any,
     val lazyFlow: Lazy<Flow<SourceData>>
 )
 
@@ -50,6 +50,10 @@ data class RepoProcessedResult(
 class RepoDisplayedData(
     @Volatile
     var lazySources: List<LazySourceData>? = null,
+
+    @Volatile
+    var sources: List<ItemSource<out Any, out Any>>? = null,
+
     @Volatile
     var resultExtra: Any? = null
 )
@@ -64,14 +68,19 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
-    class Success(
+    class RefreshSuccess(
         val processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
-    class Error(
+    class RefreshError(
         val error: Throwable,
         val preShowing: Boolean,
+        onReceived: (suspend () -> Unit) = {}
+    ) : SourceEvent(onReceived)
+
+    class ItemRemoved(
+        val processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 }

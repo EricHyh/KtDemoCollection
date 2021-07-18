@@ -1,6 +1,6 @@
 package com.hyh.list.adapter
 
-import android.util.Log
+import androidx.recyclerview.widget.RecyclerView
 import com.hyh.coroutine.*
 import com.hyh.coroutine.SingleRunner
 import com.hyh.coroutine.simpleScan
@@ -35,7 +35,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
     val loadStateFlow: SimpleStateFlow<SourceLoadState>
         get() = _loadStateFlow.asStateFlow()
 
-    private val resultFlow: MutableStateFlow<Pair<Long, SourceEvent?>> = MutableStateFlow<Pair<Long, SourceEvent?>>(Pair(0, null))
+    private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> = SimpleMutableStateFlow<Pair<Long, SourceEvent?>>(Pair(0, null))
 
     init {
         pageContext.lifecycleScope.launch {
@@ -64,19 +64,26 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
-                        is SourceEvent.PreShowing -> {
-                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
-                        }
                         is SourceEvent.Loading -> {
                             _loadStateFlow.value = SourceLoadState.Loading
                             event.onReceived()
                         }
-                        is SourceEvent.Error -> {
+                        is SourceEvent.PreShowing -> {
+                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        }
+                        is SourceEvent.RefreshSuccess -> {
+                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        }
+                        is SourceEvent.RefreshError -> {
                             _loadStateFlow.value = SourceLoadState.Error(event.error, event.preShowing)
                             event.onReceived()
                         }
-                        is SourceEvent.Success -> {
-                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        is SourceEvent.ItemRemoved -> {
+                            val processedResult = event.processor.invoke()
+                            _items = processedResult.resultItems
+                            processedResult.onResultUsed()
+                            ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
+                            event.onReceived()
                         }
                     }
                 }
@@ -84,15 +91,22 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
         }
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        super.onBindViewHolder(holder, position, payloads)
+        receiver?.accessItem(position)
+    }
+
     fun refresh(important: Boolean) {
         receiver?.refresh(important)
     }
 
     fun destroy() {
+        _loadStateFlow.close()
+        resultFlow.close()
         _items?.forEach {
             it.delegate.onDetached()
         }
-        receiver?.close()
+        receiver?.destroy()
     }
 
     inner class ResultProcessorSnapshot(private val sourceEvent: SourceEvent) {
@@ -110,7 +124,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
                         _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItems.size)
                         sourceEvent.onReceived()
                     }
-                    is SourceEvent.Success -> {
+                    is SourceEvent.RefreshSuccess -> {
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
                         processedResult.onResultUsed()

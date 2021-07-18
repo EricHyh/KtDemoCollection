@@ -1,8 +1,12 @@
 package com.hyh.list.adapter
 
+import android.util.Log
 import android.util.SparseArray
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.list.internal.ListUpdate
+import java.lang.Exception
 import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
@@ -563,6 +567,7 @@ interface ViewTypeStorage {
         }
 
         internal inner class WrapperViewTypeLookup(private val wrapper: AdapterWrapper) : ViewTypeLookup {
+
             override fun localToGlobal(localType: Int): Int {
                 // register it first
                 var wrappers = globalTypeToWrapper[localType]
@@ -571,7 +576,9 @@ interface ViewTypeStorage {
                     globalTypeToWrapper.put(localType, wrappers)
                 }
                 if (!wrappers.contains(wrapper)) {
-                    wrappers.add(wrapper)
+                    wrappers.add(0, wrapper)
+                } else {
+                    ListUpdate.move(wrappers, wrappers.indexOf(wrapper), 0)
                 }
                 return localType
             }

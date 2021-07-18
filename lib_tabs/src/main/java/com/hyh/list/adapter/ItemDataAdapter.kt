@@ -1,10 +1,13 @@
 package com.hyh.list.adapter
 
+import android.content.Context
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.*
+import com.hyh.tabs.BuildConfig
+import java.lang.IndexOutOfBoundsException
 import java.lang.ref.WeakReference
 
 /**
@@ -25,27 +28,43 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
     protected abstract fun getItemDataList(): List<ItemData>?
 
     override fun getItemViewType(position: Int): Int {
-        return getItemDataList()?.let {
-            if (position in it.indices) {
-                val itemData = it[position]
-                val itemViewType = itemData.getItemViewType()
-                if (viewTypeStorage.get(itemViewType, false) == null) {
-                    viewTypeStorage.put(itemViewType, itemData)
-                }
-                itemViewType
+        val itemDataList = getItemDataList()
+        if (itemDataList == null) {
+            if (BuildConfig.DEBUG) {
+                throw NullPointerException("ItemDataAdapter.getItemViewType: $position is not in itemDataList, itemDataList is null")
             } else {
-                Log.d(TAG, "getItemViewType: 0")
-                0
+                Log.e(TAG, "ItemDataAdapter.getItemViewType: $position is not in itemDataList, itemDataList is null")
             }
-        } ?: 0
+            return 0
+        }
+        return if (position in itemDataList.indices) {
+            val itemData = itemDataList[position]
+            val itemViewType = itemData.getItemViewType()
+            if (viewTypeStorage.get(itemViewType, false) == null) {
+                viewTypeStorage.put(itemViewType, itemData)
+            }
+            itemViewType
+        } else {
+            if (BuildConfig.DEBUG) {
+                throw IndexOutOfBoundsException("ItemDataAdapter.getItemViewType: $position is not in itemDataList, list size is ${itemDataList.size}")
+            } else {
+                Log.e(TAG, "ItemDataAdapter.getItemViewType: $position is not in itemDataList, list size is ${itemDataList.size}")
+            }
+            0
+        }
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val viewHolderFactory = viewTypeStorage.get(viewType)
         if (viewHolderFactory == null) {
-            Log.d(TAG, "onCreateViewHolder: $viewHolderFactory")
+            if (BuildConfig.DEBUG) {
+                throw IllegalStateException("ItemDataAdapter.onCreateViewHolder: viewHolderFactory can't be null, viewType = $viewType")
+            } else {
+                Log.e(TAG, "ItemDataAdapter.onCreateViewHolder: viewHolderFactory can't be null, viewType = $viewType")
+            }
         }
-        return viewHolderFactory?.invoke(parent) ?: object : RecyclerView.ViewHolder(View(parent.context)) {}
+        return viewHolderFactory?.invoke(parent) ?: object : RecyclerView.ViewHolder(ErrorItemView(parent.context)) {}
     }
 
     override fun getItemCount(): Int {
@@ -54,18 +73,46 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (position == RecyclerView.NO_POSITION) return
-        getItemDataList()?.let {
-            if (position in it.indices) {
-                (it[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder)
+        if (holder.itemView is ErrorItemView) return
+        val itemDataList = getItemDataList()
+        if (itemDataList == null) {
+            if (BuildConfig.DEBUG) {
+                throw NullPointerException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
+            } else {
+                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
+            }
+            return
+        }
+        if (position in itemDataList.indices) {
+            (itemDataList[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder)
+        } else {
+            if (BuildConfig.DEBUG) {
+                throw IndexOutOfBoundsException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
+            } else {
+                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
             }
         }
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (position == RecyclerView.NO_POSITION) return
-        getItemDataList()?.let {
-            if (position in it.indices) {
-                (it[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder, payloads)
+        if (holder.itemView is ErrorItemView) return
+        val itemDataList = getItemDataList()
+        if (itemDataList == null) {
+            if (BuildConfig.DEBUG) {
+                throw NullPointerException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
+            } else {
+                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
+            }
+            return
+        }
+        if (position in itemDataList.indices) {
+            (itemDataList[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder, payloads)
+        } else {
+            if (BuildConfig.DEBUG) {
+                throw IndexOutOfBoundsException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
+            } else {
+                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
             }
         }
     }
@@ -108,4 +155,6 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
             return null
         }
     }
+
+    private class ErrorItemView(context: Context) : View(context)
 }

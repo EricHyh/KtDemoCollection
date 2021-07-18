@@ -9,7 +9,6 @@ import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.coroutine.SingleRunner
 import com.hyh.list.ItemData
-import com.hyh.list.ItemSource
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
 import com.hyh.list.internal.*
@@ -60,7 +59,7 @@ class SourceRepoAdapter<Param : Any>(
             wrapperMap.forEach {
                 it.value.destroy()
             }
-            receiver?.close()
+            receiver?.destroy()
         }
     }
 
@@ -257,19 +256,19 @@ class SourceRepoAdapter<Param : Any>(
         val newWrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
 
         sources.forEachIndexed { index, data ->
-            newSourceTokens.add(data.itemSource.sourceToken)
-            val oldWrapper = oldWrapperMap[data.itemSource.sourceToken]
+            newSourceTokens.add(data.sourceToken)
+            val oldWrapper = oldWrapperMap[data.sourceToken]
             if (oldWrapper != null) {
-                newWrapperMap[data.itemSource.sourceToken] = oldWrapper
-                reuseInvokes.add {
+                newWrapperMap[data.sourceToken] = oldWrapper
+                /*reuseInvokes.add {
                     oldWrapper.reuse(index, data.itemSource)
-                }
+                }*/
                 refreshInvokes.add {
                     oldWrapper.refresh()
                 }
             } else {
                 val wrapper = createWrapper(data)
-                newWrapperMap[data.itemSource.sourceToken] = wrapper
+                newWrapperMap[data.sourceToken] = wrapper
                 newInvokes.add {
                     onAdapterAdded(wrapper)
                 }
@@ -326,7 +325,7 @@ class SourceRepoAdapter<Param : Any>(
             if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
                 return findItemLocalInfo(globalPosition)
             }
-            return ItemLocalInfo(wrapper.itemSource.sourceToken, localPosition, wrapper.cachedItemCount)
+            return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount)
         }
         return findItemLocalInfo(globalPosition)
     }
@@ -347,13 +346,13 @@ class SourceRepoAdapter<Param : Any>(
             Log.e(TAG, "findItemLocalInfo error: localPosition=$localPosition, itemCount=${resultWrapper.adapter.itemCount}")
             return null
         }
-        return ItemLocalInfo(resultWrapper.itemSource.sourceToken, localPosition, resultWrapper.cachedItemCount)
+        return ItemLocalInfo(resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount)
     }
 
     @Suppress("UNCHECKED_CAST")
     private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
-            sourceData.itemSource,
+            sourceData.sourceToken,
             SourceAdapter(pageContext),
             viewTypeStorage,
             sourceAdapterCallback
@@ -595,7 +594,7 @@ object SimpleDispatchUpdatesHelper {
 
 
 class SourceAdapterWrapper(
-    var itemSource: ItemSource<out Any, out Any>,
+    val sourceToken: Any,
     val sourceAdapter: SourceAdapter,
     viewTypeStorage: ViewTypeStorage,
     callback: Callback
@@ -604,20 +603,11 @@ class SourceAdapterWrapper(
     private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     suspend fun submitData(flow: Flow<SourceData>) {
-
-        itemSource.delegate.attach()
         coroutineScope.launch {
             flow.collectLatest {
                 sourceAdapter.submitData(it)
             }
         }
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun reuse(newPosition: Int, newItemSource: ItemSource<out Any, out Any>) {
-        itemSource.delegate.sourcePosition = newPosition
-        (itemSource.delegate as ItemSource.Delegate<Any, Any>)
-            .updateItemSource((newItemSource as ItemSource<Any, Any>))
     }
 
     fun refresh() {
@@ -628,8 +618,5 @@ class SourceAdapterWrapper(
         super.destroy()
         coroutineScope.cancel()
         sourceAdapter.destroy()
-        itemSource.delegate.sourcePosition = -1
-        itemSource.delegate.detach()
     }
-
 }

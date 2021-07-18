@@ -38,9 +38,9 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             refreshEventHandler.onRefreshComplete()
         }
 
-        override fun close() {
+        override fun destroy() {
             refreshEventHandler.onDestroy()
-            destroy()
+            this@ItemSourceFetcher.destroy()
         }
     }
 
@@ -84,6 +84,9 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
     private fun destroy() {
         coroutineScope.cancel()
+        repoDisplayedData.sources?.forEach {
+            it.delegate.detach()
+        }
     }
 }
 
@@ -99,7 +102,7 @@ class RepoResultProcessorGenerator(
 
     private fun processResult(): RepoProcessedResult {
         val indexMap = mutableMapOf<Any, Int>()
-        val lazySources = sources.mapIndexed { index, itemSource ->
+        val sourceWrappers = sources.mapIndexed { index, itemSource ->
             indexMap[itemSource.sourceToken] = index
             val lazyFlow: Lazy<Flow<SourceData>> = lazy {
                 itemSource.delegate.sourcePosition = index
@@ -107,22 +110,78 @@ class RepoResultProcessorGenerator(
                 itemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                 itemFetcher.flow
             }
-            LazySourceData(itemSource, lazyFlow)
+            ItemSourceWrapper(
+                itemSource.sourceToken,
+                itemSource,
+                LazySourceData(itemSource.sourceToken, lazyFlow)
+            )
         }
 
         val updateResult = ListUpdate.calculateDiff(
-            repoDisplayedData.lazySources,
-            lazySources,
-            IElementDiff.ItemSourceDiff()
+            repoDisplayedData.getItemSourceWrappers(),
+            sourceWrappers,
+            IElementDiff.AnyDiff()
         )
 
-        return RepoProcessedResult(updateResult.resultList, updateResult.listOperates) {
-            repoDisplayedData.lazySources = updateResult.resultList
+        val sourceIndexMap: MutableMap<Any, Int> = mutableMapOf()
+
+        val lazySources = mutableListOf<LazySourceData>()
+        val sources = mutableListOf<ItemSource<out Any, out Any>>()
+        updateResult.resultList.forEachIndexed { index, itemSourceWrapper ->
+            lazySources.add(itemSourceWrapper.lazySourceData)
+            sources.add(itemSourceWrapper.itemSource)
+            sourceIndexMap[itemSourceWrapper.sourceToken] = index
+        }
+
+        return RepoProcessedResult(lazySources, updateResult.listOperates) {
+            repoDisplayedData.lazySources = lazySources
+            repoDisplayedData.sources = sources
             repoDisplayedData.resultExtra = resultExtra
+
+            updateResult.elementOperates.removedElements.forEach {
+                it.itemSource.delegate.detach()
+            }
+            updateResult.elementOperates.addedElements.forEach {
+                it.itemSource.delegate.attach()
+            }
+            updateResult.elementOperates.changedElements.forEach {
+                val oldWrapper = it.first
+                val newWrapper = it.second
+                oldWrapper.itemSource.delegate.sourcePosition = sourceIndexMap[oldWrapper.sourceToken] ?: -1
+                @Suppress("UNCHECKED_CAST")
+                (oldWrapper.itemSource.delegate as ItemSource.Delegate<Any, Any>)
+                    .updateItemSource((newWrapper.itemSource as ItemSource<Any, Any>))
+            }
+        }
+    }
+
+    private fun RepoDisplayedData.getItemSourceWrappers(): List<ItemSourceWrapper> {
+        val lazySources = this.lazySources
+        val sources = this.sources
+        if (lazySources == null || sources == null) return emptyList()
+        return lazySources.mapIndexed { index, lazySourceData ->
+            ItemSourceWrapper(
+                lazySourceData.sourceToken,
+                sources[index],
+                lazySourceData
+            )
+        }
+    }
+
+    private class ItemSourceWrapper(
+        val sourceToken: Any,
+        val itemSource: ItemSource<out Any, out Any>,
+        val lazySourceData: LazySourceData
+    ) {
+        override fun equals(other: Any?): Boolean {
+            return sourceToken == (other as? ItemSourceWrapper)?.sourceToken
+        }
+
+        override fun hashCode(): Int {
+            return sourceToken.hashCode()
         }
     }
 }
-
 
 class ItemSourceFetcherSnapshot<Param : Any>(
     private val param: Param?,

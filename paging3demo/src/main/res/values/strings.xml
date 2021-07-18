@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">PagingDemo</string>
+    <string name="app_name">列表Demo</string>
     <string name="list_demo">ListDemo</string>
     <string name="multi_tabs_list_demo">多Tab</string>
     <string name="tab_demo">TabDemo</string>

@@ -104,6 +104,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
     protected open fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {}
 
     open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
+    open fun getProcessDataDispatcher(param: Param): CoroutineDispatcher = getFetchDispatcher(param)
 
     protected open fun onDetached() {}
 

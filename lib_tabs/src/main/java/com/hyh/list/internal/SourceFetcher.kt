@@ -40,7 +40,7 @@ class ItemFetcher<Param : Any, Item : Any>(
             refreshEventHandler.onRefreshComplete()
         }
 
-        override fun close() {
+        override fun destroy() {
             refreshEventHandler.onDestroy()
         }
     }
@@ -57,6 +57,7 @@ class ItemFetcher<Param : Any, Item : Any>(
                     preShowLoader = getPreShowLoader(),
                     loader = getLoader(),
                     fetchDispatcherProvider = getFetchDispatcherProvider(),
+                    processDataDispatcherProvider = getProcessDataDispatcherProvider(),
                     onRefreshComplete = uiReceiver::onRefreshComplete,
                     delegate = itemSource.delegate
                 )
@@ -80,7 +81,8 @@ class ItemFetcher<Param : Any, Item : Any>(
     }
 
     private fun getParamProvider(): ParamProvider<Param> = ::getParam
-    private fun getFetchDispatcherProvider(): FetchDispatcherProvider<Param> = ::getFetchDispatcher
+    private fun getFetchDispatcherProvider(): DispatcherProvider<Param> = ::getFetchDispatcher
+    private fun getProcessDataDispatcherProvider(): DispatcherProvider<Param> = ::getProcessDataDispatcher
     private fun getPreShowLoader(): PreShowLoader<Param, Item> = ::getPreShow
     private fun getLoader(): ItemLoader<Param, Item> = ::load
 
@@ -90,6 +92,10 @@ class ItemFetcher<Param : Any, Item : Any>(
 
     private fun getFetchDispatcher(param: Param): CoroutineDispatcher {
         return itemSource.getFetchDispatcher(param)
+    }
+
+    private fun getProcessDataDispatcher(param: Param): CoroutineDispatcher {
+        return itemSource.getProcessDataDispatcher(param)
     }
 
     private suspend fun getPreShow(params: ItemSource.PreShowParams<Param, Item>): ItemSource.PreShowResult<Item> {
@@ -166,7 +172,8 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val paramProvider: ParamProvider<Param>,
     private val preShowLoader: PreShowLoader<Param, Item>,
     private val loader: ItemLoader<Param, Item>,
-    private val fetchDispatcherProvider: FetchDispatcherProvider<Param>,
+    private val fetchDispatcherProvider: DispatcherProvider<Param>,
+    private val processDataDispatcherProvider: DispatcherProvider<Param>,
     private val onRefreshComplete: Invoke,
     private val delegate: ItemSource.Delegate<Param, Item>
 ) {
@@ -221,7 +228,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
                     displayedData,
                     preShowResult.items,
                     preShowResult.resultExtra,
-                    null,
+                    processDataDispatcherProvider.invoke(param),
                     delegate
                 ).processor
             )
@@ -249,12 +256,12 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
 
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
-                val event = SourceEvent.Success(
+                val event = SourceEvent.RefreshSuccess(
                     SourceResultProcessorGenerator(
                         displayedData,
                         loadResult.items,
                         loadResult.resultExtra,
-                        fetchDispatcher,
+                        processDataDispatcherProvider.invoke(param),
                         delegate
                     ).processor
                 ) {
@@ -263,7 +270,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
                 sourceEventCh.send(event)
             }
             is ItemSource.LoadResult.Error -> {
-                val event = SourceEvent.Error(loadResult.error, preShowing) {
+                val event = SourceEvent.RefreshError(loadResult.error, preShowing) {
                     onRefreshComplete()
                 }
                 sourceEventCh.send(event)
@@ -279,4 +286,4 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
 internal typealias ParamProvider<Param> = (suspend () -> Param)
 internal typealias PreShowLoader<Param, Item> = (suspend (params: ItemSource.PreShowParams<Param, Item>) -> ItemSource.PreShowResult<Item>)
 internal typealias ItemLoader<Param, Item> = (suspend (param: ItemSource.LoadParams<Param, Item>) -> ItemSource.LoadResult<Item>)
-internal typealias FetchDispatcherProvider<Param> = ((Param) -> CoroutineDispatcher?)
+internal typealias DispatcherProvider<Param> = ((Param) -> CoroutineDispatcher?)

@@ -131,6 +131,8 @@ class TradeTabItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
 
 class AccountCardItemSource(private val accountName: String) : SimpleItemSource<Unit>() {
 
+    private val TAG = "AccountCardItemSource"
+
     private val accountSettingInfo = AccountSettingInfo()
 
     override val sourceToken: Any
@@ -163,6 +165,22 @@ class AccountCardItemSource(private val accountName: String) : SimpleItemSource<
     }
 
     override suspend fun getParam() {}
+
+    companion object {
+        var num = 0
+    }
+
+    override fun onAttached() {
+        super.onAttached()
+        num++
+        Log.d(TAG, "onAttached: $this, num = $num")
+    }
+
+    override fun onDetached() {
+        super.onDetached()
+        num--
+        Log.d(TAG, "onDetached: $this, num = $num")
+    }
 
 }
 
