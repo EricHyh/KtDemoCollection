@@ -5,6 +5,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.hyh.paging3demo.R
 import com.hyh.paging3demo.list.fragment.AccountPageFragment
+import com.hyh.paging3demo.list.fragment.TTTFragment
 import com.hyh.paging3demo.list.fragment.TradeTabPageFragment
 
 class ListTestEntryActivity : AppCompatActivity() {
@@ -36,7 +37,7 @@ class ListTestEntryActivity : AppCompatActivity() {
     fun openAccountPage(view: View) {
         supportFragmentManager
             .beginTransaction()
-            .add(android.R.id.content, AccountPageFragment::class.java, Bundle())
+            .add(android.R.id.content, TTTFragment::class.java, Bundle())
             .addToBackStack(null)
             .commitAllowingStateLoss()
     }

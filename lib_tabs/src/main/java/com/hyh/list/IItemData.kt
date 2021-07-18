@@ -8,22 +8,26 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
     internal val delegate = object : Delegate() {
 
-        override fun onAttached() {
-            super.onAttached()
+        override fun onDataAttached() {
+            super.onDataAttached()
+            this@IItemData.onDataAttached()
         }
 
-        override fun onActivated() {
+        override fun onDataActivated() {
+            this@IItemData.onDataActivated()
         }
 
         override fun updateItemData(newItemData: ItemData, payload: Any?) {
-            onUpdateItemData(newItemData)
+            this@IItemData.onUpdateItemData(newItemData)
         }
 
-        override fun onInactivated() {
+        override fun onDataInactivated() {
+            this@IItemData.onDataInactivated()
         }
 
-        override fun onDetached() {
-            super.onDetached()
+        override fun onDataDetached() {
+            super.onDataDetached()
+            this@IItemData.onDataDetached()
         }
     }
 
@@ -38,10 +42,9 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
     val localPosition
         get() = delegate.displayedItems?.indexOf(this) ?: -1
 
-    /**
-     * 数据被激活时回调
-     */
-    open fun onActivated() {}
+    open fun onDataAttached() {}
+
+    open fun onDataActivated() {}
 
     open fun isSupportUpdateItemData() = false
 
@@ -53,7 +56,7 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
     abstract fun onBindViewHolder(viewHolder: VH)
 
-    open fun onBindViewHolder(viewHolder: VH, payloads: MutableList<Any>) = onBindViewHolder(viewHolder)
+    open fun onBindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder)
 
     /**
      * 判断是否为同一条数据.
@@ -72,10 +75,9 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
      */
     open fun getChangePayload(newItemData: ItemData): Any? = null
 
-    /**
-     * 数据不再使用时回调
-     */
-    open fun onDetached() {}
+    open fun onDataInactivated() {}
+
+    open fun onDataDetached() {}
 
     internal abstract class Delegate {
 
@@ -87,15 +89,17 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
         var displayedItems: List<ItemData>? = null
 
-        open fun onAttached() {
+        open fun onDataAttached() {
             _attached = true
         }
 
-        abstract fun onActivated()
-        abstract fun updateItemData(newItemData: ItemData, payload: Any?)
-        abstract fun onInactivated()
+        abstract fun onDataActivated()
 
-        open fun onDetached() {
+        abstract fun updateItemData(newItemData: ItemData, payload: Any?)
+
+        abstract fun onDataInactivated()
+
+        open fun onDataDetached() {
             _attached = false
         }
     }

@@ -104,7 +104,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
         _loadStateFlow.close()
         resultFlow.close()
         _items?.forEach {
-            it.delegate.onDetached()
+            it.delegate.onDataDetached()
         }
         receiver?.destroy()
     }

@@ -207,7 +207,9 @@ class AccountTitleItemData(
         }
     }
 
-    override fun onBindViewHolder(viewHolder: AccountTitleHolder) {
+    override fun onBindViewHolder(
+        viewHolder: AccountTitleHolder
+    ) {
         viewHolder.tvAccountName.text = "账户名称: $accountName"
         if (currentPositionSequence.isEmpty()) {
             viewHolder.tvCurrentPositionSequence.text = "持仓序列: 空"
@@ -257,7 +259,9 @@ class AccountPositionItemData(
         }
     }
 
-    override fun onBindViewHolder(viewHolder: AccountPositionHolder) {
+    override fun onBindViewHolder(
+        viewHolder: AccountPositionHolder
+    ) {
         viewHolder.tvPositionName.text = "持仓: $positionName"
     }
 

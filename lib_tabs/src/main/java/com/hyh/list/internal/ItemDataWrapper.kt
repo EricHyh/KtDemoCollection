@@ -26,6 +26,7 @@ class ItemDataWrapper(
     }
 
     fun areItemsTheSame(wrapper: ItemDataWrapper): Boolean {
+        if (itemData.getItemViewType() != wrapper.itemData.getItemViewType()) return false
         return itemData.areItemsTheSame(wrapper.itemData)
     }
 

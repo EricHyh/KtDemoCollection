@@ -116,7 +116,9 @@ class MultiTabsTitleItemData(
     }
 
 
-    override fun onBindViewHolder(viewHolder: TitleHolder) {
+    override fun onBindViewHolder(
+        viewHolder: TitleHolder
+    ) {
         viewHolder.tvTab1.text = "Tab1(${if (selectedTab == 0) "选中" else "未选中"})"
         viewHolder.tvTab1.setOnClickListener {
             onTabClick(0)

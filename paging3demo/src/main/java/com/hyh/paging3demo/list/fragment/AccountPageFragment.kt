@@ -180,7 +180,9 @@ class MultiTabsTitleItemData(
     }
 
 
-    override fun onBindViewHolder(viewHolder: TitleHolder) {
+    override fun onBindViewHolder(
+        viewHolder: TitleHolder
+    ) {
         viewHolder.tvTab1.text = "Tab1(${if (selectedTab == 0) "选中" else "未选中"})"
         viewHolder.tvTab1.setOnClickListener {
             onTabClick(0)
@@ -241,7 +243,9 @@ class LoadingItemData() : IItemData<LoadingItemData.LoadingItemHolder>() {
         }
     }
 
-    override fun onBindViewHolder(viewHolder: LoadingItemHolder) {
+    override fun onBindViewHolder(
+        viewHolder: LoadingItemHolder
+    ) {
     }
 
     override fun areItemsTheSame(newItemData: ItemData): Boolean {
@@ -273,7 +277,9 @@ class EmptyItemData(val refresh: RefreshActuator) : IItemData<EmptyItemData.Empt
         }
     }
 
-    override fun onBindViewHolder(viewHolder: EmptyItemHolder) {
+    override fun onBindViewHolder(
+        viewHolder: EmptyItemHolder
+    ) {
         viewHolder.btnRefresh.setOnClickListener {
             refresh.invoke(true)
         }
@@ -312,7 +318,9 @@ class Tab1ItemData(
         }
     }
 
-    override fun onBindViewHolder(viewHolder: Tab1ItemHolder) {
+    override fun onBindViewHolder(
+        viewHolder: Tab1ItemHolder
+    ) {
         viewHolder.leftView.setBackgroundColor(leftViewColorInt)
         viewHolder.tvTitle.text = title
         viewHolder.tvDes.text = des
@@ -352,7 +360,9 @@ class Tab2ItemData(
         }
     }
 
-    override fun onBindViewHolder(viewHolder: Tab2ItemHolder) {
+    override fun onBindViewHolder(
+        viewHolder: Tab2ItemHolder
+    ) {
         viewHolder.tvTitle.text = title
         viewHolder.tvDes.text = des
     }
@@ -391,7 +401,9 @@ class Tab3ItemData(
         }
     }
 
-    override fun onBindViewHolder(viewHolder: Tab3ItemHolder) {
+    override fun onBindViewHolder(
+        viewHolder: Tab3ItemHolder
+    ) {
         viewHolder.rightView.setBackgroundColor(rightViewColorInt)
         viewHolder.tvTitle.text = title
         viewHolder.tvDes.text = des

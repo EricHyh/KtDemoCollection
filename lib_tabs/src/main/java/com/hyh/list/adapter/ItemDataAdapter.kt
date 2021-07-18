@@ -72,29 +72,22 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (position == RecyclerView.NO_POSITION) return
-        if (holder.itemView is ErrorItemView) return
-        val itemDataList = getItemDataList()
-        if (itemDataList == null) {
-            if (BuildConfig.DEBUG) {
-                throw NullPointerException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
-            } else {
-                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
-            }
-            return
-        }
-        if (position in itemDataList.indices) {
-            (itemDataList[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder)
-        } else {
-            if (BuildConfig.DEBUG) {
-                throw IndexOutOfBoundsException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
-            } else {
-                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
-            }
-        }
+        dispatchBindViewHolder(holder, position, emptyList())
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        dispatchBindViewHolder(holder, position, payloads)
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+    }
+
+    private fun dispatchBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: List<Any>
+    ) {
         if (position == RecyclerView.NO_POSITION) return
         if (holder.itemView is ErrorItemView) return
         val itemDataList = getItemDataList()

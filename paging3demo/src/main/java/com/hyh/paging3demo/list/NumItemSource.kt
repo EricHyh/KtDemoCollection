@@ -68,16 +68,16 @@ class TitleItemData(
 
     var activated = false
 
-    override fun onActivated() {
-        super.onActivated()
+    override fun onDataActivated() {
+        super.onDataActivated()
         ListConfig.aliveItems++
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onActivated: ${ListConfig.aliveItems}")
         activated = true
         Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
     }
 
-    override fun onDetached() {
-        super.onDetached()
+    override fun onDataDetached() {
+        super.onDataDetached()
         ListConfig.aliveItems--
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onDestroyed: ${ListConfig.aliveItems}")
         activated = false
@@ -137,16 +137,16 @@ class NumItemData(
 
     var activated = false
 
-    override fun onActivated() {
-        super.onActivated()
+    override fun onDataActivated() {
+        super.onDataActivated()
         ListConfig.aliveItems++
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onActivated: ${ListConfig.aliveItems}")
         activated = true
         Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
     }
 
-    override fun onDetached() {
-        super.onDetached()
+    override fun onDataDetached() {
+        super.onDataDetached()
         ListConfig.aliveItems--
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onDestroyed: ${ListConfig.aliveItems}")
         activated = false

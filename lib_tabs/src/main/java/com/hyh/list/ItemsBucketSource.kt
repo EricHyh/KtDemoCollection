@@ -31,9 +31,9 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
     override fun onItemsDisplayed(items: List<ItemDataWrapper>) {
         items.forEach {
             if (!it.attached) {
-                it.itemData.delegate.onAttached()
+                it.itemData.delegate.onDataAttached()
             }
-            it.itemData.delegate.onActivated()
+            it.itemData.delegate.onDataActivated()
         }
     }
 
@@ -45,9 +45,9 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
 
     override fun onItemsRecycled(items: List<ItemDataWrapper>) {
         items.forEach {
-            it.itemData.delegate.onInactivated()
+            it.itemData.delegate.onDataInactivated()
             if (!it.cached) {
-                it.itemData.delegate.onDetached()
+                it.itemData.delegate.onDataDetached()
             }
         }
     }
@@ -251,7 +251,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
                 val next = iterator.next()
                 next.value.values.forEach { itemsBucket ->
                     itemsBucket.items.forEach {
-                        it.delegate.onDetached()
+                        it.delegate.onDataDetached()
                     }
                 }
                 iterator.remove()

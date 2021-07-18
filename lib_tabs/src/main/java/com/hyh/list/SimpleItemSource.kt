@@ -21,9 +21,9 @@ abstract class SimpleItemSource<Param : Any> : ItemSource<Param, ItemData>() {
     final override fun onItemsDisplayed(items: List<ItemData>) {
         items.forEach {
             if (!it.delegate.attached) {
-                it.delegate.onAttached()
+                it.delegate.onDataAttached()
             }
-            it.delegate.onActivated()
+            it.delegate.onDataActivated()
         }
     }
 
@@ -35,9 +35,9 @@ abstract class SimpleItemSource<Param : Any> : ItemSource<Param, ItemData>() {
 
     final override fun onItemsRecycled(items: List<ItemData>) {
         items.forEach {
-            it.delegate.onInactivated()
+            it.delegate.onDataInactivated()
             if (it.delegate.attached) {
-                it.delegate.onDetached()
+                it.delegate.onDataDetached()
             }
         }
     }
