@@ -31,8 +31,7 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(initialParam: Any?) {
 
         data class Success<Param : Any, Item : Any>(
             val items: List<Item>,
-            val nextParam: Param?,
-
-            ) : LoadResult<Param, Item>()
+            val nextParam: Param?
+        ) : LoadResult<Param, Item>()
     }
 }

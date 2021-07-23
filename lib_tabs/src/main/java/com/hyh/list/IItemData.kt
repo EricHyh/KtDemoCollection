@@ -54,9 +54,11 @@ abstract class IItemData<VH : RecyclerView.ViewHolder> {
 
     abstract fun getViewHolderFactory(): TypedViewHolderFactory<VH>
 
-    abstract fun onBindViewHolder(viewHolder: VH)
+    fun bindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder, payloads)
 
-    open fun onBindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder)
+    protected fun onBindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder)
+
+    protected abstract fun onBindViewHolder(viewHolder: VH)
 
     /**
      * 判断是否为同一条数据.

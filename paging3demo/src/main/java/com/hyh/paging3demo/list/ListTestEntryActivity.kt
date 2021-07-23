@@ -37,7 +37,7 @@ class ListTestEntryActivity : AppCompatActivity() {
     fun openAccountPage(view: View) {
         supportFragmentManager
             .beginTransaction()
-            .add(android.R.id.content, TTTFragment::class.java, Bundle())
+            .add(android.R.id.content, AccountPageFragment::class.java, Bundle())
             .addToBackStack(null)
             .commitAllowingStateLoss()
     }

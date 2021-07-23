@@ -100,7 +100,7 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
             return
         }
         if (position in itemDataList.indices) {
-            (itemDataList[position] as IItemData<RecyclerView.ViewHolder>).onBindViewHolder(holder, payloads)
+            (itemDataList[position] as IItemData<RecyclerView.ViewHolder>).bindViewHolder(holder, payloads)
         } else {
             if (BuildConfig.DEBUG) {
                 throw IndexOutOfBoundsException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")

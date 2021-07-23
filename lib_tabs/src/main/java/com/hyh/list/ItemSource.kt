@@ -141,7 +141,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
 
         class Unused<Item : Any> : PreShowResult<Item>()
 
-        class Success<Item : Any>() : PreShowResult<Item>() {
+        class Success<Item : Any> private constructor() : PreShowResult<Item>() {
 
             private lateinit var _items: List<Item>
             val items: List<Item>
@@ -165,7 +165,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
             val error: Throwable
         ) : LoadResult<Item>()
 
-        class Success<Item : Any>() : LoadResult<Item>() {
+        class Success<Item : Any> private constructor() : LoadResult<Item>() {
 
             private lateinit var _items: List<Item>
             val items: List<Item>
@@ -185,7 +185,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
     data class ItemsBucket(
         val bucketId: Int,
         val itemsToken: Any,
-        val items: List<ItemData>,
+        val items: List<ItemData>
     )
 
     class PreShowParams<Param : Any, Item : Any>(
