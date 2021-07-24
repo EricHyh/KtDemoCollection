@@ -1,5 +1,6 @@
 package com.hyh.tabs
 
+import com.hyh.base.RefreshStrategy
 import com.hyh.tabs.internal.*
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -16,10 +17,9 @@ abstract class TabSource<Param : Any, Tab : ITab>(
 ) {
 
     private val tabFetcher: TabFetcher<Param, Tab> = object : TabFetcher<Param, Tab>(initialParam) {
+        override fun getRefreshStrategy(): RefreshStrategy = this@TabSource.getRefreshStrategy()
         override suspend fun getCache(params: CacheParams<Param, Tab>): CacheResult<Tab> = this@TabSource.getCache(params)
-        override suspend fun onCacheResult(params: CacheParams<Param, Tab>, result: CacheResult<Tab>) = this@TabSource.onCacheResult(params, result)
         override suspend fun load(params: LoadParams<Param, Tab>): LoadResult<Tab> = this@TabSource.load(params)
-        override suspend fun onLoadResult(params: LoadParams<Param, Tab>, result: LoadResult<Tab>) = this@TabSource.onLoadResult(params, result)
         override fun getFetchDispatcher(param: Param): CoroutineDispatcher = this@TabSource.getFetchDispatcher(param)
         override fun onDestroy() {
         }
@@ -27,13 +27,13 @@ abstract class TabSource<Param : Any, Tab : ITab>(
 
     val flow: Flow<TabData<Param, Tab>> = tabFetcher.flow
 
+    protected open fun getRefreshStrategy(): RefreshStrategy {
+        return RefreshStrategy.CancelLast
+    }
+
     protected abstract suspend fun getCache(params: CacheParams<Param, Tab>): CacheResult<Tab>
 
-    protected open suspend fun onCacheResult(params: CacheParams<Param, Tab>, result: CacheResult<Tab>) {}
-
     protected abstract suspend fun load(params: LoadParams<Param, Tab>): LoadResult<Tab>
-
-    protected open suspend fun onLoadResult(params: LoadParams<Param, Tab>, result: LoadResult<Tab>) {}
 
     protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
 

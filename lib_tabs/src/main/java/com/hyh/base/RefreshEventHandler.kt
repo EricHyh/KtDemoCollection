@@ -2,6 +2,7 @@ package com.hyh.base
 
 import android.os.SystemClock
 import com.hyh.coroutine.SimpleMutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlin.math.abs
 
 /**
@@ -22,7 +23,7 @@ abstract class RefreshEventHandler<Param : Any>(initialParam: Param?) {
     private var delay = 0
     private var timingStart: Long = 0
 
-    val flow = state.asStateFlow()
+    val flow = state.asStateFlow().map { it.second }
 
 
     @Synchronized

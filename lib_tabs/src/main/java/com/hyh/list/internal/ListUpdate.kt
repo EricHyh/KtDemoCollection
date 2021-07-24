@@ -19,16 +19,6 @@ sealed class ListOperate {
 
 }
 
-
-sealed class ElementOperate<E> {
-
-    data class Added<E>(val element: E) : ElementOperate<E>()
-    data class Changed<E>(val oldElement: E, val newElement: E, val payload: Any?) : ElementOperate<E>()
-    data class Removed<E>(val element: E) : ElementOperate<E>()
-
-}
-
-
 data class ElementOperates<E>(
     val addedElements: List<E>,
     val removedElements: List<E>,

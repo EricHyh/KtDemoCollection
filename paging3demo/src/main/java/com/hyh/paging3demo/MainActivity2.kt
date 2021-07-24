@@ -63,8 +63,8 @@ class MainActivity2 : AppCompatActivity() {
 
         supportFragmentManager
             .beginTransaction()
-            .add(android.R.id.content, fragment2)
-            /*.add(android.R.id.content, ProjectsFragment2::class.java, Bundle())*/
+            //.add(android.R.id.content, fragment2)
+            .add(android.R.id.content, ProjectsFragment2::class.java, Bundle())
             .addToBackStack(null)
             .commitAllowingStateLoss()
     }

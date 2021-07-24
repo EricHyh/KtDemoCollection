@@ -1,5 +1,6 @@
 package com.hyh.tabs.adapter
 
+import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SingleRunner
 import com.hyh.page.PageContext
 import com.hyh.tabs.ITab
@@ -10,7 +11,6 @@ import com.hyh.tabs.internal.TabEvent
 import com.hyh.tabs.internal.UiReceiver
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import java.util.*
@@ -35,10 +35,10 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>(private val page
     override val tabTitles: List<CharSequence>?
         get() = tabs?.map { it.tabTitle }
 
-    private val _loadStateFlow: MutableStateFlow<LoadState> = MutableStateFlow(LoadState.Initial)
+    private val _loadStateFlow: SimpleMutableStateFlow<LoadState> = SimpleMutableStateFlow(LoadState.Initial)
 
     override val loadStateFlow: Flow<LoadState>
-        get() = _loadStateFlow
+        get() = _loadStateFlow.asStateFlow()
 
     override val tabCount: Int
         get() = tabs?.size ?: 0
@@ -97,16 +97,17 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>(private val page
                             _loadStateFlow.value = LoadState.Success(newTabs.size)
                         }
                     }
+                    event.onReceived()
                 }
             }
         }
     }
 
     private fun updateTabs(tabs: List<TabInfo<Tab>>): List<TabInfo<Tab>> {
-        val oldTabs = tabs
+        val oldTabs = this.tabs
         val newTabs = tabs
         this.tabs = newTabs
-        if (!Arrays.equals(oldTabs.toTypedArray(), newTabs.toTypedArray())) {
+        if (!Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())) {
             notifyDataSetChanged()
         }
         return newTabs

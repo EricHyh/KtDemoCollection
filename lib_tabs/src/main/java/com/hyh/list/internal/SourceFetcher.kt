@@ -30,7 +30,7 @@ class ItemFetcher<Param : Any, Item : Any>(
             }
         }
 
-        val flow = refreshEventHandler.flow.map { it.first }
+        val flow = refreshEventHandler.flow
 
         override fun refresh(important: Boolean) {
             refreshEventHandler.onReceiveRefreshEvent(important, Unit)
@@ -49,7 +49,7 @@ class ItemFetcher<Param : Any, Item : Any>(
         uiReceiver
             .flow
             .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param, Item>?, id: Long ->
+            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param, Item>?, _: Unit? ->
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
                     displayedData = sourceDisplayedData,

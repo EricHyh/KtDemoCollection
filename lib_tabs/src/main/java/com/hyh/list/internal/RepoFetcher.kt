@@ -28,7 +28,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             }
         }
 
-        val flow = refreshEventHandler.flow.map { it.second }
+        val flow = refreshEventHandler.flow
 
         override fun refresh(param: Param) {
             refreshEventHandler.onReceiveRefreshEvent(false, param)
