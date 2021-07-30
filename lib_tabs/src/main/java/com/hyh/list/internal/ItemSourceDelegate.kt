@@ -1,6 +1,6 @@
 package com.hyh.list.internal
 
-import com.hyh.list.ItemData
+import com.hyh.list.FlatListItem
 
 interface ItemSourceDelegate<Param : Any, Item : Any> {
 
@@ -10,7 +10,7 @@ interface ItemSourceDelegate<Param : Any, Item : Any> {
 
     fun getElementDiff(): IElementDiff<Item>
 
-    fun mapItems(items: List<Item>): List<ItemData>
+    fun mapItems(items: List<Item>): List<FlatListItem>
 
     fun onItemsDisplayed(items: List<Item>)
 

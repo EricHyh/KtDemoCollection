@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.*
 
 
 class ItemFetcher<Param : Any, Item : Any>(
-    private val itemSource: ItemSource<Param, Item>,
+    private val itemSource: ItemSource<Param, Item>
 ) {
 
     private val sourceDisplayedData = SourceDisplayedData<Item>()
@@ -70,7 +70,7 @@ class ItemFetcher<Param : Any, Item : Any>(
             .collect {
                 send(it)
             }
-    }.buffer(Channel.BUFFERED)
+    }
 
     fun refresh(important: Boolean) {
         uiReceiver.refresh(important)
@@ -81,8 +81,8 @@ class ItemFetcher<Param : Any, Item : Any>(
     }
 
     private fun getParamProvider(): ParamProvider<Param> = ::getParam
-    private fun getFetchDispatcherProvider(): DispatcherProvider<Param> = ::getFetchDispatcher
-    private fun getProcessDataDispatcherProvider(): DispatcherProvider<Param> = ::getProcessDataDispatcher
+    private fun getFetchDispatcherProvider(): DispatcherProvider<Param, Item> = ::getFetchDispatcher
+    private fun getProcessDataDispatcherProvider(): DispatcherProvider<Param, Item> = ::getProcessDataDispatcher
     private fun getPreShowLoader(): PreShowLoader<Param, Item> = ::getPreShow
     private fun getLoader(): ItemLoader<Param, Item> = ::load
 
@@ -90,12 +90,12 @@ class ItemFetcher<Param : Any, Item : Any>(
         return itemSource.getParam()
     }
 
-    private fun getFetchDispatcher(param: Param): CoroutineDispatcher {
-        return itemSource.getFetchDispatcher(param)
+    private fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
+        return itemSource.getFetchDispatcher(param, displayedData)
     }
 
-    private fun getProcessDataDispatcher(param: Param): CoroutineDispatcher {
-        return itemSource.getProcessDataDispatcher(param)
+    private fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
+        return itemSource.getProcessDataDispatcher(param, displayedData)
     }
 
     private suspend fun getPreShow(params: ItemSource.PreShowParams<Param, Item>): ItemSource.PreShowResult<Item> {
@@ -113,12 +113,8 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
     private val items: List<Item>,
     private val resultExtra: Any?,
     private val dispatcher: CoroutineDispatcher?,
-    private val delegate: ItemSource.Delegate<Param, Item>,
+    private val delegate: ItemSource.Delegate<Param, Item>
 ) {
-
-    companion object {
-        private const val TAG = "ResultProcessor"
-    }
 
     val processor: SourceResultProcessor = {
         if (dispatcher != null) {
@@ -131,14 +127,13 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
     }
 
     private fun processResult(): SourceProcessedResult {
-
         val updateResult = ListUpdate.calculateDiff(
-            sourceDisplayedData.items,
+            sourceDisplayedData.originalItems,
             items,
             delegate.getElementDiff()
         )
 
-        val itemDataList = delegate.mapItems(updateResult.resultList)
+        val flatListItems = delegate.mapItems(updateResult.resultList)
 
         delegate.onProcessResult(
             updateResult.resultList,
@@ -146,13 +141,13 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
             sourceDisplayedData
         )
 
-        return SourceProcessedResult(itemDataList, updateResult.listOperates) {
-            sourceDisplayedData.items = updateResult.resultList
-            sourceDisplayedData.itemDataList = itemDataList
+        return SourceProcessedResult(flatListItems, updateResult.listOperates) {
+            sourceDisplayedData.originalItems = updateResult.resultList
+            sourceDisplayedData.flatListItems = flatListItems
             sourceDisplayedData.resultExtra = resultExtra
 
-            itemDataList.forEach {
-                it.delegate.displayedItems = itemDataList
+            flatListItems.forEach {
+                it.delegate.displayedItems = flatListItems
             }
 
             delegate.run {
@@ -172,33 +167,29 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val paramProvider: ParamProvider<Param>,
     private val preShowLoader: PreShowLoader<Param, Item>,
     private val loader: ItemLoader<Param, Item>,
-    private val fetchDispatcherProvider: DispatcherProvider<Param>,
-    private val processDataDispatcherProvider: DispatcherProvider<Param>,
+    private val fetchDispatcherProvider: DispatcherProvider<Param, Item>,
+    private val processDataDispatcherProvider: DispatcherProvider<Param, Item>,
     private val onRefreshComplete: Invoke,
     private val delegate: ItemSource.Delegate<Param, Item>
 ) {
 
     companion object {
-        private const val TAG = "ItemFetcher"
+        private const val TAG = "ItemFetcherSnapshot"
     }
 
-
-    var preShowResult: ItemSource.PreShowResult<Item>? = null
-    var loadResult: ItemSource.LoadResult<Item>? = null
-
+    @Volatile
+    private var closed = false
     private val sourceEventChannelFlowJob = Job()
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
+
 
     val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
         launch {
             sourceEventCh.consumeAsFlow().collect {
-                // Protect against races where a subsequent call to submitData invoked close(),
-                // but a tabEvent arrives after closing causing ClosedSendChannelException.
                 try {
+                    if (closed) return@collect
                     send(it)
-                    Log.d(TAG, "send : $it")
                 } catch (e: ClosedSendChannelException) {
-                    // Safe to drop tabEvent here, since collection has been cancelled.
                 }
             }
         }
@@ -218,7 +209,6 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
                 displayedData
             )
         val preShowResult = preShowLoader.invoke(preShowParams)
-        this@ItemFetcherSnapshot.preShowResult = preShowResult
 
         var preShowing = false
         if (preShowResult is ItemSource.PreShowResult.Success<Item>) {
@@ -228,7 +218,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
                     displayedData,
                     preShowResult.items,
                     preShowResult.resultExtra,
-                    processDataDispatcherProvider.invoke(param),
+                    processDataDispatcherProvider.invoke(param, displayedData),
                     delegate
                 ).processor
             )
@@ -238,7 +228,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     }
 
     private suspend fun handleLoadStep(param: Param, preShowing: Boolean) {
-        val fetchDispatcher = fetchDispatcherProvider.invoke(param)
+        val fetchDispatcher = fetchDispatcherProvider.invoke(param, displayedData)
 
         val loadParams = ItemSource.LoadParams(
             param,
@@ -252,7 +242,6 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
                 loader.invoke(loadParams)
             }
         }
-        this@ItemFetcherSnapshot.loadResult = loadResult
 
         when (loadResult) {
             is ItemSource.LoadResult.Success -> {
@@ -261,7 +250,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
                         displayedData,
                         loadResult.items,
                         loadResult.resultExtra,
-                        processDataDispatcherProvider.invoke(param),
+                        processDataDispatcherProvider.invoke(param, displayedData),
                         delegate
                     ).processor
                 ) {
@@ -279,6 +268,8 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     }
 
     fun close() {
+        closed = true
+        Log.d(TAG, "ItemFetcherSnapshot close: ")
         sourceEventChannelFlowJob.cancel()
     }
 }
@@ -286,4 +277,4 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
 internal typealias ParamProvider<Param> = (suspend () -> Param)
 internal typealias PreShowLoader<Param, Item> = (suspend (params: ItemSource.PreShowParams<Param, Item>) -> ItemSource.PreShowResult<Item>)
 internal typealias ItemLoader<Param, Item> = (suspend (param: ItemSource.LoadParams<Param, Item>) -> ItemSource.LoadResult<Item>)
-internal typealias DispatcherProvider<Param> = ((Param) -> CoroutineDispatcher?)
+internal typealias DispatcherProvider<Param, Item> = ((Param, SourceDisplayedData<Item>) -> CoroutineDispatcher?)

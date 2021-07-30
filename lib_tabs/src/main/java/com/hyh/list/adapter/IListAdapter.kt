@@ -3,12 +3,11 @@ package com.hyh.list.adapter
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.coroutine.SimpleStateFlow
-import com.hyh.list.ItemData
+import com.hyh.list.FlatListItem
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
 import com.hyh.list.internal.RepoData
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
 
 interface IListAdapter<Param : Any> {
 
@@ -19,9 +18,9 @@ interface IListAdapter<Param : Any> {
     fun getSourceLoadState(sourceIndex: Int): SimpleStateFlow<SourceLoadState>?
     fun getSourceLoadState(sourceToken: Any): SimpleStateFlow<SourceLoadState>?
 
-    fun getItemSnapshot(): List<ItemData>
-    fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<ItemData>
-    fun getItemSnapshot(sourceTokenStart: Any, count: Int = 1): List<ItemData>
+    fun getItemSnapshot(): List<FlatListItem>
+    fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<FlatListItem>
+    fun getItemSnapshot(sourceTokenStart: Any, count: Int = 1): List<FlatListItem>
 
 
     fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo?

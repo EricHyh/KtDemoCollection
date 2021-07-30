@@ -24,14 +24,14 @@ class NumItemSource(private val type: String, override val sourceToken: Any = ty
 
     private var lastNums: List<Int> = emptyList()
 
-    override suspend fun getPreShow(param: Unit): PreShowResult<ItemData> {
-        val titleItemData = TitleItemData(type, lastNums, emptyList())
+    override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
+        val titleItemData = TitleFlatListItem(type, lastNums, emptyList())
         return PreShowResult.Success(listOf(titleItemData))
     }
 
-    override suspend fun load(param: Unit): LoadResult<ItemData> {
+    override suspend fun load(param: Unit): LoadResult<FlatListItem> {
         delay(1000)
-        val items = mutableListOf<ItemData>()
+        val items = mutableListOf<FlatListItem>()
         val random = Random(SystemClock.currentThreadTimeMillis())
         val count = random.nextLong(5, 10).toInt()
         val nums = mutableListOf<Int>()
@@ -41,10 +41,10 @@ class NumItemSource(private val type: String, override val sourceToken: Any = ty
         nums.sortBy {
             Math.random()
         }
-        val titleItemData = TitleItemData(type, lastNums, nums)
+        val titleItemData = TitleFlatListItem(type, lastNums, nums)
         lastNums = nums
 
-        val numItems = nums.map { NumItemData(type, it) }
+        val numItems = nums.map { NumFlatListItem(type, it) }
 
         items.add(titleItemData)
         items.addAll(numItems)
@@ -60,24 +60,24 @@ class NumItemSource(private val type: String, override val sourceToken: Any = ty
 }
 
 
-class TitleItemData(
+class TitleFlatListItem(
     private val type: String,
     private val lastNums: List<Int>,
     private val curNums: List<Int>,
-) : IItemData<RecyclerView.ViewHolder>() {
+) : IFlatListItem<RecyclerView.ViewHolder>() {
 
     var activated = false
 
-    override fun onDataActivated() {
-        super.onDataActivated()
+    override fun onItemActivated() {
+        super.onItemActivated()
         ListConfig.aliveItems++
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onActivated: ${ListConfig.aliveItems}")
         activated = true
         Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
     }
 
-    override fun onDataDetached() {
-        super.onDataDetached()
+    override fun onItemDetached() {
+        super.onItemDetached()
         ListConfig.aliveItems--
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - TitleItemData.onDestroyed: ${ListConfig.aliveItems}")
         activated = false
@@ -119,34 +119,34 @@ class TitleItemData(
         (viewHolder.itemView as TextView).text = "$type:\n\t$lastNumsStr\n\t$curNumsStr"
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is TitleItemData) return false
-        return type == newItemData.type
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is TitleFlatListItem) return false
+        return type == newItem.type
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is TitleItemData) return false
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is TitleFlatListItem) return false
         return false
     }
 }
 
-class NumItemData(
+class NumFlatListItem(
     private val type: String,
     private val num: Int
-) : IItemData<RecyclerView.ViewHolder>() {
+) : IFlatListItem<RecyclerView.ViewHolder>() {
 
     var activated = false
 
-    override fun onDataActivated() {
-        super.onDataActivated()
+    override fun onItemActivated() {
+        super.onItemActivated()
         ListConfig.aliveItems++
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onActivated: ${ListConfig.aliveItems}")
         activated = true
         Log.d(NumItemSource.TAG, "${this}:onActivated: $activated")
     }
 
-    override fun onDataDetached() {
-        super.onDataDetached()
+    override fun onItemDetached() {
+        super.onItemDetached()
         ListConfig.aliveItems--
         //Log.d(NumItemSource.TAG, "${Thread.currentThread()} - NumItemData onDestroyed: ${ListConfig.aliveItems}")
         activated = false
@@ -169,14 +169,14 @@ class NumItemData(
         }
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is NumItemData) return false
-        return this.type == newItemData.type && this.num == newItemData.num
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is NumFlatListItem) return false
+        return this.type == newItem.type && this.num == newItem.num
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is NumItemData) return false
-        return this.type == newItemData.type && this.num == newItemData.num
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is NumFlatListItem) return false
+        return this.type == newItem.type && this.num == newItem.num
     }
 
     @SuppressLint("SetTextI18n")

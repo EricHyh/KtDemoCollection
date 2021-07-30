@@ -3,7 +3,7 @@ package com.hyh.list
 import com.hyh.Invoke
 import com.hyh.list.internal.*
 
-abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrapper>() {
+abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrapper>() {
 
     companion object {
         const val DEFAULT_ITEMS_BUCKET_ID = -1
@@ -20,39 +20,39 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
         this._itemsBucketIds = itemsBucketIds
     }
 
-    override fun getElementDiff(): IElementDiff<ItemDataWrapper> {
+    override fun getElementDiff(): IElementDiff<ListItemWrapper> {
         return IElementDiff.ItemDataWrapperDiff()
     }
 
-    override fun mapItems(items: List<ItemDataWrapper>): List<ItemData> {
-        return items.map { it.itemData }
+    override fun mapItems(listItems: List<ListItemWrapper>): List<FlatListItem> {
+        return listItems.map { it.item }
     }
 
-    override fun onItemsDisplayed(items: List<ItemDataWrapper>) {
-        items.forEach {
+    override fun onItemsDisplayed(listItems: List<ListItemWrapper>) {
+        listItems.forEach {
             if (!it.attached) {
-                it.itemData.delegate.onDataAttached()
+                it.item.delegate.onItemAttached()
             }
-            it.itemData.delegate.onDataActivated()
+            it.item.delegate.onItemActivated()
         }
     }
 
-    override fun onItemsChanged(changes: List<Triple<ItemDataWrapper, ItemDataWrapper, Any?>>) {
+    override fun onItemsChanged(changes: List<Triple<ListItemWrapper, ListItemWrapper, Any?>>) {
         changes.forEach {
-            it.first.itemData.delegate.updateItemData(it.second.itemData, it.third)
+            it.first.item.delegate.updateItem(it.second.item, it.third)
         }
     }
 
-    override fun onItemsRecycled(items: List<ItemDataWrapper>) {
-        items.forEach {
-            it.itemData.delegate.onDataInactivated()
+    override fun onItemsRecycled(listItems: List<ListItemWrapper>) {
+        listItems.forEach {
+            it.item.delegate.onItemInactivated()
             if (!it.cached) {
-                it.itemData.delegate.onDataDetached()
+                it.item.delegate.onItemDetached()
             }
         }
     }
 
-    override suspend fun getPreShow(params: PreShowParams<Param, ItemDataWrapper>): PreShowResult<ItemDataWrapper> {
+    override suspend fun getPreShow(params: PreShowParams<Param, ListItemWrapper>): PreShowResult<ListItemWrapper> {
         val resultExtra = params.displayedData.resultExtra as? ResultExtra
         val result = getPreShow(params.param, resultExtra?.resultItemsBucketMap)
         return if (result is BucketPreShowResult.Success) {
@@ -65,7 +65,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
         }
     }
 
-    override suspend fun load(params: LoadParams<Param, ItemDataWrapper>): LoadResult<ItemDataWrapper> {
+    override suspend fun load(params: LoadParams<Param, ListItemWrapper>): LoadResult<ListItemWrapper> {
         val resultExtra = params.displayedData.resultExtra as? ResultExtra
         val result = load(params.param, resultExtra?.resultItemsBucketMap)
         return if (result is BucketLoadResult.Success) {
@@ -83,9 +83,9 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
 
 
     override fun onProcessResult(
-        resultItems: List<ItemDataWrapper>,
+        resultItems: List<ListItemWrapper>,
         resultExtra: Any?,
-        displayedData: SourceDisplayedData<ItemDataWrapper>
+        displayedData: SourceDisplayedData<ListItemWrapper>
     ) {
         val displayedExtra = displayedData.resultExtra as? ResultExtra
         val newExtra = resultExtra as? ResultExtra
@@ -94,20 +94,20 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
         }
         val resultItemsBucketMap: LinkedHashMap<Int, ItemsBucket> = LinkedHashMap()
         itemsBucketIds.forEach {
-            val items = mutableListOf<ItemData>()
+            val items = mutableListOf<FlatListItem>()
             resultItemsBucketMap[it] = ItemsBucket(it, DEFAULT_ITEMS_TOKEN, items)
         }
 
         resultItems.forEach { wrapper ->
             var itemsBucket = resultItemsBucketMap[wrapper.itemsBucketId]
             if (itemsBucket == null || itemsBucket.itemsToken != wrapper.itemsToken) {
-                val items = mutableListOf<ItemData>()
-                items.add(wrapper.itemData)
+                val items = mutableListOf<FlatListItem>()
+                items.add(wrapper.item)
 
                 itemsBucket = ItemsBucket(wrapper.itemsBucketId, wrapper.itemsToken, items)
                 resultItemsBucketMap[wrapper.itemsBucketId] = itemsBucket
             } else {
-                (itemsBucket.items as MutableList<ItemData>).add(wrapper.itemData)
+                (itemsBucket.items as MutableList<FlatListItem>).add(wrapper.item)
             }
         }
 
@@ -146,7 +146,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
         newExtra.invokeOnDisplayed = invokes
     }
 
-    override fun onResultDisplayed(displayedData: SourceDisplayedData<ItemDataWrapper>) {
+    override fun onResultDisplayed(displayedData: SourceDisplayedData<ListItemWrapper>) {
         super.onResultDisplayed(displayedData)
         (displayedData.resultExtra as? ResultExtra)?.onDisplayed()
     }
@@ -159,13 +159,13 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
     private fun getItemWrappers(
         itemsBucketIds: List<Int>,
         itemsBucketMap: Map<Int, ItemsBucket>
-    ): List<ItemDataWrapper> {
-        val wrappers = mutableListOf<ItemDataWrapper>()
+    ): List<ListItemWrapper> {
+        val wrappers = mutableListOf<ListItemWrapper>()
         itemsBucketIds.forEach { id ->
             val itemsBucket = itemsBucketMap[id]
             if (itemsBucket != null) {
                 wrappers.addAll(
-                    itemsBucket.items.map { ItemDataWrapper(id, itemsBucket.itemsToken, it) }
+                    itemsBucket.items.map { ListItemWrapper(id, itemsBucket.itemsToken, it) }
                 )
             }
         }
@@ -251,7 +251,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ItemDataWrappe
                 val next = iterator.next()
                 next.value.values.forEach { itemsBucket ->
                     itemsBucket.items.forEach {
-                        it.delegate.onDataDetached()
+                        it.delegate.onItemDetached()
                     }
                 }
                 iterator.remove()

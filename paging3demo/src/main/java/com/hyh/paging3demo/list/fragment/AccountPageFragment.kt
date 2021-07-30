@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hyh.RefreshActuator
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
-import com.hyh.list.adapter.SourceRepoAdapter
+import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.list.decoration.ItemSourceFrameDecoration
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
@@ -32,8 +32,8 @@ class AccountPageFragment : Fragment() {
     }
 
 
-    private val sourceRepoAdapter: SourceRepoAdapter<Unit> by lazy {
-        SourceRepoAdapter<Unit>(pageContext)
+    private val multiItemSourceAdapter: MultiItemSourceAdapter<Unit> by lazy {
+        MultiItemSourceAdapter<Unit>(pageContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +47,7 @@ class AccountPageFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.findViewById<View>(R.id.btn_refresh).setOnClickListener {
-            sourceRepoAdapter.refreshRepo(Unit)
+            multiItemSourceAdapter.refreshRepo(Unit)
         }
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
@@ -56,10 +56,10 @@ class AccountPageFragment : Fragment() {
         }
 
         recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
-        recyclerView.adapter = sourceRepoAdapter
+        recyclerView.adapter = multiItemSourceAdapter
         //sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)
-        sourceRepoAdapter.submitData(
-            ListItemSourceRepo(
+        multiItemSourceAdapter.submitData(
+            MultiItemSourceRepo(
                 listOf(AccountItemSource(true), AccountItemSource(false))
             ).flow
         )
@@ -88,21 +88,21 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<In
     }
 
 
-    override fun isEmptyContent(items: List<ItemData>): Boolean {
+    override fun isEmptyContent(items: List<FlatListItem>): Boolean {
         if (items.isEmpty()) return true
-        if (items.size == 1 && items[0] is EmptyItemData) {
+        if (items.size == 1 && items[0] is EmptyFlatListItem) {
             return true
         }
         return false
     }
 
-    override suspend fun getTitlePreShow(tabToken: Any, param: Int): List<ItemData> {
-        return listOf(MultiTabsTitleItemData(param, onTabClick))
+    override suspend fun getTitlePreShow(tabToken: Any, param: Int): List<FlatListItem> {
+        return listOf(MultiTabsTitleFlatListItem(param, onTabClick))
     }
 
-    override suspend fun getContentPreShow(tabToken: Any, param: Int): List<ItemData> {
+    override suspend fun getContentPreShow(tabToken: Any, param: Int): List<FlatListItem> {
         return if (testEmpty) {
-            listOf(LoadingItemData())
+            listOf(LoadingFlatListItem())
         } else {
             emptyList()
         }
@@ -115,25 +115,25 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<In
         when (param) {
             0 -> {
                 if (testEmpty) {
-                    return ContentResult.Success(listOf(EmptyItemData(refreshActuator)))
+                    return ContentResult.Success(listOf(EmptyFlatListItem(refreshActuator)))
                 }
-                val list = mutableListOf<Tab1ItemData>()
+                val list = mutableListOf<Tab1FlatListItem>()
                 for (index in 0..4) {
-                    list.add(Tab1ItemData(getRandomColor(), "条目: $index", "这是条目: $index"))
+                    list.add(Tab1FlatListItem(getRandomColor(), "条目: $index", "这是条目: $index"))
                 }
                 return ContentResult.Success(list)
             }
             1 -> {
-                val list = mutableListOf<Tab2ItemData>()
+                val list = mutableListOf<Tab2FlatListItem>()
                 for (index in 0..9) {
-                    list.add(Tab2ItemData("条目: $index", "这是条目: $index"))
+                    list.add(Tab2FlatListItem("条目: $index", "这是条目: $index"))
                 }
                 return ContentResult.Success(list)
             }
             2 -> {
-                val list = mutableListOf<Tab3ItemData>()
+                val list = mutableListOf<Tab3FlatListItem>()
                 for (index in 0..19) {
-                    list.add(Tab3ItemData(getRandomColor(), "条目: $index", "这是条目: $index"))
+                    list.add(Tab3FlatListItem(getRandomColor(), "条目: $index", "这是条目: $index"))
                 }
                 return ContentResult.Success(list)
             }
@@ -163,10 +163,10 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<In
 }
 
 
-class MultiTabsTitleItemData(
+class MultiTabsTitleFlatListItem(
     private var selectedTab: Int,
     private val onTabClick: (tab: Int) -> Unit
-) : IItemData<MultiTabsTitleItemData.TitleHolder>() {
+) : IFlatListItem<MultiTabsTitleFlatListItem.TitleHolder>() {
 
     override fun getItemViewType(): Int {
         return 0
@@ -197,28 +197,28 @@ class MultiTabsTitleItemData(
         }
     }
 
-    override fun isSupportUpdateItemData(): Boolean {
+    override fun isSupportUpdateItem(): Boolean {
         return false
     }
 
-    override fun onUpdateItemData(newItemData: ItemData) {
-        super.onUpdateItemData(newItemData)
-        selectedTab = (newItemData as MultiTabsTitleItemData).selectedTab
+    override fun onUpdateItem(newItem: FlatListItem) {
+        super.onUpdateItem(newItem)
+        selectedTab = (newItem as MultiTabsTitleFlatListItem).selectedTab
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is MultiTabsTitleItemData) return false
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is MultiTabsTitleFlatListItem) return false
         return true
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return false
         /*if (newItemData !is MultiTabsTitleItemData) return false
         return this.selectedTab == newItemData.selectedTab*/
     }
 
-    override fun getChangePayload(newItemData: ItemData): Any? {
-        return (newItemData as MultiTabsTitleItemData).selectedTab
+    override fun getChangePayload(newItem: FlatListItem): Any? {
+        return (newItem as MultiTabsTitleFlatListItem).selectedTab
     }
 
     class TitleHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -229,7 +229,7 @@ class MultiTabsTitleItemData(
 }
 
 
-class LoadingItemData() : IItemData<LoadingItemData.LoadingItemHolder>() {
+class LoadingFlatListItem() : IFlatListItem<LoadingFlatListItem.LoadingItemHolder>() {
 
 
     override fun getItemViewType(): Int {
@@ -248,12 +248,12 @@ class LoadingItemData() : IItemData<LoadingItemData.LoadingItemHolder>() {
     ) {
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is LoadingItemData) return false
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is LoadingFlatListItem) return false
         return true
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return true
     }
 
@@ -264,7 +264,7 @@ class LoadingItemData() : IItemData<LoadingItemData.LoadingItemHolder>() {
 }
 
 
-class EmptyItemData(val refresh: RefreshActuator) : IItemData<EmptyItemData.EmptyItemHolder>() {
+class EmptyFlatListItem(val refresh: RefreshActuator) : IFlatListItem<EmptyFlatListItem.EmptyItemHolder>() {
 
     override fun getItemViewType(): Int {
         return R.layout.item_empty
@@ -285,13 +285,13 @@ class EmptyItemData(val refresh: RefreshActuator) : IItemData<EmptyItemData.Empt
         }
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is EmptyItemData) return false
-        if (refresh != newItemData.refresh) return false
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is EmptyFlatListItem) return false
+        if (refresh != newItem.refresh) return false
         return true
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return true
     }
 
@@ -301,11 +301,11 @@ class EmptyItemData(val refresh: RefreshActuator) : IItemData<EmptyItemData.Empt
 }
 
 
-class Tab1ItemData(
+class Tab1FlatListItem(
     private val leftViewColorInt: Int,
     private val title: String,
     private val des: String
-) : IItemData<Tab1ItemData.Tab1ItemHolder>() {
+) : IFlatListItem<Tab1FlatListItem.Tab1ItemHolder>() {
 
     override fun getItemViewType(): Int {
         return 1
@@ -326,14 +326,14 @@ class Tab1ItemData(
         viewHolder.tvDes.text = des
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is Tab1ItemData) return false
-        return this.leftViewColorInt == newItemData.leftViewColorInt
-                && this.title == newItemData.title
-                && this.des == newItemData.des
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is Tab1FlatListItem) return false
+        return this.leftViewColorInt == newItem.leftViewColorInt
+                && this.title == newItem.title
+                && this.des == newItem.des
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return false
     }
 
@@ -344,10 +344,10 @@ class Tab1ItemData(
     }
 }
 
-class Tab2ItemData(
+class Tab2FlatListItem(
     private val title: String,
     private val des: String
-) : IItemData<Tab2ItemData.Tab2ItemHolder>() {
+) : IFlatListItem<Tab2FlatListItem.Tab2ItemHolder>() {
 
     override fun getItemViewType(): Int {
         return 2
@@ -367,13 +367,13 @@ class Tab2ItemData(
         viewHolder.tvDes.text = des
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is Tab2ItemData) return false
-        return this.title == newItemData.title
-                && this.des == newItemData.des
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is Tab2FlatListItem) return false
+        return this.title == newItem.title
+                && this.des == newItem.des
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return false
     }
 
@@ -384,11 +384,11 @@ class Tab2ItemData(
 }
 
 
-class Tab3ItemData(
+class Tab3FlatListItem(
     private val rightViewColorInt: Int,
     private val title: String,
     private val des: String
-) : IItemData<Tab3ItemData.Tab3ItemHolder>() {
+) : IFlatListItem<Tab3FlatListItem.Tab3ItemHolder>() {
 
     override fun getItemViewType(): Int {
         return 3
@@ -409,14 +409,14 @@ class Tab3ItemData(
         viewHolder.tvDes.text = des
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is Tab3ItemData) return false
-        return this.rightViewColorInt == newItemData.rightViewColorInt
-                && this.title == newItemData.title
-                && this.des == newItemData.des
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is Tab3FlatListItem) return false
+        return this.rightViewColorInt == newItem.rightViewColorInt
+                && this.title == newItem.title
+                && this.des == newItem.des
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return false
     }
 

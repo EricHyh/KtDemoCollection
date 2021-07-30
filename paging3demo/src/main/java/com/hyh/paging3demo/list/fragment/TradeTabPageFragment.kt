@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.RefreshActuator
 import com.hyh.list.*
-import com.hyh.list.adapter.SourceRepoAdapter
+import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.list.decoration.ItemSourceFrameDecoration
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
@@ -32,8 +32,8 @@ class TradeTabPageFragment : Fragment() {
     }
 
 
-    private val sourceRepoAdapter: SourceRepoAdapter<Unit> by lazy {
-        SourceRepoAdapter<Unit>(pageContext)
+    private val multiItemSourceAdapter: MultiItemSourceAdapter<Unit> by lazy {
+        MultiItemSourceAdapter<Unit>(pageContext)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +48,7 @@ class TradeTabPageFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         view.findViewById<TextView>(R.id.btn_refresh).text = "刷新账户列表\n(随机生成账户卡片列表)"
         view.findViewById<TextView>(R.id.btn_refresh).setOnClickListener {
-            sourceRepoAdapter.refreshRepo(Unit)
+            multiItemSourceAdapter.refreshRepo(Unit)
         }
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
@@ -57,29 +57,29 @@ class TradeTabPageFragment : Fragment() {
         }
 
         recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
-        recyclerView.adapter = sourceRepoAdapter
-        sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)
+        recyclerView.adapter = multiItemSourceAdapter
+        multiItemSourceAdapter.submitData(TradeTabItemSourceRepo().flow)
 
 
         lifecycleScope.launch {
-            sourceRepoAdapter.repoLoadStateFlow.collect {
+            multiItemSourceAdapter.repoLoadStateFlow.collect {
                 Log.d(TAG, "onViewCreated repoLoadStateFlow 1: $it")
             }
         }
 
         lifecycleScope.launch {
-            sourceRepoAdapter.repoLoadStateFlow.collect {
+            multiItemSourceAdapter.repoLoadStateFlow.collect {
                 Log.d(TAG, "onViewCreated repoLoadStateFlow 2: $it")
                 if (it is RepoLoadState.Success) {
                     recyclerView.scrollToPosition(0)
                     lifecycleScope.launch {
-                        sourceRepoAdapter.getSourceLoadState(0)?.collect {
+                        multiItemSourceAdapter.getSourceLoadState(0)?.collect {
                             Log.d(TAG, "onViewCreated SourceLoadState 1: $it")
                         }
                     }
 
                     lifecycleScope.launch {
-                        sourceRepoAdapter.getSourceLoadState(0)?.collect {
+                        multiItemSourceAdapter.getSourceLoadState(0)?.collect {
                             Log.d(TAG, "onViewCreated SourceLoadState 2: $it")
                         }
                     }
@@ -138,13 +138,13 @@ class AccountCardItemSource(private val accountName: String) : SimpleItemSource<
     override val sourceToken: Any
         get() = accountName
 
-    override suspend fun getPreShow(param: Unit): PreShowResult<ItemData> {
+    override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
         return PreShowResult.Unused()
     }
 
-    override suspend fun load(param: Unit): LoadResult<ItemData> {
+    override suspend fun load(param: Unit): LoadResult<FlatListItem> {
         if (!accountSettingInfo.expandPosition) {
-            val accountTitleItemData = AccountTitleItemData(accountName, emptyList(), accountSettingInfo, refreshActuator)
+            val accountTitleItemData = AccountTitleFlatListItem(accountName, emptyList(), accountSettingInfo, refreshActuator)
             return LoadResult.Success(listOf(accountTitleItemData))
         } else {
             val random = Random(SystemClock.currentThreadTimeMillis())
@@ -156,9 +156,9 @@ class AccountCardItemSource(private val accountName: String) : SimpleItemSource<
             positions.sortBy {
                 Math.random()
             }
-            val accountTitleItemData = AccountTitleItemData(accountName, positions, accountSettingInfo, refreshActuator)
+            val accountTitleItemData = AccountTitleFlatListItem(accountName, positions, accountSettingInfo, refreshActuator)
             val positionItemDataList = positions.map {
-                AccountPositionItemData(accountName, it)
+                AccountPositionFlatListItem(accountName, it)
             }
             return LoadResult.Success(listOf(accountTitleItemData, *positionItemDataList.toTypedArray()))
         }
@@ -189,12 +189,12 @@ class AccountSettingInfo {
 }
 
 
-class AccountTitleItemData(
+class AccountTitleFlatListItem(
     private val accountName: String,
     private val currentPositionSequence: List<String>,
     private val accountSettingInfo: AccountSettingInfo,
     private val refreshActuator: RefreshActuator,
-) : IItemData<AccountTitleItemData.AccountTitleHolder>() {
+) : IFlatListItem<AccountTitleFlatListItem.AccountTitleHolder>() {
 
     override fun getItemViewType(): Int {
         return R.layout.item_account_title
@@ -226,13 +226,13 @@ class AccountTitleItemData(
         }
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        return this.accountName == (newItemData as? AccountTitleItemData)?.accountName
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        return this.accountName == (newItem as? AccountTitleFlatListItem)?.accountName
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is AccountTitleItemData) return false
-        return currentPositionSequence.toTypedArray().contentEquals(newItemData.currentPositionSequence.toTypedArray())
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is AccountTitleFlatListItem) return false
+        return currentPositionSequence.toTypedArray().contentEquals(newItem.currentPositionSequence.toTypedArray())
     }
 
     class AccountTitleHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -243,10 +243,10 @@ class AccountTitleItemData(
     }
 }
 
-class AccountPositionItemData(
+class AccountPositionFlatListItem(
     val accountName: String,
     val positionName: String
-) : IItemData<AccountPositionItemData.AccountPositionHolder>() {
+) : IFlatListItem<AccountPositionFlatListItem.AccountPositionHolder>() {
 
     override fun getItemViewType(): Int {
         return R.layout.item_account_position
@@ -265,12 +265,12 @@ class AccountPositionItemData(
         viewHolder.tvPositionName.text = "持仓: $positionName"
     }
 
-    override fun areItemsTheSame(newItemData: ItemData): Boolean {
-        if (newItemData !is AccountPositionItemData) return false
-        return this.accountName == newItemData.accountName && this.positionName == newItemData.positionName
+    override fun areItemsTheSame(newItem: FlatListItem): Boolean {
+        if (newItem !is AccountPositionFlatListItem) return false
+        return this.accountName == newItem.accountName && this.positionName == newItem.positionName
     }
 
-    override fun areContentsTheSame(newItemData: ItemData): Boolean {
+    override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         return true
     }
 

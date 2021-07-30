@@ -4,32 +4,86 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
-import com.hyh.list.ItemData
+import com.hyh.list.FlatListItem
 import com.hyh.list.ItemSource
 import java.util.*
 import kotlin.collections.ArrayList
 
+/**
+ * 与[RecyclerView.Adapter]对应的列表操作
+ */
 sealed class ListOperate {
 
+    /**
+     * 列表全部变化，对应[RecyclerView.Adapter.notifyDataSetChanged]
+     */
     object OnAllChanged : ListOperate()
+
+    /**
+     * 列表部分变化，对应[RecyclerView.Adapter.notifyItemRangeChanged]
+     *
+     * @property positionStart 其实位置
+     * @property count 变化的数目
+     * @property payload 变化的内容
+     */
     data class OnChanged(val positionStart: Int, val count: Int, val payload: Any? = null) : ListOperate()
+
+    /**
+     * 列表元素移动，对应[RecyclerView.Adapter.notifyItemMoved]
+     *
+     * @property fromPosition 原始位置
+     * @property toPosition 目标位置
+     */
     data class OnMoved(val fromPosition: Int, val toPosition: Int) : ListOperate()
+
+    /**
+     * 列表插入元素，对应[RecyclerView.Adapter.notifyItemRangeInserted]
+     *
+     * @property positionStart 插入起始位置
+     * @property count 插入数目
+     */
     data class OnInserted(val positionStart: Int, val count: Int) : ListOperate()
+
+    /**
+     * 列表删除元素，对应[RecyclerView.Adapter.notifyItemRangeRemoved]
+     *
+     * @property positionStart 插入起始位置
+     * @property count 删除数目
+     */
     data class OnRemoved(val positionStart: Int, val count: Int) : ListOperate()
 
 }
 
+/**
+ * 对比两个列表，产生的列表元素增删改操作
+ *
+ * @param E 元素泛型
+ * @property addedElements 增加的元素
+ * @property removedElements 删除的元素
+ * @property changedElements 改变的元素
+ */
 data class ElementOperates<E>(
     val addedElements: List<E>,
     val removedElements: List<E>,
     val changedElements: List<Triple<E, E, Any?>>
 )
 
-
+/**
+ * 列表比对工具类
+ */
 object ListUpdate {
 
     private const val TAG = "ListUpdate"
 
+    /**
+     * 计算两个列表的变化
+     *
+     * @param E 元素泛型
+     * @param oldList 旧元素列表
+     * @param newList 新元素列表
+     * @param elementDiff 元素比对接口
+     * @return 比对结果
+     */
     fun <E> calculateDiff(oldList: List<E>?, newList: List<E>, elementDiff: IElementDiff<E>): UpdateResult<E> {
         if (oldList == null) {
             return UpdateResult(
@@ -63,7 +117,7 @@ object ListUpdate {
                         val elementStub = listSnapshot[index]
                         val oldElement = elementStub.element!!
                         val newElement = contentsNotSameMap[oldElement]!!
-                        if (elementDiff.isSupportUpdateItemData(oldElement, newElement)) {
+                        if (elementDiff.isSupportUpdate(oldElement, newElement)) {
                             changedElements.add(Triple(oldElement, newElement, payload))
                         } else {
                             elementStub.element = newElement
@@ -154,6 +208,14 @@ object ListUpdate {
         var element: E? = null
     )
 
+    /**
+     * 两个列表比对后的结果
+     *
+     * @param E 元素泛型
+     * @property resultList 比对后的最终结果列表
+     * @property listOperates 比对过程中对列表进行的一些操作
+     * @property elementOperates 元素的增删改结果
+     */
     class UpdateResult<E>(
         val resultList: List<E>,
         val listOperates: List<ListOperate>,
@@ -165,7 +227,7 @@ class DiffCallbackImpl<E>(
     private val oldList: List<E>,
     private val newList: List<E>,
     private val elementDiff: IElementDiff<E>,
-    private val contentsNotSameMap: IdentityHashMap<E, E>,
+    private val contentsNotSameMap: IdentityHashMap<E, E>
 ) : DiffUtil.Callback() {
 
     override fun getOldListSize(): Int = oldList.size
@@ -191,61 +253,103 @@ class DiffCallbackImpl<E>(
     }
 }
 
+/**
+ * 元素比对接口
+ *
+ * @param E 元素泛型
+ */
 interface IElementDiff<E> {
 
-    fun isSupportUpdateItemData(oldElement: E, newElement: E): Boolean
+    /**
+     * 元素是否支持更新，如果支持更新，那么[areItemsTheSame]为true时，旧元素会被保留
+     *
+     * @param oldElement 旧元素
+     * @param newElement 新元素
+     * @return
+     */
+    fun isSupportUpdate(oldElement: E, newElement: E): Boolean
+
+    /**
+     * 是否为同一个元素
+     *
+     * @param oldElement 旧元素
+     * @param newElement 新元素
+     * @return
+     */
     fun areItemsTheSame(oldElement: E, newElement: E): Boolean
+
+    /**
+     * 同一个元素的内容是否相同
+     *
+     * @param oldElement 旧元素
+     * @param newElement 新元素
+     * @return
+     */
     fun areContentsTheSame(oldElement: E, newElement: E): Boolean
+
+    /**
+     * 同一个元素如果内容不相同，那么在这里返回变化的部分
+     *
+     * @param oldElement 旧元素
+     * @param newElement 新元素
+     * @return
+     */
     fun getChangePayload(oldElement: E, newElement: E): Any?
 
 
-    class ItemDataDiff : IElementDiff<ItemData> {
+    class ItemDataDiff : IElementDiff<FlatListItem> {
 
-        override fun isSupportUpdateItemData(oldElement: ItemData, newElement: ItemData): Boolean {
-            return oldElement.isSupportUpdateItemData()
+        override fun isSupportUpdate(oldElement: FlatListItem, newElement: FlatListItem): Boolean {
+            return oldElement.isSupportUpdateItem()
         }
 
-        override fun areItemsTheSame(oldElement: ItemData, newElement: ItemData): Boolean {
+        override fun areItemsTheSame(oldElement: FlatListItem, newElement: FlatListItem): Boolean {
             return oldElement.areItemsTheSame(newElement)
         }
 
-        override fun areContentsTheSame(oldElement: ItemData, newElement: ItemData): Boolean {
+        override fun areContentsTheSame(oldElement: FlatListItem, newElement: FlatListItem): Boolean {
             return oldElement.areContentsTheSame(newElement)
         }
 
-        override fun getChangePayload(oldElement: ItemData, newElement: ItemData): Any? {
+        override fun getChangePayload(oldElement: FlatListItem, newElement: FlatListItem): Any? {
             return oldElement.getChangePayload(newElement)
         }
     }
 
-    class ItemDataWrapperDiff : IElementDiff<ItemDataWrapper> {
+    class ItemDataWrapperDiff : IElementDiff<ListItemWrapper> {
 
-        override fun isSupportUpdateItemData(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
+        override fun isSupportUpdate(oldElement: ListItemWrapper, newElement: ListItemWrapper): Boolean {
             return oldElement.isSupportUpdateItemData(newElement)
         }
 
-        override fun areItemsTheSame(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
+        override fun areItemsTheSame(oldElement: ListItemWrapper, newElement: ListItemWrapper): Boolean {
             return oldElement.areItemsTheSame(newElement)
         }
 
-        override fun areContentsTheSame(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Boolean {
+        override fun areContentsTheSame(oldElement: ListItemWrapper, newElement: ListItemWrapper): Boolean {
             return oldElement.areContentsTheSame(newElement)
         }
 
-        override fun getChangePayload(oldElement: ItemDataWrapper, newElement: ItemDataWrapper): Any? {
+        override fun getChangePayload(oldElement: ListItemWrapper, newElement: ListItemWrapper): Any? {
             return oldElement.getChangePayload(newElement)
         }
     }
 
     class BucketDiff : IElementDiff<ItemSource.ItemsBucket> {
 
-        override fun isSupportUpdateItemData(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean = true
+        override fun isSupportUpdate(
+            oldElement: ItemSource.ItemsBucket,
+            newElement: ItemSource.ItemsBucket
+        ): Boolean = true
 
         override fun areItemsTheSame(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean {
             return oldElement.bucketId == newElement.bucketId
         }
 
-        override fun areContentsTheSame(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean {
+        override fun areContentsTheSame(
+            oldElement: ItemSource.ItemsBucket,
+            newElement: ItemSource.ItemsBucket
+        ): Boolean {
             return oldElement.itemsToken == newElement.itemsToken
         }
 
@@ -256,7 +360,7 @@ interface IElementDiff<E> {
 
     class ItemSourceDiff : IElementDiff<LazySourceData> {
 
-        override fun isSupportUpdateItemData(oldElement: LazySourceData, newElement: LazySourceData): Boolean = true
+        override fun isSupportUpdate(oldElement: LazySourceData, newElement: LazySourceData): Boolean = true
 
         override fun areItemsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
             return oldElement.sourceToken == newElement.sourceToken
@@ -273,7 +377,7 @@ interface IElementDiff<E> {
 
     class AnyDiff<E> : IElementDiff<E> {
 
-        override fun isSupportUpdateItemData(oldElement: E, newElement: E): Boolean = true
+        override fun isSupportUpdate(oldElement: E, newElement: E): Boolean = true
 
         override fun areItemsTheSame(oldElement: E, newElement: E): Boolean {
             return oldElement == newElement

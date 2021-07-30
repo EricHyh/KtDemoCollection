@@ -7,9 +7,23 @@ import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
+/**
+ * [IFlatListItem]列表的数据源
+ *
+ * @param Param 参数泛型
+ * @param Item 原始的 Item 数据泛型
+ */
 abstract class ItemSource<Param : Any, Item : Any> {
 
     internal val delegate: Delegate<Param, Item> = object : Delegate<Param, Item>() {
+
+        private var displayedData: SourceDisplayedData<Item>? = null
+
+        override val displayedOriginalItemsSnapshot: List<Item>?
+            get() = displayedData?.originalItems
+
+        override val displayedFlatListItemsSnapshot: List<FlatListItem>?
+            get() = displayedData?.flatListItems
 
         override var sourcePosition: Int = -1
             set(value) {
@@ -32,7 +46,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
             return this@ItemSource.getElementDiff()
         }
 
-        override fun mapItems(items: List<Item>): List<ItemData> {
+        override fun mapItems(items: List<Item>): List<FlatListItem> {
             return this@ItemSource.mapItems(items)
         }
 
@@ -61,6 +75,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
         }
 
         override fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {
+            this.displayedData = displayedData
             return this@ItemSource.onResultDisplayed(displayedData)
         }
 
@@ -68,6 +83,12 @@ abstract class ItemSource<Param : Any, Item : Any> {
             this@ItemSource.onDetached()
         }
     }
+
+    protected val displayedOriginalItemsSnapshot: List<Item>?
+        get() = delegate.displayedOriginalItemsSnapshot
+
+    protected val displayedFlatListItemsSnapshot: List<FlatListItem>?
+        get() = delegate.displayedFlatListItemsSnapshot
 
     abstract val sourceToken: Any
 
@@ -84,7 +105,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
     protected open fun onUpdateItemSource(newItemSource: ItemSource<Param, Item>) {}
 
     protected abstract fun getElementDiff(): IElementDiff<Item>
-    protected abstract fun mapItems(items: List<Item>): List<ItemData>
+    protected abstract fun mapItems(items: List<Item>): List<FlatListItem>
     protected abstract fun onItemsDisplayed(items: List<Item>)
     protected abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)
     protected abstract fun onItemsRecycled(items: List<Item>)
@@ -103,12 +124,19 @@ abstract class ItemSource<Param : Any, Item : Any> {
 
     protected open fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {}
 
-    open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
-    open fun getProcessDataDispatcher(param: Param): CoroutineDispatcher = getFetchDispatcher(param)
+    open fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher =
+        Dispatchers.Unconfined
+
+    open fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher =
+        getFetchDispatcher(param, displayedData)
 
     protected open fun onDetached() {}
 
     abstract class Delegate<Param : Any, Item : Any> {
+
+        abstract val displayedOriginalItemsSnapshot: List<Item>?
+
+        abstract val displayedFlatListItemsSnapshot: List<FlatListItem>?
 
         abstract var sourcePosition: Int
 
@@ -117,7 +145,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
 
         abstract fun getElementDiff(): IElementDiff<Item>
-        abstract fun mapItems(items: List<Item>): List<ItemData>
+        abstract fun mapItems(items: List<Item>): List<FlatListItem>
 
         abstract fun updateItemSource(newItemSource: ItemSource<Param, Item>)
 
@@ -185,7 +213,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
     data class ItemsBucket(
         val bucketId: Int,
         val itemsToken: Any,
-        val items: List<ItemData>
+        val items: List<FlatListItem>
     )
 
     class PreShowParams<Param : Any, Item : Any>(

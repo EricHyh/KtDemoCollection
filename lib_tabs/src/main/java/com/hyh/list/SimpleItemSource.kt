@@ -1,5 +1,6 @@
 package com.hyh.list
 
+import com.hyh.base.RefreshStrategy
 import com.hyh.list.internal.IElementDiff
 
 /**
@@ -8,53 +9,73 @@ import com.hyh.list.internal.IElementDiff
  * @author eriche
  * @data 2021/6/17
  */
-abstract class SimpleItemSource<Param : Any> : ItemSource<Param, ItemData>() {
+abstract class SimpleItemSource<Param : Any> : ItemSource<Param, FlatListItem>() {
 
-    final override fun getElementDiff(): IElementDiff<ItemData> {
+    final override fun getElementDiff(): IElementDiff<FlatListItem> {
         return IElementDiff.ItemDataDiff()
     }
 
-    final override fun mapItems(items: List<ItemData>): List<ItemData> {
+    final override fun mapItems(items: List<FlatListItem>): List<FlatListItem> {
         return items
     }
 
-    final override fun onItemsDisplayed(items: List<ItemData>) {
+    override fun getRefreshStrategy(): RefreshStrategy {
+        if (displayedFlatListItemsSnapshot == null) return RefreshStrategy.QueueUp
+        return super.getRefreshStrategy()
+    }
+
+    final override fun onItemsDisplayed(items: List<FlatListItem>) {
         items.forEach {
             if (!it.delegate.attached) {
-                it.delegate.onDataAttached()
+                it.delegate.onItemAttached()
             }
-            it.delegate.onDataActivated()
+            it.delegate.onItemActivated()
         }
     }
 
-    final override fun onItemsChanged(changes: List<Triple<ItemData, ItemData, Any?>>) {
+    final override fun onItemsChanged(changes: List<Triple<FlatListItem, FlatListItem, Any?>>) {
         changes.forEach {
-            it.first.delegate.updateItemData(it.second, it.third)
+            it.first.delegate.updateItem(it.second, it.third)
         }
     }
 
-    final override fun onItemsRecycled(items: List<ItemData>) {
+    final override fun onItemsRecycled(items: List<FlatListItem>) {
         items.forEach {
-            it.delegate.onDataInactivated()
+            it.delegate.onItemInactivated()
             if (it.delegate.attached) {
-                it.delegate.onDataDetached()
+                it.delegate.onItemDetached()
             }
         }
     }
 
-    override suspend fun getPreShow(params: PreShowParams<Param, ItemData>): PreShowResult<ItemData> {
-        return if (params.displayedData.items == null) {
+    override suspend fun getPreShow(params: PreShowParams<Param, FlatListItem>): PreShowResult<FlatListItem> {
+        return if (params.displayedData.originalItems == null) {
             getPreShow(params.param)
         } else {
             PreShowResult.Unused()
         }
     }
 
-    override suspend fun load(params: LoadParams<Param, ItemData>): LoadResult<ItemData> {
+    override suspend fun load(params: LoadParams<Param, FlatListItem>): LoadResult<FlatListItem> {
         return load(params.param)
     }
 
-    protected abstract suspend fun getPreShow(param: Param): PreShowResult<ItemData>
-    protected abstract suspend fun load(param: Param): LoadResult<ItemData>
+    /**
+     * 列表中没数据的时候会调用该函数.
+     *
+     * 场景1：可以在这里获取缓存中的数据
+     *
+     * @param param
+     * @return
+     */
+    protected abstract suspend fun getPreShow(param: Param): PreShowResult<FlatListItem>
+
+    /**
+     * 每次刷新的时候会执行该函数，执行的线程由[getFetchDispatcher]决定，默认是在主线程中执行
+     *
+     * @param param
+     * @return
+     */
+    protected abstract suspend fun load(param: Param): LoadResult<FlatListItem>
 
 }

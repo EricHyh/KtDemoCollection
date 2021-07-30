@@ -8,8 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.list.adapter.MultiSourceAdapter
-import com.hyh.list.adapter.SourceRepoAdapter
+import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 
@@ -26,7 +25,7 @@ class ListTestActivity : AppCompatActivity() {
         }
     }
 
-    val multiSourceAdapter = SourceRepoAdapter<Unit>(this.pageContext)
+    val multiSourceAdapter = MultiItemSourceAdapter<Unit>(this.pageContext)
     //val testAdapter = TestAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {

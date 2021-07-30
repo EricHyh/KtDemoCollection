@@ -1,7 +1,7 @@
 package com.hyh.list
 
 /**
- * 加载状态
+ * [ItemSourceRepo]的加载状态
  *
  * @author eriche
  * @data 2021/1/29
@@ -21,6 +21,12 @@ sealed class RepoLoadState {
 }
 
 
+/**
+ * [ItemSource]的加载状态
+ *
+ * @author eriche
+ * @data 2021/1/29
+ */
 sealed class SourceLoadState {
 
     object Initial : SourceLoadState()

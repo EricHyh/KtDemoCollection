@@ -2,7 +2,7 @@ package com.hyh.list.internal
 
 import com.hyh.Invoke
 import com.hyh.OnEventReceived
-import com.hyh.list.ItemData
+import com.hyh.list.FlatListItem
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.flow.Flow
 
@@ -88,16 +88,36 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 typealias SourceResultProcessor = suspend () -> SourceProcessedResult
 
 data class SourceProcessedResult(
-    val resultItems: List<ItemData>,
+    val resultItems: List<FlatListItem>,
     val listOperates: List<ListOperate>,
     val onResultUsed: Invoke
 )
 
+/**
+ * 展示在界面上的列表数据
+ *
+ * @param Item
+ * @property originalItems
+ * @property flatListItems
+ * @property resultExtra
+ */
 class SourceDisplayedData<Item : Any>(
+
+    /**
+     * 原始数据
+     */
     @Volatile
-    var items: List<Item>? = null,
+    var originalItems: List<Item>? = null,
+
+    /**
+     * 将原始数据转换成[FlatListItem]之后的数据
+     */
     @Volatile
-    var itemDataList: List<ItemData>? = null,
+    var flatListItems: List<FlatListItem>? = null,
+
+    /**
+     * 额外数据，由业务自定义
+     */
     @Volatile
     var resultExtra: Any? = null
 )

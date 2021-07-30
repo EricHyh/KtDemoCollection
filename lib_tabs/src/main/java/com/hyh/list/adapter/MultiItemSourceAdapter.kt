@@ -8,7 +8,7 @@ import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.coroutine.SingleRunner
-import com.hyh.list.ItemData
+import com.hyh.list.FlatListItem
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
 import com.hyh.list.internal.*
@@ -19,17 +19,17 @@ import kotlin.collections.ArrayList
 import kotlin.collections.LinkedHashMap
 
 /**
- * 管理多个[SourceAdapter]
+ * 管理多个[FlatListItemAdapter]
  *
  * @author eriche
  * @data 2021/6/7
  */
-class SourceRepoAdapter<Param : Any>(
-    private val pageContext: PageContext,
+class MultiItemSourceAdapter<Param : Any>(
+    private val pageContext: PageContext
 ) : MultiSourceAdapter(), IListAdapter<Param> {
 
     companion object {
-        private const val TAG = "MultiSourceAdapter"
+        private const val TAG = "MultiItemSourceAdapter"
     }
 
 
@@ -84,7 +84,7 @@ class SourceRepoAdapter<Param : Any>(
         var index = 0
         wrapperMap.forEach {
             if (index == sourceIndex) {
-                return@getSourceLoadState it.value.sourceAdapter.loadStateFlow
+                return@getSourceLoadState it.value.flatListItemAdapter.loadStateFlow
             }
             index++
         }
@@ -93,36 +93,36 @@ class SourceRepoAdapter<Param : Any>(
 
     override fun getSourceLoadState(sourceToken: Any): SimpleStateFlow<SourceLoadState>? {
         val wrapper = wrapperMap[sourceToken] ?: return null
-        return wrapper.sourceAdapter.loadStateFlow
+        return wrapper.flatListItemAdapter.loadStateFlow
     }
 
-    override fun getItemSnapshot(): List<ItemData> {
-        val itemSnapshot = mutableListOf<ItemData>()
+    override fun getItemSnapshot(): List<FlatListItem> {
+        val itemSnapshot = mutableListOf<FlatListItem>()
         wrapperMap.forEach {
-            itemSnapshot += it.value.sourceAdapter.items ?: emptyList()
+            itemSnapshot += it.value.flatListItemAdapter.items ?: emptyList()
         }
         return itemSnapshot
     }
 
-    override fun getItemSnapshot(sourceIndexStart: Int, count: Int): List<ItemData> {
-        val itemSnapshot = mutableListOf<ItemData>()
+    override fun getItemSnapshot(sourceIndexStart: Int, count: Int): List<FlatListItem> {
+        val itemSnapshot = mutableListOf<FlatListItem>()
         findWrappers(sourceIndexStart, count).forEach {
-            itemSnapshot += it.sourceAdapter.items ?: emptyList()
+            itemSnapshot += it.flatListItemAdapter.items ?: emptyList()
         }
         return itemSnapshot
     }
 
-    override fun getItemSnapshot(sourceTokenStart: Any, count: Int): List<ItemData> {
-        val itemSnapshot = mutableListOf<ItemData>()
+    override fun getItemSnapshot(sourceTokenStart: Any, count: Int): List<FlatListItem> {
+        val itemSnapshot = mutableListOf<FlatListItem>()
         findWrappers(sourceTokenStart, count).forEach {
-            itemSnapshot += it.sourceAdapter.items ?: emptyList()
+            itemSnapshot += it.flatListItemAdapter.items ?: emptyList()
         }
         return itemSnapshot
     }
 
     override fun refreshSources(important: Boolean) {
         wrapperMap.forEach {
-            it.value.sourceAdapter.refresh(important)
+            it.value.flatListItemAdapter.refresh(important)
         }
     }
 
@@ -132,7 +132,7 @@ class SourceRepoAdapter<Param : Any>(
         wrapperMap.forEach {
             if (sourceIndexList.isEmpty()) return@refreshSources
             if (sourceIndexList.remove(index)) {
-                it.value.sourceAdapter.refresh(important)
+                it.value.flatListItemAdapter.refresh(important)
             }
             index++
         }
@@ -140,19 +140,19 @@ class SourceRepoAdapter<Param : Any>(
 
     override fun refreshSources(vararg sourceTokens: Any, important: Boolean) {
         sourceTokens.forEach {
-            wrapperMap[it]?.sourceAdapter?.refresh(important)
+            wrapperMap[it]?.flatListItemAdapter?.refresh(important)
         }
     }
 
     override fun refreshSources(sourceIndexStart: Int, count: Int, important: Boolean) {
         findWrappers(sourceIndexStart, count).forEach {
-            it.sourceAdapter.refresh(important)
+            it.flatListItemAdapter.refresh(important)
         }
     }
 
     override fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean) {
         findWrappers(sourceTokenStart, count).forEach {
-            it.sourceAdapter.refresh(important)
+            it.flatListItemAdapter.refresh(important)
         }
     }
 
@@ -343,7 +343,10 @@ class SourceRepoAdapter<Param : Any>(
         }
         if (resultWrapper == null) return null
         if (localPosition < 0 || localPosition >= resultWrapper.cachedItemCount) {
-            Log.e(TAG, "findItemLocalInfo error: localPosition=$localPosition, itemCount=${resultWrapper.adapter.itemCount}")
+            Log.e(
+                TAG,
+                "findItemLocalInfo error: localPosition=$localPosition, itemCount=${resultWrapper.adapter.itemCount}"
+            )
             return null
         }
         return ItemLocalInfo(resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount)
@@ -353,7 +356,7 @@ class SourceRepoAdapter<Param : Any>(
     private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
-            SourceAdapter(pageContext),
+            FlatListItemAdapter(pageContext),
             viewTypeStorage,
             sourceAdapterCallback
         )
@@ -595,28 +598,32 @@ object SimpleDispatchUpdatesHelper {
 
 class SourceAdapterWrapper(
     val sourceToken: Any,
-    val sourceAdapter: SourceAdapter,
+    val flatListItemAdapter: FlatListItemAdapter,
     viewTypeStorage: ViewTypeStorage,
     callback: Callback
-) : AdapterWrapper(sourceAdapter, viewTypeStorage, callback) {
+) : AdapterWrapper(flatListItemAdapter, viewTypeStorage, callback) {
+
+    companion object {
+        private const val TAG = "SourceAdapterWrapper"
+    }
 
     private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     suspend fun submitData(flow: Flow<SourceData>) {
         coroutineScope.launch {
             flow.collectLatest {
-                sourceAdapter.submitData(it)
+                flatListItemAdapter.submitData(it)
             }
         }
     }
 
     fun refresh() {
-        sourceAdapter.refresh(false)
+        flatListItemAdapter.refresh(false)
     }
 
     override fun destroy() {
         super.destroy()
         coroutineScope.cancel()
-        sourceAdapter.destroy()
+        flatListItemAdapter.destroy()
     }
 }

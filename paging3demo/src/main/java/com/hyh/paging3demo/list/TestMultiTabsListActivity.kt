@@ -8,14 +8,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.SingleItemSourceRepo
-import com.hyh.list.adapter.SourceRepoAdapter
+import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.list.decoration.ItemSourceFrameDecoration
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 
 class TestMultiTabsListActivity : AppCompatActivity() {
 
-    val multiSourceAdapter = SourceRepoAdapter<Unit>(this.pageContext)
+    val multiSourceAdapter = MultiItemSourceAdapter<Unit>(this.pageContext)
     //val testAdapter = TestAdapter()
 
     override fun onCreate(savedInstanceState: Bundle?) {

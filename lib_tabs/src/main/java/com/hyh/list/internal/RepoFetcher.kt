@@ -44,33 +44,34 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
         }
     }
 
-    private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Default)
+    //展示不需要，后面再考虑添加
+    //private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val flow: Flow<RepoData<Param>> = simpleChannelFlow<RepoData<Param>> {
-        withContext(coroutineScope.coroutineContext) {
-            uiReceiver
-                .flow
-                .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param? ->
-                    previousSnapshot?.close()
-                    ItemSourceFetcherSnapshot(
-                        param,
-                        repoDisplayedData,
-                        getCacheLoader(),
-                        getLoader(),
-                        if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param),
-                        uiReceiver::onRefreshComplete
-                    )
-                }
-                .filterNotNull()
-                .simpleMapLatest { snapshot ->
-                    val downstreamFlow = snapshot.repoEventFlow
-                    RepoData(downstreamFlow, uiReceiver)
-                }
-                .collect {
-                    send(it)
-                }
-        }
-    }.buffer(Channel.BUFFERED)
+        /*withContext(coroutineScope.coroutineContext) {
+        }*/
+        uiReceiver
+            .flow
+            .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param? ->
+                previousSnapshot?.close()
+                ItemSourceFetcherSnapshot(
+                    param,
+                    repoDisplayedData,
+                    getCacheLoader(),
+                    getLoader(),
+                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param),
+                    uiReceiver::onRefreshComplete
+                )
+            }
+            .filterNotNull()
+            .simpleMapLatest { snapshot ->
+                val downstreamFlow = snapshot.repoEventFlow
+                RepoData(downstreamFlow, uiReceiver)
+            }
+            .collect {
+                send(it)
+            }
+    }
 
     private fun getCacheLoader(): SourceCacheLoader<Param> = ::getCache
     private fun getLoader(): SourceLoader<Param> = ::load
@@ -83,7 +84,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     abstract fun getFetchDispatcher(param: Param): CoroutineDispatcher
 
     private fun destroy() {
-        coroutineScope.cancel()
+        //coroutineScope.cancel()
         repoDisplayedData.sources?.forEach {
             it.delegate.detach()
         }
@@ -93,7 +94,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 class RepoResultProcessorGenerator(
     private val repoDisplayedData: RepoDisplayedData,
     private val sources: List<ItemSource<out Any, out Any>>,
-    private val resultExtra: Any?,
+    private val resultExtra: Any?
 ) {
 
     val processor: RepoResultProcessor = {
@@ -192,19 +193,18 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     private val onRefreshComplete: Invoke
 ) {
 
-
+    @Volatile
+    private var closed = false
     private val repoEventChannelFlowJob = Job()
     private val repoEventCh = Channel<RepoEvent>(Channel.BUFFERED)
 
     val repoEventFlow: Flow<RepoEvent> = cancelableChannelFlow(repoEventChannelFlowJob) {
         launch {
             repoEventCh.consumeAsFlow().collect {
-                // Protect against races where a subsequent call to submitData invoked close(),
-                // but a tabEvent arrives after closing causing ClosedSendChannelException.
                 try {
+                    if (closed) return@collect
                     send(it)
                 } catch (e: ClosedSendChannelException) {
-                    // Safe to drop tabEvent here, since collection has been cancelled.
                 }
             }
         }
@@ -254,6 +254,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
     }
 
     fun close() {
+        closed = true
         repoEventChannelFlowJob.cancel()
     }
 }

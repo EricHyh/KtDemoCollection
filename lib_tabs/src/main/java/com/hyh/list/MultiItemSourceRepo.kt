@@ -1,6 +1,6 @@
 package com.hyh.list
 
-class ListItemSourceRepo(private val itemSources: List<ItemSource<out Any, out Any>>) : SimpleItemSourceRepo<Unit>(Unit) {
+class MultiItemSourceRepo(private val itemSources: List<ItemSource<out Any, out Any>>) : SimpleItemSourceRepo<Unit>(Unit) {
 
     override suspend fun getCache(param: Unit): CacheResult {
         return CacheResult.Unused

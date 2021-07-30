@@ -11,13 +11,13 @@ import java.lang.IndexOutOfBoundsException
 import java.lang.ref.WeakReference
 
 /**
- * 负责将绑定UI的事件分发给[ItemData]
+ * 负责将绑定UI的事件分发给[FlatListItem]
  *
  * @author eriche
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val TAG = "ItemDataAdapter"
@@ -25,11 +25,11 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage()
 
-    protected abstract fun getItemDataList(): List<ItemData>?
+    protected abstract fun getFlatListItems(): List<FlatListItem>?
 
     override fun getItemViewType(position: Int): Int {
-        val itemDataList = getItemDataList()
-        if (itemDataList == null) {
+        val items = getFlatListItems()
+        if (items == null) {
             if (BuildConfig.DEBUG) {
                 throw NullPointerException("ItemDataAdapter.getItemViewType: $position is not in itemDataList, itemDataList is null")
             } else {
@@ -37,8 +37,8 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
             }
             return 0
         }
-        return if (position in itemDataList.indices) {
-            val itemData = itemDataList[position]
+        return if (position in items.indices) {
+            val itemData = items[position]
             val itemViewType = itemData.getItemViewType()
             if (viewTypeStorage.get(itemViewType, false) == null) {
                 viewTypeStorage.put(itemViewType, itemData)
@@ -46,9 +46,9 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
             itemViewType
         } else {
             if (BuildConfig.DEBUG) {
-                throw IndexOutOfBoundsException("ItemDataAdapter.getItemViewType: $position is not in itemDataList, list size is ${itemDataList.size}")
+                throw IndexOutOfBoundsException("ItemDataAdapter.getItemViewType: $position is not in itemDataList, list size is ${items.size}")
             } else {
-                Log.e(TAG, "ItemDataAdapter.getItemViewType: $position is not in itemDataList, list size is ${itemDataList.size}")
+                Log.e(TAG, "ItemDataAdapter.getItemViewType: $position is not in itemDataList, list size is ${items.size}")
             }
             0
         }
@@ -68,7 +68,7 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
     }
 
     override fun getItemCount(): Int {
-        return getItemDataList()?.size ?: 0
+        return getFlatListItems()?.size ?: 0
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -90,8 +90,8 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
     ) {
         if (position == RecyclerView.NO_POSITION) return
         if (holder.itemView is ErrorItemView) return
-        val itemDataList = getItemDataList()
-        if (itemDataList == null) {
+        val items = getFlatListItems()
+        if (items == null) {
             if (BuildConfig.DEBUG) {
                 throw NullPointerException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
             } else {
@@ -99,46 +99,46 @@ abstract class ItemDataAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>()
             }
             return
         }
-        if (position in itemDataList.indices) {
-            (itemDataList[position] as IItemData<RecyclerView.ViewHolder>).bindViewHolder(holder, payloads)
+        if (position in items.indices) {
+            (items[position] as IFlatListItem<RecyclerView.ViewHolder>).bindViewHolder(holder, payloads)
         } else {
             if (BuildConfig.DEBUG) {
-                throw IndexOutOfBoundsException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
+                throw IndexOutOfBoundsException("ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${items.size}")
             } else {
-                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${itemDataList.size}")
+                Log.e(TAG, "ItemDataAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${items.size}")
             }
         }
     }
 
     inner class ViewTypeStorage {
 
-        private val typeToItemData: MutableMap<Int, WeakReference<ItemData>?> = mutableMapOf()
+        private val typeToItem: MutableMap<Int, WeakReference<FlatListItem>?> = mutableMapOf()
 
-        fun put(viewType: Int, itemData: ItemData) {
-            typeToItemData[viewType] = WeakReference(itemData)
+        fun put(viewType: Int, flatListItem: FlatListItem) {
+            typeToItem[viewType] = WeakReference(flatListItem)
         }
 
         fun get(viewType: Int, findOnNull: Boolean = true): ViewHolderFactory? {
-            val weakReference = typeToItemData[viewType]
-            var itemData = weakReference?.get()
-            if (itemData != null) {
-                return itemData.getViewHolderFactory()
+            val weakReference = typeToItem[viewType]
+            var item = weakReference?.get()
+            if (item != null) {
+                return item.getViewHolderFactory()
             }
             if (findOnNull) {
-                itemData = findViewItemData(viewType)
+                item = findViewItemData(viewType)
             }
-            if (itemData == null) {
-                typeToItemData.remove(viewType)
+            if (item == null) {
+                typeToItem.remove(viewType)
             } else {
-                typeToItemData[viewType] = WeakReference(itemData)
+                typeToItem[viewType] = WeakReference(item)
             }
-            return itemData?.getViewHolderFactory()
+            return item?.getViewHolderFactory()
         }
 
-        private fun findViewItemData(viewType: Int): ItemData? {
-            val items = this@ItemDataAdapter.getItemDataList()
+        private fun findViewItemData(viewType: Int): FlatListItem? {
+            val items = this@BaseFlatListItemAdapter.getFlatListItems()
             if (items.isNullOrEmpty()) return null
-            val itemsSnapshot = mutableListOf<ItemData>()
+            val itemsSnapshot = mutableListOf<FlatListItem>()
             itemsSnapshot.addAll(items)
             itemsSnapshot.forEach {
                 if (it.getItemViewType() == viewType) {

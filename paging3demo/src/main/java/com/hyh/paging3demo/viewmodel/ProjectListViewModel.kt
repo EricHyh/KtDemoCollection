@@ -8,6 +8,7 @@ import com.hyh.paging3demo.base.Global
 import com.hyh.paging3demo.bean.ProjectBean
 import com.hyh.paging3demo.db.ProjectDB
 import com.hyh.paging3demo.fragment.ProjectsFragment
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.map
 
 /**

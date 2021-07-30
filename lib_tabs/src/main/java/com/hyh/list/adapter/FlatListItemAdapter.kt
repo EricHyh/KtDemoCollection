@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.*
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
+class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() {
 
     companion object {
         private const val TAG = "SourceAdapter"
@@ -27,8 +27,8 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
     private val collectFromRunner = SingleRunner()
     private var receiver: UiReceiverForSource? = null
 
-    private var _items: List<ItemData>? = null
-    val items: List<ItemData>?
+    private var _items: List<FlatListItem>? = null
+    val items: List<FlatListItem>?
         get() = _items
 
     private val _loadStateFlow: SimpleMutableStateFlow<SourceLoadState> = SimpleMutableStateFlow(SourceLoadState.Initial)
@@ -54,7 +54,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
         }
     }
 
-    override fun getItemDataList(): List<ItemData>? {
+    override fun getFlatListItems(): List<FlatListItem>? {
         return items
     }
 
@@ -82,7 +82,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
                             val processedResult = event.processor.invoke()
                             _items = processedResult.resultItems
                             processedResult.onResultUsed()
-                            ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
+                            ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
                             event.onReceived()
                         }
                     }
@@ -104,7 +104,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
         _loadStateFlow.close()
         resultFlow.close()
         _items?.forEach {
-            it.delegate.onDataDetached()
+            it.delegate.onItemDetached()
         }
         receiver?.destroy()
     }
@@ -120,7 +120,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
                         processedResult.onResultUsed()
-                        ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
+                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
                         _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItems.size)
                         sourceEvent.onReceived()
                     }
@@ -128,7 +128,7 @@ class SourceAdapter(pageContext: PageContext) : ItemDataAdapter() {
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
                         processedResult.onResultUsed()
-                        ListUpdate.handleListOperates(processedResult.listOperates, this@SourceAdapter)
+                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
                         _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
                         sourceEvent.onReceived()
                     }

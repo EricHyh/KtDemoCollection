@@ -65,9 +65,9 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
         }
     }
 
-    protected abstract fun isEmptyContent(items: List<ItemData>): Boolean
-    protected abstract suspend fun getTitlePreShow(tabToken: Any, param: Param): List<ItemData>
-    protected abstract suspend fun getContentPreShow(tabToken: Any, param: Param): List<ItemData>
+    protected abstract fun isEmptyContent(items: List<FlatListItem>): Boolean
+    protected abstract suspend fun getTitlePreShow(tabToken: Any, param: Param): List<FlatListItem>
+    protected abstract suspend fun getContentPreShow(tabToken: Any, param: Param): List<FlatListItem>
     protected abstract suspend fun getContent(tabToken: Any, param: Param): ContentResult
     protected abstract fun getTabTokenFromParam(param: Param): Any
 
@@ -77,6 +77,6 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
             val error: Throwable
         ) : ContentResult()
 
-        class Success(val items: List<ItemData>) : ContentResult()
+        class Success(val items: List<FlatListItem>) : ContentResult()
     }
 }
