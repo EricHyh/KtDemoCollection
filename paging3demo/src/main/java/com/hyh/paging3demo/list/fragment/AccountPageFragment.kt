@@ -16,6 +16,8 @@ import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
 import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.list.decoration.ItemSourceFrameDecoration
+import com.hyh.list.internal.ListItemWrapper
+import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.CoroutineDispatcher
@@ -149,7 +151,7 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<In
         return selectedTab
     }
 
-    override fun getFetchDispatcher(param: Int): CoroutineDispatcher {
+    override fun getFetchDispatcher(param: Int, displayedData: SourceDisplayedData<ListItemWrapper>): CoroutineDispatcher {
         return Dispatchers.IO
     }
 

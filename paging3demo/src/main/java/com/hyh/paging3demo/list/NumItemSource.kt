@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.*
+import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -54,7 +55,11 @@ class NumItemSource(private val type: String, override val sourceToken: Any = ty
 
     override suspend fun getParam() = Unit
 
-    override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {
+    /*override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {
+        return Dispatchers.IO
+    }*/
+
+    override fun getFetchDispatcher(param: Unit, displayedData: SourceDisplayedData<FlatListItem>): CoroutineDispatcher {
         return Dispatchers.IO
     }
 }

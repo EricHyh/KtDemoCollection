@@ -23,17 +23,16 @@ import kotlin.math.roundToInt
  * @author eriche
  * @data 2020/11/30
  */
-class StickyHeadersLayout : FrameLayout {
+class OldStickyItemsLayout : FrameLayout {
 
     private val mObserver = RecyclerViewDataObserver()
     private var mAdapter: RecyclerView.Adapter<RecyclerView.ViewHolder>? = null
-    private val mDecorations: MutableList<StickyHeaderDecoration> = mutableListOf()
 
     private var mVisibleItemFinder: VisibleItemFinder = DefaultVisibleItemFinder()
     private var mRecyclerView: RecyclerView? = null
     private var mRecyclerViewState: RecyclerView.State? = null
 
-    private var mStickyHeadersAdapter: IStickyHeadersAdapter<RecyclerView.ViewHolder>? = null
+    private var mStickyItemsAdapter: IStickyItemsAdapter<RecyclerView.ViewHolder>? = null
 
     private var mLastHeaderPosition = RecyclerView.NO_POSITION
 
@@ -139,7 +138,7 @@ class StickyHeadersLayout : FrameLayout {
 
     private fun bindHeaderViewHolder(header: StickyHeader, position: Int, force: Boolean = false) {
         if (!force && header.bound) return
-        mStickyHeadersAdapter?.onBindStickyViewHolder(header.viewHolder, position)
+        mStickyItemsAdapter?.onBindStickyViewHolder(header.viewHolder, position)
         header.bound = true
     }
 
@@ -152,22 +151,12 @@ class StickyHeadersLayout : FrameLayout {
     )
 
     @Suppress("UNCHECKED_CAST")
-    fun setup(recyclerView: RecyclerView, adapter: IStickyHeadersAdapter<*>) {
+    fun setup(recyclerView: RecyclerView, adapter: IStickyItemsAdapter<*>) {
         this.mRecyclerView = recyclerView
         this.mRecyclerViewState = recyclerView.getRecyclerViewState()
-        this.mStickyHeadersAdapter = adapter as IStickyHeadersAdapter<RecyclerView.ViewHolder>
+        this.mStickyItemsAdapter = adapter as IStickyItemsAdapter<RecyclerView.ViewHolder>
         recyclerView.addOnScrollListener(mOnScrollListener)
         registerAdapterDataObserver(recyclerView)
-    }
-
-    fun addHeaderDecoration(decoration: StickyHeaderDecoration) {
-        mDecorations.add(decoration)
-        requestLayout()
-    }
-
-    fun removeHeaderDecoration(decoration: StickyHeaderDecoration) {
-        mDecorations.remove(decoration)
-        requestLayout()
     }
 
     fun setItem() {
@@ -178,14 +167,6 @@ class StickyHeadersLayout : FrameLayout {
         return -1
     }
 
-    public override fun onDraw(c: Canvas) {
-        super.onDraw(c)
-
-        val count = mDecorations.size
-        for (i in 0 until count) {
-            mDecorations.get(i).onDraw(c, this)
-        }
-    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -346,7 +327,7 @@ class StickyHeadersLayout : FrameLayout {
     }
 
     private fun isHeaderPosition(position: Int): Boolean {
-        return mStickyHeadersAdapter?.isStickyHeader(position) ?: false
+        return mStickyItemsAdapter?.isStickyHeader(position) ?: false
     }
 
     private fun findCurrentHeaderPosition(recyclerView: RecyclerView): Int {
@@ -384,7 +365,7 @@ class StickyHeadersLayout : FrameLayout {
 
     private fun findFirstHeaderPosition(startPosition: Int, endPosition: Int): Int {
         if (startPosition > endPosition) return RecyclerView.NO_POSITION
-        return mStickyHeadersAdapter?.let {
+        return mStickyItemsAdapter?.let {
             for (position in startPosition..endPosition) {
                 if (it.isStickyHeader(position)) return@let position
             }

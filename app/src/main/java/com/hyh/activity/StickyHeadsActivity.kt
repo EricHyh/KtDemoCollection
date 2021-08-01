@@ -1,6 +1,8 @@
 package com.hyh.activity
 
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Rect
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.util.Log
@@ -16,7 +18,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hyh.demo.R
 import com.hyh.feeds.EventData
 import com.hyh.widget.TestItemDecoration
-import com.hyh.widget.sticky.IStickyHeadersAdapter
+import com.hyh.widget.sticky.IStickyItemsAdapter
+import com.hyh.widget.sticky.StickyItemDecoration
+import com.hyh.widget.sticky.StickyItemsLayout
 import com.scwang.smart.refresh.header.ClassicsHeader
 import kotlinx.android.synthetic.main.activity_sticky_heads.*
 
@@ -37,15 +41,15 @@ class StickyHeadsActivity : AppCompatActivity() {
         recycler_view.adapter = mAdapter
         sticky_headers_layout.setup(
             recycler_view,
-            recycler_view.adapter as IStickyHeadersAdapter<*>
+            recycler_view.adapter as IStickyItemsAdapter<*>
         )
+
+        sticky_headers_layout.setStickyItemDecoration(StickyItemDecorationImpl())
+
         /*recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))*/
-        recycler_view.addItemDecoration(TestItemDecoration())
-        recycler_view.addItemDecoration(TestItemDecoration())
-        recycler_view.addItemDecoration(TestItemDecoration())
         recycler_view.addItemDecoration(TestItemDecoration())
 
         test(EventData().apply {
@@ -82,7 +86,7 @@ class StickyHeadsActivity : AppCompatActivity() {
 }
 
 class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
-    IStickyHeadersAdapter<RecyclerView.ViewHolder> {
+    IStickyItemsAdapter<RecyclerView.ViewHolder> {
 
     var mData = mutableListOf<Int>()
     private var mNum = 0
@@ -185,4 +189,21 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
 
         //viewHolder.itemView.background = ColorDrawable(Color.BLUE)
     }
+
+    override fun isStickyFooter(position: Int): Boolean {
+        return false
+    }
+}
+
+
+class StickyItemDecorationImpl : StickyItemDecoration {
+
+    override fun onDraw(c: Canvas, parent: StickyItemsLayout) {
+
+    }
+
+    override fun getItemOffsets(outRect: Rect, adapterPosition: Int, parent: StickyItemsLayout) {
+        //outRect.set(20, 20, 20, 20)
+    }
+
 }

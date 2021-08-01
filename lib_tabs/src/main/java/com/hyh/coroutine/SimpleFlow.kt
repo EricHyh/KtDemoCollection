@@ -2,6 +2,7 @@ package com.hyh.coroutine
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
 import java.io.Closeable
@@ -46,7 +47,7 @@ internal fun <T, R> Flow<T>.simpleTransformLatest(
 
 internal fun <T> cancelableChannelFlow(
     controller: Job,
-    block: suspend SimpleProducerScope<T>.() -> Unit
+    block: suspend ProducerScope<T>.() -> Unit
 ): Flow<T> {
     return simpleChannelFlow<T> {
         controller.invokeOnCompletion {
@@ -57,9 +58,10 @@ internal fun <T> cancelableChannelFlow(
 }
 
 internal fun <T> simpleChannelFlow(
-    block: suspend SimpleProducerScope<T>.() -> Unit
+    block: suspend ProducerScope<T>.() -> Unit
 ): Flow<T> {
-    return flow {
+    return channelFlow(block)
+    /*return flow {
         coroutineScope {
             val channel = Channel<T>(capacity = Channel.RENDEZVOUS)
             val producer = launch {
@@ -84,7 +86,7 @@ internal fun <T> simpleChannelFlow(
             // in case channel closed before producer completes, cancel the producer.
             producer.cancel()
         }
-    }.buffer(Channel.BUFFERED)
+    }.buffer(Channel.BUFFERED)*/
 }
 
 internal interface SimpleProducerScope<T> : CoroutineScope, SendChannel<T> {

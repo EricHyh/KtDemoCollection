@@ -27,7 +27,7 @@ class TestItemDecoration : RecyclerView.ItemDecoration() {
         state: RecyclerView.State
     ) {
         //super.getItemOffsets(outRect, view, parent, state)
-        outRect.set(10, 10, 10, 10)
+        outRect.set(20, 20, 20, 20)
     }
 
 }

@@ -14,8 +14,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.widget.layoutmanager.StickyHeaders
 import com.hyh.widget.layoutmanager.StickyHeadersLinearLayoutManager
-import com.hyh.widget.sticky.IStickyHeadersAdapter
-import com.hyh.widget.sticky.StickyHeadersLayout
+import com.hyh.widget.sticky.IStickyItemsAdapter
 
 class StickyListActivity : AppCompatActivity() {
 
@@ -29,7 +28,7 @@ class StickyListActivity : AppCompatActivity() {
         )
         setContentView(recyclerView)
 
-        recyclerView.layoutManager = StickyHeadersLinearLayoutManager<StickyHeadersHeadersAdapter>(
+        recyclerView.layoutManager = StickyHeadersLinearLayoutManager<StickyHeadersItemsAdapter>(
             this,
             StickyHeadersLinearLayoutManager.VERTICAL,
             false
@@ -47,7 +46,7 @@ class StickyListActivity : AppCompatActivity() {
                 })
             })
 
-        recyclerView.adapter = StickyHeadersHeadersAdapter()
+        recyclerView.adapter = StickyHeadersItemsAdapter()
 
 
     }
@@ -57,7 +56,7 @@ class ItemHolder(item: View) : RecyclerView.ViewHolder(item) {
 
 }
 
-class StickyHeadersHeadersAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(), StickyHeaders, IStickyHeadersAdapter<RecyclerView.ViewHolder> {
+class StickyHeadersItemsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(), StickyHeaders, IStickyItemsAdapter<RecyclerView.ViewHolder> {
 
     val mSwitchMap = mutableMapOf<Int, Boolean>()
 
@@ -123,5 +122,9 @@ class StickyHeadersHeadersAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder
 
     override fun onBindStickyViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
         onBindViewHolder(viewHolder, position)
+    }
+
+    override fun isStickyFooter(position: Int): Boolean {
+        return false
     }
 }

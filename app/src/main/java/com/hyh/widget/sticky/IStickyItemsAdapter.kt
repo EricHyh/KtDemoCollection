@@ -8,9 +8,11 @@ import androidx.recyclerview.widget.RecyclerView
  * @author eriche
  * @data 2020/11/30
  */
-interface IStickyHeadersAdapter<VH : RecyclerView.ViewHolder> {
+interface IStickyItemsAdapter<VH : RecyclerView.ViewHolder> {
 
     fun isStickyHeader(position: Int): Boolean
+
+    fun isStickyFooter(position: Int): Boolean
 
     fun onBindStickyViewHolder(viewHolder: VH, position: Int)
 

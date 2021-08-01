@@ -21,8 +21,8 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
         override suspend fun load(params: LoadParams<Param>): LoadResult =
             this@ItemSourceRepo.load(params)
 
-        override fun getFetchDispatcher(param: Param): CoroutineDispatcher =
-            this@ItemSourceRepo.getFetchDispatcher(param)
+        override fun getFetchDispatcher(param: Param, displayedData: RepoDisplayedData): CoroutineDispatcher =
+            this@ItemSourceRepo.getFetchDispatcher(param, displayedData)
 
     }
 
@@ -34,7 +34,7 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
 
     protected abstract suspend fun load(params: LoadParams<Param>): LoadResult
 
-    protected open fun getFetchDispatcher(param: Param): CoroutineDispatcher = Dispatchers.Unconfined
+    protected open fun getFetchDispatcher(param: Param, displayedData: RepoDisplayedData): CoroutineDispatcher = Dispatchers.Unconfined
 
     sealed class CacheResult {
 

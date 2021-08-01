@@ -8,6 +8,8 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
+import com.hyh.list.internal.ListItemWrapper
+import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -82,7 +84,7 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
         return selectedTab
     }
 
-    override fun getFetchDispatcher(param: Int): CoroutineDispatcher {
+    override fun getFetchDispatcher(param: Int, displayedData: SourceDisplayedData<ListItemWrapper>): CoroutineDispatcher {
         return Dispatchers.IO
     }
 

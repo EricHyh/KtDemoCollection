@@ -3,7 +3,6 @@ package com.hyh.list.internal
 import com.hyh.Invoke
 import com.hyh.base.RefreshEventHandler
 import com.hyh.base.RefreshStrategy
-import com.hyh.coroutine.*
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
@@ -59,7 +58,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
                     repoDisplayedData,
                     getCacheLoader(),
                     getLoader(),
-                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param),
+                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param, repoDisplayedData),
                     uiReceiver::onRefreshComplete
                 )
             }
@@ -81,7 +80,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
     abstract suspend fun load(params: ItemSourceRepo.LoadParams<Param>): ItemSourceRepo.LoadResult
 
-    abstract fun getFetchDispatcher(param: Param): CoroutineDispatcher
+    abstract fun getFetchDispatcher(param: Param, displayedData: RepoDisplayedData): CoroutineDispatcher
 
     private fun destroy() {
         //coroutineScope.cancel()

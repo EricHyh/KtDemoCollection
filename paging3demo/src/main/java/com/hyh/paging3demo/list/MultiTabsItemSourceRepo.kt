@@ -2,6 +2,7 @@ package com.hyh.paging3demo.list
 
 import com.hyh.list.SimpleItemSourceRepo
 import com.hyh.base.RefreshStrategy
+import com.hyh.list.internal.RepoDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -30,7 +31,7 @@ class MultiTabsItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
         return LoadResult.Success(sources)
     }
 
-    override fun getFetchDispatcher(param: Unit): CoroutineDispatcher {
+    override fun getFetchDispatcher(param: Unit, displayedData: RepoDisplayedData): CoroutineDispatcher {
         return Dispatchers.IO
     }
 
