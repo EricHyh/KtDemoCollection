@@ -50,7 +50,7 @@ class StickyHeadsActivity : AppCompatActivity() {
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))*/
-        recycler_view.addItemDecoration(TestItemDecoration())
+       // recycler_view.addItemDecoration(TestItemDecoration())
 
         test(EventData().apply {
 
@@ -92,7 +92,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     private var mNum = 0
 
     init {
-        for (index in 0..100) {
+        for (index in 0..200) {
             mData.add(index)
         }
     }
@@ -155,11 +155,14 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val data = mData[position]
-        if (data % 10 == 0) {
+        if (isStickyHeader(position)) {
             holder.itemView.background = ColorDrawable(Color.RED)
+        } else if (isStickyFooter(position)) {
+            holder.itemView.background = ColorDrawable(Color.BLUE)
         } else {
             holder.itemView.background = ColorDrawable(Color.WHITE)
         }
+
         Log.d(
             "StickyHeadsActivity_",
             "onBindViewHolder: position = $position, data = $data , ${holder.itemView}"
@@ -191,12 +194,19 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     }
 
     override fun isStickyFooter(position: Int): Boolean {
-        return false
+        return !isStickyHeader(position) && let {
+            val data = mData[position]
+            data % 17 == 0
+        }
     }
 }
 
 
 class StickyItemDecorationImpl : StickyItemDecoration {
+
+    override fun onDrawOver(c: Canvas, parent: StickyItemsLayout) {
+
+    }
 
     override fun onDraw(c: Canvas, parent: StickyItemsLayout) {
 

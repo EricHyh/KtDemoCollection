@@ -5,6 +5,11 @@ import android.graphics.Rect
 
 interface StickyItemDecoration {
 
+    fun onDrawOver(
+        c: Canvas,
+        parent: StickyItemsLayout
+    )
+
     fun onDraw(
         c: Canvas,
         parent: StickyItemsLayout
