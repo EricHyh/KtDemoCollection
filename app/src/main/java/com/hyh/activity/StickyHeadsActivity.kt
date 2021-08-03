@@ -180,8 +180,9 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     }
 
     override fun isStickyHeader(position: Int): Boolean {
-        val data = mData[position]
-        return data % 10 == 0
+        /*val data = mData[position]
+        return data % 10 == 0*/
+        return position == 0
     }
 
     override fun onBindStickyViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -194,10 +195,11 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     }
 
     override fun isStickyFooter(position: Int): Boolean {
-        return !isStickyHeader(position) && let {
+        /*return !isStickyHeader(position) && let {
             val data = mData[position]
             data % 17 == 0
-        }
+        }*/
+        return position == itemCount -1
     }
 }
 

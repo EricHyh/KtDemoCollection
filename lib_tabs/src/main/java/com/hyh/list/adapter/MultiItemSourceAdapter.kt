@@ -325,7 +325,10 @@ class MultiItemSourceAdapter<Param : Any>(
             if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
                 return findItemLocalInfo(globalPosition)
             }
-            return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount)
+            val item = wrapper.flatListItemAdapter.findItem(localPosition)
+            if (item != null) {
+                return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount, item)
+            }
         }
         return findItemLocalInfo(globalPosition)
     }
@@ -349,7 +352,8 @@ class MultiItemSourceAdapter<Param : Any>(
             )
             return null
         }
-        return ItemLocalInfo(resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount)
+        val item = resultWrapper.flatListItemAdapter.findItem(localPosition) ?: return null
+        return ItemLocalInfo(resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount, item)
     }
 
     @Suppress("UNCHECKED_CAST")

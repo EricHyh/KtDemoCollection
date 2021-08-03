@@ -25,7 +25,13 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage()
 
-    protected abstract fun getFlatListItems(): List<FlatListItem>?
+    fun findItem(position: Int): FlatListItem? {
+        val items = getFlatListItems() ?: return null
+        if (position in items.indices) {
+            return items[position]
+        }
+        return null
+    }
 
     override fun getItemViewType(position: Int): Int {
         val items = getFlatListItems()
@@ -82,6 +88,8 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
     }
+
+    protected abstract fun getFlatListItems(): List<FlatListItem>?
 
     private fun dispatchBindViewHolder(
         holder: RecyclerView.ViewHolder,

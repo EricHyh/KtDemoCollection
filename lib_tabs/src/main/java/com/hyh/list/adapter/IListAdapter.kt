@@ -38,5 +38,6 @@ interface IListAdapter<Param : Any> {
 data class ItemLocalInfo(
     val sourceToken: Any,
     val localPosition: Int,
-    val sourceItemCount: Int
+    val sourceItemCount: Int,
+    val item: FlatListItem
 )
