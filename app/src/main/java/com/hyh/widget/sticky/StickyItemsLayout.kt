@@ -1031,7 +1031,7 @@ class StickyItemsLayout : ViewGroup {
             }
         }
 
-        var bound: Boolean = false
+        var stickyItemBound: Boolean = false
 
         val heightWithDecor: Int
             get() = itemView.measuredHeight + layoutParams.insets.top + layoutParams.insets.bottom
@@ -1048,18 +1048,19 @@ class StickyItemsLayout : ViewGroup {
         }
 
         fun bindItemViewHolder() {
+            if (!stickyItemBound) return
             if (!isVisibleItem(position)) return
             val adapter = recyclerView.adapter ?: return
             if (adapter.getItemViewType(position) != itemViewType) return
             val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) ?: return
             adapter.bindViewHolder(viewHolder, position)
-            bound = false
+            stickyItemBound = false
         }
 
         fun bindStickyItemViewHolder(force: Boolean = false) {
-            if (!force && bound) return
+            if (!force && stickyItemBound) return
             stickyItemsAdapter.onBindStickyViewHolder(viewHolder, position)
-            bound = true
+            stickyItemBound = true
         }
 
         abstract fun updateOffsetY(itemsOffsetY: Float)

@@ -1,7 +1,7 @@
 package com.hyh.tabs
 
 /**
- * 用于标识Tab
+ * 用于标识Tab数据的接口
  *
  * @author eriche
  * @data 2021/5/20

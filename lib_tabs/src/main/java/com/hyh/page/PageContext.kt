@@ -251,7 +251,7 @@ class PageContextViewModel : ViewModel() {
 
     override fun onCleared() {
         super.onCleared()
-        synchronized(pageContextMap) {
+        synchronized(PageContext.lock) {
             pageContextMap.clear()
         }
     }
