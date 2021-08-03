@@ -10,8 +10,8 @@ package com.hyh.tabs
 abstract class SimpleTabSource<Param : Any, Tab : ITab> : TabSource<Param, Tab>() {
 
     final override suspend fun getCache(params: CacheParams<Param, Tab>): CacheResult<Tab> {
-        return if (params.lastLoadResult == null && params.lastCacheResult == null) {
-            getCacheWhenTheFirstTime(params.param)
+        return if (params.displayedData.tabs == null) {
+            getCache(params.param)
         } else {
             CacheResult.Unused()
         }
@@ -21,7 +21,7 @@ abstract class SimpleTabSource<Param : Any, Tab : ITab> : TabSource<Param, Tab>(
         return load(params.param)
     }
 
-    protected abstract suspend fun getCacheWhenTheFirstTime(param: Param): CacheResult<Tab>
+    protected abstract suspend fun getCache(param: Param): CacheResult<Tab>
 
     protected abstract suspend fun load(param: Param): LoadResult<Tab>
 

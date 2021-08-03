@@ -1,6 +1,7 @@
 package com.hyh.paging3demo.fragment
 
 
+import android.content.Context
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
@@ -65,19 +66,43 @@ class ProjectFragment : CommonBaseFragment() {
 
     val job = SupervisorJob() + Dispatchers.Main.immediate
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        Log.d(TAG, "Attach：onAttach: $pageContext")
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        Log.d(TAG, "Attach：onDetach: $pageContext")
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
 
+        Log.d(TAG, "onDestroyView: $pageContext")
+    }
+
+    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        Log.d(TAG, "onCreateView: $pageContext")
+        return super.onCreateView(inflater, container, savedInstanceState)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
         Log.d(TAG, "onDestroy: $num cancel")
+
+        Log.d(TAG, "onDestroy: $pageContext")
     }
+
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        Log.d(TAG, "onCreate: $pageContext")
+
 
         GlobalScope.launch(job) {
             parentFragment

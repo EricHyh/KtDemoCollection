@@ -37,7 +37,7 @@ class ProjectChaptersViewModel2(context: Context) : ViewModel() {
         var num = 0
 
 
-        override suspend fun getCacheWhenTheFirstTime(param: Unit): CacheResult<FragmentTab> {
+        override suspend fun getCache(param: Unit): CacheResult<FragmentTab> {
             return CacheResult.Unused()
         }
 

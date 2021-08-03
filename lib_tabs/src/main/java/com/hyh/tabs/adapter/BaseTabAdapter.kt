@@ -8,6 +8,7 @@ import com.hyh.tabs.LoadState
 import com.hyh.tabs.TabInfo
 import com.hyh.tabs.internal.TabData
 import com.hyh.tabs.internal.TabEvent
+import com.hyh.tabs.internal.TabSourceResultProcessor
 import com.hyh.tabs.internal.UiReceiver
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -83,7 +84,7 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>(private val page
                 withContext(mainDispatcher) {
                     when (event) {
                         is TabEvent.UsingCache<Tab> -> {
-                            val newTabs = updateTabs(event.tabs)
+                            val newTabs = updateTabs(event.processor)
                             _loadStateFlow.value = LoadState.UsingCache(newTabs.size)
                         }
                         is TabEvent.Loading<Tab> -> {
@@ -93,7 +94,7 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>(private val page
                             _loadStateFlow.value = LoadState.Error(event.error, event.usingCache)
                         }
                         is TabEvent.Success<Tab> -> {
-                            val newTabs = updateTabs(event.tabs)
+                            val newTabs = updateTabs(event.processor)
                             _loadStateFlow.value = LoadState.Success(newTabs.size)
                         }
                     }
@@ -103,17 +104,18 @@ internal abstract class BaseTabAdapter<Param : Any, Tab : ITab>(private val page
         }
     }
 
-    private fun updateTabs(tabs: List<TabInfo<Tab>>): List<TabInfo<Tab>> {
-        val oldTabs = this.tabs
-        val newTabs = tabs
+    private fun updateTabs(processor: TabSourceResultProcessor<Tab>): List<TabInfo<Tab>> {
+        val result = processor.invoke()
+        val newTabs = result.tabs
         this.tabs = newTabs
-        if (!Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())) {
+        result.onResultUsed()
+        if (result.changed) {
             notifyDataSetChanged()
         }
         return newTabs
     }
 
     private fun performDestroy() {
-
+        receiver?.destroy()
     }
 }

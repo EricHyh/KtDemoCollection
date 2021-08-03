@@ -42,7 +42,8 @@ abstract class TabSource<Param : Any, Tab : ITab>(
         class Unused<Tab : ITab> : CacheResult<Tab>()
 
         data class Success<Tab : ITab> constructor(
-            val tabs: List<TabInfo<Tab>>
+            val tabs: List<TabInfo<Tab>>,
+            val resultExtra: Any? = null
         ) : CacheResult<Tab>()
     }
 
@@ -53,19 +54,18 @@ abstract class TabSource<Param : Any, Tab : ITab>(
         ) : TabSource.LoadResult<Tab>()
 
         data class Success<Tab : ITab> constructor(
-            val tabs: List<TabInfo<Tab>>
+            val tabs: List<TabInfo<Tab>>,
+            val resultExtra: Any? = null
         ) : LoadResult<Tab>()
     }
 
     class CacheParams<Param : Any, Tab : ITab>(
         val param: Param,
-        val lastCacheResult: CacheResult<Tab>?,
-        val lastLoadResult: LoadResult<Tab>?
+        val displayedData: SourceDisplayedData<Tab>
     )
 
     class LoadParams<Param : Any, Tab : ITab>(
         val param: Param,
-        val lastCacheResult: CacheResult<Tab>?,
-        val lastLoadResult: LoadResult<Tab>?
+        val displayedData: SourceDisplayedData<Tab>
     )
 }

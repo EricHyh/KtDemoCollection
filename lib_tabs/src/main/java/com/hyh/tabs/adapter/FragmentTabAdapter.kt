@@ -29,7 +29,7 @@ class FragmentTabAdapter<Param : Any>(
         private const val TAG = "FragmentTabAdapter"
     }
 
-    private val baseBaseTabAdapter: BaseTabAdapter<Param, FragmentTab> = object : BaseTabAdapter<Param, FragmentTab>(pageContext) {
+    private val baseTabAdapter: BaseTabAdapter<Param, FragmentTab> = object : BaseTabAdapter<Param, FragmentTab>(pageContext) {
         override fun notifyDataSetChanged() {
             this@FragmentTabAdapter.notifyDataSetChanged()
         }
@@ -42,13 +42,13 @@ class FragmentTabAdapter<Param : Any>(
     override val currentPrimaryItem: FragmentTab?
         get() = null
     override val tabCount: Int
-        get() = baseBaseTabAdapter.tabCount
+        get() = baseTabAdapter.tabCount
     override val tabTokens: List<Any>?
-        get() = baseBaseTabAdapter.tabTokens
+        get() = baseTabAdapter.tabTokens
     override val tabTitles: List<CharSequence>?
-        get() = baseBaseTabAdapter.tabTitles
+        get() = baseTabAdapter.tabTitles
     override val loadStateFlow: Flow<LoadState>
-        get() = baseBaseTabAdapter.loadStateFlow
+        get() = baseTabAdapter.loadStateFlow
 
     private val itemIdAtomicLong: AtomicLong = AtomicLong(0)
 
@@ -57,7 +57,7 @@ class FragmentTabAdapter<Param : Any>(
     private val tabRecordMap: MutableMap<Int, TabInfo<FragmentTab>> = mutableMapOf()
 
     override fun getItem(position: Int): Fragment {
-        val tabInfo = baseBaseTabAdapter.getTabInfo(position) ?: throw NullPointerException()
+        val tabInfo = baseTabAdapter.getTabInfo(position) ?: throw NullPointerException()
         val fragment = tabInfo.lazyTab.value.fragment
         tabRecordMap[fragment.hashCode()] = tabInfo
         return fragment
@@ -69,10 +69,10 @@ class FragmentTabAdapter<Param : Any>(
         tabRecordMap.remove(fragment.hashCode())
     }
 
-    override fun getCount(): Int = baseBaseTabAdapter.tabCount
+    override fun getCount(): Int = baseTabAdapter.tabCount
 
     override fun getItemId(position: Int): Long {
-        val tabInfo = baseBaseTabAdapter.getTabInfo(position) ?: return -1
+        val tabInfo = baseTabAdapter.getTabInfo(position) ?: return -1
         var id = itemIdMap[tabInfo.tabToken]
         if (id == null) {
             id = itemIdAtomicLong.incrementAndGet()
@@ -84,15 +84,15 @@ class FragmentTabAdapter<Param : Any>(
     override fun getItemPosition(`object`: Any): Int {
         val fragment = `object` as? Fragment ?: return PagerAdapter.POSITION_NONE
         val tabInfo: TabInfo<FragmentTab> = tabRecordMap[fragment.hashCode()] ?: return PagerAdapter.POSITION_NONE
-        val currentPosition = baseBaseTabAdapter.indexOf(tabInfo)
-        if (currentPosition < 0 || currentPosition >= baseBaseTabAdapter.tabCount) {
+        val currentPosition = baseTabAdapter.indexOf(tabInfo)
+        if (currentPosition < 0 || currentPosition >= baseTabAdapter.tabCount) {
             return PagerAdapter.POSITION_NONE
         }
         return currentPosition
     }
 
     override fun getPageTitle(position: Int): CharSequence? {
-        return baseBaseTabAdapter.getTabTitle(position)
+        return baseTabAdapter.getTabTitle(position)
     }
 
     override fun setPrimaryItem(container: ViewGroup, position: Int, `object`: Any) {
@@ -102,10 +102,10 @@ class FragmentTabAdapter<Param : Any>(
     }
 
     override fun submitData(flow: Flow<TabData<Param, FragmentTab>>) {
-        baseBaseTabAdapter.submitData(flow)
+        baseTabAdapter.submitData(flow)
     }
 
     override fun refresh(param: Param) {
-        baseBaseTabAdapter.refresh(param)
+        baseTabAdapter.refresh(param)
     }
 }

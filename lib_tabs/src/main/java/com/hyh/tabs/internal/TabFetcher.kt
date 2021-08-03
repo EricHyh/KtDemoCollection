@@ -8,13 +8,17 @@ import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
 import com.hyh.tabs.ITab
+import com.hyh.tabs.TabInfo
 import com.hyh.tabs.TabSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
+import java.util.*
 
 abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param?) {
+
+    private val displayedData = SourceDisplayedData<Tab>()
 
     private val uiReceiver = object : UiReceiver<Param> {
 
@@ -37,6 +41,7 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
 
         override fun destroy() {
             refreshEventHandler.onDestroy()
+            onDestroy()
         }
     }
 
@@ -50,8 +55,7 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
                 previousSnapshot?.close()
                 TabFetcherSnapshot(
                     param,
-                    previousSnapshot?.cacheResult,
-                    previousSnapshot?.loadResult,
+                    displayedData,
                     getCacheLoader(),
                     getLoader(),
                     if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param),
@@ -69,6 +73,7 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
     }.buffer(Channel.BUFFERED)
 
     private fun getCacheLoader(): TabCacheLoader<Param, Tab> = ::getCache
+
     private fun getLoader(): TabLoader<Param, Tab> = ::load
 
     abstract fun getRefreshStrategy(): RefreshStrategy
@@ -83,10 +88,35 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
 }
 
 
+internal class TabSourceResultProcessorGenerator<Tab : ITab>(
+    private val displayedData: SourceDisplayedData<Tab>,
+    private var tabs: List<TabInfo<Tab>>,
+    private val resultExtra: Any?
+) {
+
+
+    val processor: TabSourceResultProcessor<Tab> = {
+        processResult()
+    }
+
+    private fun processResult(): TabSourceProcessedResult<Tab> {
+        val oldTabs: List<TabInfo<Tab>>? = displayedData.tabs
+        val newTabs = tabs
+        val changed: Boolean = !Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())
+        return TabSourceProcessedResult(
+            newTabs,
+            changed
+        ) {
+            displayedData.tabs = newTabs
+            displayedData.resultExtra = resultExtra
+        }
+    }
+}
+
+
 internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
     private val param: Param?,
-    private val lastCacheResult: TabSource.CacheResult<Tab>? = null,
-    private val lastLoadResult: TabSource.LoadResult<Tab>? = null,
+    private val displayedData: SourceDisplayedData<Tab>,
     private val cacheLoader: TabCacheLoader<Param, Tab>,
     private val loader: TabLoader<Param, Tab>,
     private val fetchDispatcher: CoroutineDispatcher?,
@@ -95,8 +125,6 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
     private val pageEventChannelFlowJob = Job()
     private val pageEventCh = Channel<TabEvent<Tab>>(Channel.BUFFERED)
 
-    var cacheResult: TabSource.CacheResult<Tab>? = null
-    var loadResult: TabSource.LoadResult<Tab>? = null
 
     val pageEventFlow: Flow<TabEvent<Tab>> = cancelableChannelFlow(pageEventChannelFlowJob) {
         launch {
@@ -117,31 +145,33 @@ internal class TabFetcherSnapshot<Param : Any, Tab : ITab>(
 
         pageEventCh.send(TabEvent.Loading())
 
-        val cacheParams = TabSource.CacheParams(param, lastCacheResult, lastLoadResult)
+        val cacheParams = TabSource.CacheParams(param, displayedData)
         val cacheResult = cacheLoader.invoke(cacheParams)
-        this@TabFetcherSnapshot.cacheResult = cacheResult
 
         var usingCache = false
         if (cacheResult is TabSource.CacheResult.Success) {
             usingCache = true
-            val event = TabEvent.UsingCache(ArrayList(cacheResult.tabs))
+            val event = TabEvent.UsingCache(
+                TabSourceResultProcessorGenerator(displayedData, cacheResult.tabs, cacheResult.resultExtra).processor
+            )
             pageEventCh.send(event)
         }
 
-        val loadParams = TabSource.LoadParams(param, lastCacheResult, lastLoadResult)
+        val loadParams = TabSource.LoadParams(param, displayedData)
         val loadResult: TabSource.LoadResult<Tab>
-        if (fetchDispatcher == null) {
-            loadResult = loader.invoke(loadParams)
+        loadResult = if (fetchDispatcher == null) {
+            loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {
-                loadResult = loader.invoke(loadParams)
+                loader.invoke(loadParams)
             }
         }
-        this@TabFetcherSnapshot.loadResult = loadResult
 
         when (loadResult) {
             is TabSource.LoadResult.Success<Tab> -> {
-                val event = TabEvent.Success(ArrayList(loadResult.tabs)) {
+                val event = TabEvent.Success(
+                    TabSourceResultProcessorGenerator(displayedData, loadResult.tabs, loadResult.resultExtra).processor
+                ) {
                     onRefreshComplete()
                 }
                 pageEventCh.send(event)
