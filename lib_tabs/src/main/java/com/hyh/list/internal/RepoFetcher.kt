@@ -43,7 +43,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
         }
     }
 
-    //展示不需要，后面再考虑添加
+    //暂时不需要，后面再考虑添加
     //private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val flow: Flow<RepoData<Param>> = simpleChannelFlow<RepoData<Param>> {

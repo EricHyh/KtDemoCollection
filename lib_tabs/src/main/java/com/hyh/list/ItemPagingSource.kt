@@ -1,7 +1,5 @@
 package com.hyh.list
 
-import androidx.paging.PagingState
-
 abstract class ItemPagingSource<Param : Any, Item : Any>(initialParam: Any?) {
 
     abstract val sourceToken: Any

@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.*
 class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() {
 
     companion object {
-        private const val TAG = "SourceAdapter"
+        private const val TAG = "FlatListItemAdapter"
     }
 
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main

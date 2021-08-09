@@ -33,6 +33,7 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
 
+
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
     private val sourceAdapterCallback = SourceAdapterCallback()
@@ -43,6 +44,9 @@ class MultiItemSourceAdapter<Param : Any>(
     private val _loadStateFlow: SimpleMutableStateFlow<RepoLoadState> = SimpleMutableStateFlow(RepoLoadState.Initial)
     override val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
         get() = _loadStateFlow.asStateFlow()
+
+    override val sourceTokens: List<Any>
+        get() = wrapperMap.keys.toList()
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage.SharedIdRangeViewTypeStorage()
 
@@ -441,7 +445,7 @@ object SimpleDispatchUpdatesHelper {
     ) {
         val beforeMoveWrapperStubs = mutableListOf<WrapperStub>()
         beforeMoveWrapperStubs.addAll(wrapperStubs)
-        move(wrapperStubs, operate.fromPosition, operate.toPosition)
+        ListUpdate.move(wrapperStubs, operate.fromPosition, operate.toPosition)
         val afterMoveWrapperStubs = mutableListOf<WrapperStub>()
         afterMoveWrapperStubs.addAll(wrapperStubs)
         val invoke: RecyclerView.Adapter<*>.() -> Unit = {
@@ -581,17 +585,6 @@ object SimpleDispatchUpdatesHelper {
             return newWrappers[index]
         }
         return null
-    }
-
-    private fun <T> move(list: MutableList<T>, sourceIndex: Int, targetIndex: Int): Boolean {
-        if (list.isNullOrEmpty()) return false
-        val size = list.size
-        if (size <= sourceIndex || size <= targetIndex) return false
-        if (sourceIndex == targetIndex) {
-            return true
-        }
-        list.add(targetIndex, list.removeAt(sourceIndex))
-        return true
     }
 
     class WrapperStub(

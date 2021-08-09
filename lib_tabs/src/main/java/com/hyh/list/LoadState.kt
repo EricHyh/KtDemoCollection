@@ -1,5 +1,8 @@
 package com.hyh.list
 
+import androidx.lifecycle.LiveData
+import com.hyh.coroutine.SimpleStateFlow
+
 /**
  * [ItemSourceRepo]的加载状态
  *
@@ -40,3 +43,21 @@ sealed class SourceLoadState {
     data class Error(val error: Throwable, val preShowing: Boolean) : SourceLoadState()
 
 }
+
+
+interface LoadStates {
+
+    val sourceStates: List<SourceLoadState>
+
+    val sourceStateCount: SimpleStateFlow<SourceStateCount>
+
+}
+
+data class SourceStateCount(
+    val totalCount: Int,
+    val initialCount: Int,
+    val loadingCount: Int,
+    val preShowCount: Int,
+    val successCount: Int,
+    val errorCount: Int
+)

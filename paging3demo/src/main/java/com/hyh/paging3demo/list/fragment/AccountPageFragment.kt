@@ -2,6 +2,7 @@ package com.hyh.paging3demo.list.fragment
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -309,6 +310,8 @@ class Tab1FlatListItem(
     private val des: String
 ) : IFlatListItem<Tab1FlatListItem.Tab1ItemHolder>() {
 
+    private val TAG = "Tab1FlatListItem"
+
     override fun getItemViewType(): Int {
         return 1
     }
@@ -326,6 +329,28 @@ class Tab1FlatListItem(
         viewHolder.leftView.setBackgroundColor(leftViewColorInt)
         viewHolder.tvTitle.text = title
         viewHolder.tvDes.text = des
+
+        Log.d(TAG, "onBindViewHolder: $viewHolder")
+    }
+
+    override fun onViewAttachedToWindow(viewHolder: Tab1ItemHolder) {
+        Log.d(TAG, "onViewAttachedToWindow: $viewHolder")
+        super.onViewAttachedToWindow(viewHolder)
+    }
+
+    override fun onViewDetachedFromWindow(viewHolder: Tab1ItemHolder) {
+        super.onViewDetachedFromWindow(viewHolder)
+        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder")
+    }
+
+    override fun onViewRecycled(viewHolder: Tab1ItemHolder) {
+        super.onViewRecycled(viewHolder)
+        Log.d(TAG, "onViewRecycled: $viewHolder")
+    }
+
+    override fun onFailedToRecycleView(viewHolder: Tab1ItemHolder): Boolean {
+        Log.d(TAG, "onFailedToRecycleView: $viewHolder")
+        return super.onFailedToRecycleView(viewHolder)
     }
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
@@ -351,6 +376,8 @@ class Tab2FlatListItem(
     private val des: String
 ) : IFlatListItem<Tab2FlatListItem.Tab2ItemHolder>() {
 
+    private val TAG = "Tab2FlatListItem"
+
     override fun getItemViewType(): Int {
         return 2
     }
@@ -367,6 +394,29 @@ class Tab2FlatListItem(
     ) {
         viewHolder.tvTitle.text = title
         viewHolder.tvDes.text = des
+
+        Log.d(TAG, "onBindViewHolder: $viewHolder")
+    }
+
+
+    override fun onViewAttachedToWindow(viewHolder: Tab2ItemHolder) {
+        Log.d(TAG, "onViewAttachedToWindow: $viewHolder")
+        super.onViewAttachedToWindow(viewHolder)
+    }
+
+    override fun onViewDetachedFromWindow(viewHolder: Tab2ItemHolder) {
+        super.onViewDetachedFromWindow(viewHolder)
+        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder")
+    }
+
+    override fun onViewRecycled(viewHolder: Tab2ItemHolder) {
+        super.onViewRecycled(viewHolder)
+        Log.d(TAG, "onViewRecycled: $viewHolder")
+    }
+
+    override fun onFailedToRecycleView(viewHolder: Tab2ItemHolder): Boolean {
+        Log.d(TAG, "onFailedToRecycleView: $viewHolder")
+        return super.onFailedToRecycleView(viewHolder)
     }
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
@@ -392,6 +442,8 @@ class Tab3FlatListItem(
     private val des: String
 ) : IFlatListItem<Tab3FlatListItem.Tab3ItemHolder>() {
 
+    private val TAG = "Tab2FlatListItem"
+
     override fun getItemViewType(): Int {
         return 3
     }
@@ -409,6 +461,28 @@ class Tab3FlatListItem(
         viewHolder.rightView.setBackgroundColor(rightViewColorInt)
         viewHolder.tvTitle.text = title
         viewHolder.tvDes.text = des
+
+        Log.d(TAG, "onBindViewHolder: $viewHolder")
+    }
+
+    override fun onViewAttachedToWindow(viewHolder: Tab3ItemHolder) {
+        Log.d(TAG, "onViewAttachedToWindow: $viewHolder")
+        super.onViewAttachedToWindow(viewHolder)
+    }
+
+    override fun onViewDetachedFromWindow(viewHolder: Tab3ItemHolder) {
+        super.onViewDetachedFromWindow(viewHolder)
+        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder")
+    }
+
+    override fun onViewRecycled(viewHolder: Tab3ItemHolder) {
+        super.onViewRecycled(viewHolder)
+        Log.d(TAG, "onViewRecycled: $viewHolder")
+    }
+
+    override fun onFailedToRecycleView(viewHolder: Tab3ItemHolder): Boolean {
+        Log.d(TAG, "onFailedToRecycleView: $viewHolder")
+        return super.onFailedToRecycleView(viewHolder)
     }
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {

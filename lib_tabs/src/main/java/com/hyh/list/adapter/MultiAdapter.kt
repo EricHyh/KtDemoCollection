@@ -1,12 +1,9 @@
 package com.hyh.list.adapter
 
-import android.util.Log
 import android.util.SparseArray
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.internal.ListUpdate
-import java.lang.Exception
 import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList

@@ -13,6 +13,8 @@ interface IListAdapter<Param : Any> {
 
     val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
 
+    val sourceTokens: List<Any>
+
     fun submitData(flow: Flow<RepoData<Param>>)
 
     fun getSourceLoadState(sourceIndex: Int): SimpleStateFlow<SourceLoadState>?
@@ -22,6 +24,9 @@ interface IListAdapter<Param : Any> {
     fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<FlatListItem>
     fun getItemSnapshot(sourceTokenStart: Any, count: Int = 1): List<FlatListItem>
 
+    fun indexOf(sourceToken: Any): Int {
+        return sourceTokens.indexOf(sourceToken)
+    }
 
     fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo?
 

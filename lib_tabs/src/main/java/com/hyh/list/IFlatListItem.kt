@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
  */
 abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
 
-    internal val delegate = object : Delegate() {
+    internal val delegate = object : Delegate<VH>() {
 
         override fun onItemAttached() {
             super.onItemAttached()
@@ -24,6 +24,18 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
         override fun updateItem(newItem: FlatListItem, payload: Any?) {
             this@IFlatListItem.onUpdateItem(newItem)
         }
+
+        override fun onViewAttachedToWindow(viewHolder: VH) =
+            this@IFlatListItem.onViewAttachedToWindow(viewHolder)
+
+        override fun onViewDetachedFromWindow(viewHolder: VH) =
+            this@IFlatListItem.onViewDetachedFromWindow(viewHolder)
+
+        override fun onViewRecycled(viewHolder: VH) =
+            this@IFlatListItem.onViewRecycled(viewHolder)
+
+        override fun onFailedToRecycleView(viewHolder: VH): Boolean =
+            this@IFlatListItem.onFailedToRecycleView(viewHolder)
 
         override fun onItemInactivated() {
             this@IFlatListItem.onItemInactivated()
@@ -97,6 +109,11 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
 
     protected abstract fun onBindViewHolder(viewHolder: VH)
 
+    protected open fun onViewAttachedToWindow(viewHolder: VH) {}
+    protected open fun onViewDetachedFromWindow(viewHolder: VH) {}
+    protected open fun onViewRecycled(viewHolder: VH) {}
+    protected open fun onFailedToRecycleView(viewHolder: VH): Boolean = false
+
     /**
      * 判断是否为同一条数据.
      *
@@ -127,7 +144,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
      */
     open fun onItemDetached() {}
 
-    internal abstract class Delegate {
+    internal abstract class Delegate<VH : RecyclerView.ViewHolder> {
 
         private var _attached = false
         val attached
@@ -144,6 +161,11 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
         abstract fun onItemActivated()
 
         abstract fun updateItem(newItem: FlatListItem, payload: Any?)
+
+        abstract fun onViewAttachedToWindow(viewHolder: VH)
+        abstract fun onViewDetachedFromWindow(viewHolder: VH)
+        abstract fun onViewRecycled(viewHolder: VH)
+        abstract fun onFailedToRecycleView(viewHolder: VH): Boolean
 
         abstract fun onItemInactivated()
 

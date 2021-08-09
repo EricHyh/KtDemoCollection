@@ -4,12 +4,12 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.FlatListItem
 import com.hyh.list.IFlatListItem
 import com.hyh.list.ViewHolderFactory
 import com.hyh.tabs.BuildConfig
+import com.hyh.tabs.R
 import java.lang.ref.WeakReference
 
 /**
@@ -23,7 +23,7 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
 
     companion object {
         private const val TAG = "BaseFlatListItemAdapter"
-        private val BOUND_POSITION_TAG_ID = ViewCompat.generateViewId()
+        private val BOUND_POSITION_TAG_ID = R.id.flat_list_bound_position_tag_id
     }
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage()
@@ -88,23 +88,32 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
         dispatchBindViewHolder(holder, position, payloads)
     }
 
-    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
-        super.onViewRecycled(holder)
-        Log.d(TAG, "onViewRecycled: $holder")
-
-    }
-
     override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
         super.onViewAttachedToWindow(holder)
-        Log.d(TAG, "onViewAttachedToWindow: $holder")
+        getCacheFlatListItem(holder)?.delegate?.onViewAttachedToWindow(holder)
     }
 
     override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
         super.onViewDetachedFromWindow(holder)
-        Log.d(TAG, "onViewDetachedFromWindow: $holder")
+        getCacheFlatListItem(holder)?.delegate?.onViewDetachedFromWindow(holder)
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        getCacheFlatListItem(holder)?.delegate?.onViewRecycled(holder)
+    }
+
+    override fun onFailedToRecycleView(holder: RecyclerView.ViewHolder): Boolean {
+        return getCacheFlatListItem(holder)?.delegate?.onFailedToRecycleView(holder) ?: false
     }
 
     protected abstract fun getFlatListItems(): List<FlatListItem>?
+
+
+    private fun getCacheFlatListItem(holder: RecyclerView.ViewHolder): IFlatListItem<RecyclerView.ViewHolder>? {
+        val boundPosition = holder.itemView.getTag(BOUND_POSITION_TAG_ID) as? BoundPosition
+        return boundPosition?.flatListItem
+    }
 
     private fun dispatchBindViewHolder(
         holder: RecyclerView.ViewHolder,
@@ -127,7 +136,8 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
             holder.itemView.setTag(
                 BOUND_POSITION_TAG_ID, BoundPosition(
                     holder.absoluteAdapterPosition,
-                    position
+                    position,
+                    flatListItem
                 )
             )
             flatListItem.bindViewHolder(holder, payloads)
@@ -184,5 +194,6 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
     private data class BoundPosition(
         val globalPosition: Int,
         val localPosition: Int,
+        val flatListItem: IFlatListItem<RecyclerView.ViewHolder>
     )
 }
