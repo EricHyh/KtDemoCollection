@@ -65,13 +65,14 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
     /**
      * Item 是否支持被更新：
      * - 如果为 true ，那么在 [areItemsTheSame] =  true 时会被认为是同一条数据，会执行[onUpdateItem]
-     * - 如果为 false ，那么只要数据发生变动就会用数据替换旧数据
+     * - 如果为 false ，那么只要数据发生变动就会用新数据替换旧数据
      *
-     * 一般情况下不需要重新该函数，只有实现一些特殊的场景才有可能需要用到这个功能；
+     * 一般情况下不需要重写该函数，只有实现一些特殊的场景才有可能需要用到这个功能；
      */
     open fun isSupportUpdateItem() = false
 
     /**
+     * 当[isSupportUpdateItem] = true，并且 [areItemsTheSame] = true 时，会回调该函数，
      * 在这里根据新的数据，更新自身的数据
      *
      * @param newItem 新的数据

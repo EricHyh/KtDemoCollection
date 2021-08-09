@@ -24,12 +24,12 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         return IElementDiff.ItemDataWrapperDiff()
     }
 
-    override fun mapItems(listItems: List<ListItemWrapper>): List<FlatListItem> {
-        return listItems.map { it.item }
+    override fun mapItems(items: List<ListItemWrapper>): List<FlatListItem> {
+        return items.map { it.item }
     }
 
-    override fun onItemsDisplayed(listItems: List<ListItemWrapper>) {
-        listItems.forEach {
+    override fun onItemsDisplayed(items: List<ListItemWrapper>) {
+        items.forEach {
             if (!it.attached) {
                 it.item.delegate.onItemAttached()
             }
@@ -43,8 +43,8 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         }
     }
 
-    override fun onItemsRecycled(listItems: List<ListItemWrapper>) {
-        listItems.forEach {
+    override fun onItemsRecycled(items: List<ListItemWrapper>) {
+        items.forEach {
             it.item.delegate.onItemInactivated()
             if (!it.cached) {
                 it.item.delegate.onItemDetached()
