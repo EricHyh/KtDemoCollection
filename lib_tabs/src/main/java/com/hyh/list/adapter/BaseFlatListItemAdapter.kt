@@ -11,6 +11,7 @@ import com.hyh.list.ViewHolderFactory
 import com.hyh.tabs.BuildConfig
 import com.hyh.tabs.R
 import java.lang.ref.WeakReference
+import java.lang.reflect.Type
 
 /**
  * 负责将绑定UI的事件分发给[FlatListItem]
@@ -111,8 +112,9 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
 
 
     private fun getCacheFlatListItem(holder: RecyclerView.ViewHolder): IFlatListItem<RecyclerView.ViewHolder>? {
-        val boundPosition = holder.itemView.getTag(BOUND_POSITION_TAG_ID) as? BoundPosition
-        return boundPosition?.flatListItem
+        val boundPosition = holder.itemView.getTag(BOUND_POSITION_TAG_ID) as? BoundPosition ?: return null
+        if (holder.javaClass != boundPosition.holdType) return null
+        return boundPosition.flatListItem
     }
 
     private fun dispatchBindViewHolder(
@@ -125,9 +127,9 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
         val items = getFlatListItems()
         if (items == null) {
             if (BuildConfig.DEBUG) {
-                throw NullPointerException("ItemAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
+                throw NullPointerException("ItemAdapter.onBindViewHolder: $position is not in itemList, itemList is null")
             } else {
-                Log.e(TAG, "ItemAdapter.onBindViewHolder: $position is not in itemDataList, itemDataList is null")
+                Log.e(TAG, "ItemAdapter.onBindViewHolder: $position is not in itemList, itemList is null")
             }
             return
         }
@@ -137,15 +139,16 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
                 BOUND_POSITION_TAG_ID, BoundPosition(
                     holder.absoluteAdapterPosition,
                     position,
-                    flatListItem
+                    flatListItem,
+                    holder.javaClass
                 )
             )
             flatListItem.bindViewHolder(holder, payloads)
         } else {
             if (BuildConfig.DEBUG) {
-                throw IndexOutOfBoundsException("ItemAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${items.size}")
+                throw IndexOutOfBoundsException("ItemAdapter.onBindViewHolder: $position is not in itemList, list size is ${items.size}")
             } else {
-                Log.e(TAG, "ItemAdapter.onBindViewHolder: $position is not in itemDataList, list size is ${items.size}")
+                Log.e(TAG, "ItemAdapter.onBindViewHolder: $position is not in itemList, list size is ${items.size}")
             }
         }
     }
@@ -194,6 +197,7 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
     private data class BoundPosition(
         val globalPosition: Int,
         val localPosition: Int,
-        val flatListItem: IFlatListItem<RecyclerView.ViewHolder>
+        val flatListItem: IFlatListItem<RecyclerView.ViewHolder>,
+        val holdType: Type
     )
 }

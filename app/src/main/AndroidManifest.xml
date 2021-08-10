@@ -9,6 +9,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+
         <activity android:name="com.hyh.activity.MainActivity">
 
             <!--<intent-filter>
@@ -18,6 +20,20 @@
             </intent-filter>-->
 
         </activity>
+
+
+        <activity
+            android:name="com.hyh.activity.TestPopActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:screenOrientation="behind"
+            android:windowSoftInputMode="adjustPan">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
 
         <activity android:name="com.hyh.activity.OtherActivity">
 
@@ -33,11 +49,7 @@
 
         </activity>
         <activity android:name="com.hyh.activity.StickyHeadsActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
         <activity
