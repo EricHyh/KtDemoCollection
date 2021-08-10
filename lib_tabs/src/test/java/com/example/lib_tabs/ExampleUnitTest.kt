@@ -2,6 +2,8 @@ package com.example.lib_tabs
 
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
+import com.hyh.list.internal.IElementDiff
+import com.hyh.list.internal.ListUpdate
 import org.junit.Test
 
 import org.junit.Assert.*
@@ -17,7 +19,7 @@ class ExampleUnitTest {
 
         println("start")
 
-        val oldList = listOf<TestData>(
+        /*val oldList = listOf<TestData>(
             TestData(0, "0"),
             TestData(1, "1"),
             TestData(2, "2"),
@@ -39,9 +41,46 @@ class ExampleUnitTest {
             TestData(9, "9"),
             TestData(10, "10"),
             TestData(11, "11"),
+        )*/
+
+        val oldList = listOf<TestData>(
+            TestData(0, "0"),
+            TestData(0, "1"),
+            TestData(0, "2"),
+            TestData(1, "0"),
+            TestData(0, "0"),
+            TestData(0, "0"),
+            TestData(2, "0"),
+            TestData(0, "3")
+        )
+        val newList = listOf<TestData>(
+            TestData(0, "0"),
+            TestData(0, "0"),
+            TestData(0, "2"),
+            TestData(0, "3")
         )
 
-        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+
+        val result = ListUpdate.calculateDiff(oldList, newList, object : IElementDiff<TestData> {
+            override fun isSupportUpdate(oldElement: TestData, newElement: TestData): Boolean {
+                return false
+            }
+
+            override fun areItemsTheSame(oldElement: TestData, newElement: TestData): Boolean {
+                return oldElement.id == newElement.id
+            }
+
+            override fun areContentsTheSame(oldElement: TestData, newElement: TestData): Boolean {
+                return oldElement.text == newElement.text
+            }
+
+            override fun getChangePayload(oldElement: TestData, newElement: TestData): Any? {
+                return "change"
+            }
+        })
+
+
+        /*val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
 
             override fun getOldListSize(): Int {
                 return oldList.size
@@ -85,7 +124,7 @@ class ExampleUnitTest {
             override fun onRemoved(position: Int, count: Int) {
                 println("onRemoved: position=$position, count=$count")
             }
-        })
+        })*/
 
         println("end")
 
