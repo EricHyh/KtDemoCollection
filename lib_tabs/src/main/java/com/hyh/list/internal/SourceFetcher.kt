@@ -117,7 +117,7 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
 ) {
 
     val processor: SourceResultProcessor = {
-        if (dispatcher != null) {
+        if (dispatcher != null && sourceDisplayedData.originalItems != null) {
             withContext(dispatcher) {
                 processResult()
             }
