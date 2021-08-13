@@ -1,6 +1,5 @@
 package com.hyh.list.internal
 
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
@@ -98,7 +97,7 @@ object ListUpdate {
         list.addAll(oldList.map { ElementStub(it) })
 
         val contentsNotSameMap: IdentityHashMap<E, E> = IdentityHashMap()
-        val diffResult = DiffUtil.calculateDiff(DiffCallbackImpl(oldList, newList, elementDiff, contentsNotSameMap))
+        val diffResult = SimpleDiffUtil.calculateDiff(DiffCallbackImpl(oldList, newList, elementDiff, contentsNotSameMap))
         val operates = mutableListOf<ListOperate>()
 
         val addedElements: MutableList<E> = mutableListOf()
@@ -228,11 +227,17 @@ class DiffCallbackImpl<E>(
     private val newList: List<E>,
     private val elementDiff: IElementDiff<E>,
     private val contentsNotSameMap: IdentityHashMap<E, E>
-) : DiffUtil.Callback() {
+) : SimpleDiffUtil.Callback() {
 
-    override fun getOldListSize(): Int = oldList.size
+    /*override fun getOldListSize(): Int = oldList.size
 
-    override fun getNewListSize(): Int = newList.size
+    override fun getNewListSize(): Int = newList.size*/
+
+    override val oldListSize: Int
+        get() = oldList.size
+
+    override val newListSize: Int
+        get() = newList.size
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         return elementDiff.areItemsTheSame(oldList[oldItemPosition], newList[newItemPosition])

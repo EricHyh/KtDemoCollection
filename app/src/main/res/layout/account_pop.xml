@@ -9,6 +9,83 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+
+        <androidx.appcompat.widget.AppCompatTextView
+            style="@style/text_style"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="#000000"
+            android:gravity="left|center_vertical"
+            android:text="这是一行测试文字"/>
+
+
         <View
             android:layout_width="match_parent"
             android:layout_height="100dp"

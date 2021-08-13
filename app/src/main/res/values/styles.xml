@@ -30,4 +30,14 @@
         <attr name="maxWidthPercent" format="float" />
     </declare-styleable>
 
+
+    <style name="text_style">
+        <item name="android:textColor">#FF0000</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:text">--</item>
+        <item name="android:layout_height">25dp</item>
+        <item name="android:layout_width">0dp</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
 </resources>

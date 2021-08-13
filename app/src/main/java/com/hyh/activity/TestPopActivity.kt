@@ -73,11 +73,16 @@ class TestPopActivity : AppCompatActivity() {
 
             }, 5000
         )
+
+
+        val layoutInflater = LayoutInflater.from(this).cloneInContext(this)
+
+
     }
 
 
     fun showPop1(view: View) {
-        val popview = TextView(view.context).apply {
+        /*val popview = TextView(view.context).apply {
             setBackgroundColor(Color.RED)
             layoutParams = ViewGroup.LayoutParams(400, 200)
             gravity = Gravity.CENTER
@@ -93,7 +98,14 @@ class TestPopActivity : AppCompatActivity() {
         }
 
         popupWindow.update()
-        popupWindow.showAsDropDown(view, 0, calculateOffsetY(view))
+        popupWindow.showAsDropDown(view, 0, calculateOffsetY(view))*/
+
+        for (index in 0..100) {
+            Thread {
+                val inflate = layoutInflater.inflate(R.layout.account_pop, null)
+                Log.d(TAG, "showPop1: $index -- $inflate")
+            }.start()
+        }
     }
 
     fun showPop2(view: View) {
