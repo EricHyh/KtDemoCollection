@@ -1,6 +1,6 @@
 package com.hyh.list
 
-abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
+abstract class MultiContentItemSource<Param : Any> : ItemsBucketSource<Param>() {
 
     companion object {
         private const val TITLE_BUCKET_ID = 0
@@ -15,33 +15,33 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
         param: Param,
         displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?
     ): BucketPreShowResult {
-        val tabToken = getTabTokenFromParam(param)
+        val contentToken = getContentTokenFromParam(param)
         val contentBucket = displayedItemsBucketMap?.get(CONTENT_BUCKET_ID)
         val displayedContentItemsToken = contentBucket?.itemsToken
-        if (tabToken == displayedContentItemsToken) {
+        if (contentToken == displayedContentItemsToken) {
             return if (isEmptyContent(contentBucket.items)) {
-                val titleItems = getTitlePreShow(tabToken, param)
-                val contentItems = getContentPreShow(tabToken, param)
+                val titleItems = getTitlePreShow(contentToken, param)
+                val contentItems = getContentPreShow(contentToken, param)
                 val itemsBucketMap: MutableMap<Int, ItemsBucket> = mutableMapOf()
                 itemsBucketMap[TITLE_BUCKET_ID] = ItemsBucket(TITLE_BUCKET_ID, DEFAULT_ITEMS_TOKEN, titleItems)
-                itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, tabToken, contentItems)
+                itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, contentToken, contentItems)
                 BucketPreShowResult.Success(itemsBucketIds, itemsBucketMap)
             } else {
                 BucketPreShowResult.Unused
             }
         }
-        val titleItems = getTitlePreShow(tabToken, param)
-        val contentItemsBucket = storage.get(CONTENT_BUCKET_ID, tabToken)
+        val titleItems = getTitlePreShow(contentToken, param)
+        val contentItemsBucket = storage.get(CONTENT_BUCKET_ID, contentToken)
         val items = contentItemsBucket?.items
 
         val contentItems = if (items == null || isEmptyContent(items)) {
-            getContentPreShow(tabToken, param)
+            getContentPreShow(contentToken, param)
         } else {
             items
         }
         val itemsBucketMap: MutableMap<Int, ItemsBucket> = mutableMapOf()
         itemsBucketMap[TITLE_BUCKET_ID] = ItemsBucket(TITLE_BUCKET_ID, DEFAULT_ITEMS_TOKEN, titleItems)
-        itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, tabToken, contentItems)
+        itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, contentToken, contentItems)
         return BucketPreShowResult.Success(itemsBucketIds, itemsBucketMap)
     }
 
@@ -49,9 +49,9 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
         param: Param,
         displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?
     ): BucketLoadResult {
-        val tabToken = getTabTokenFromParam(param)
-        val titleItems = getTitlePreShow(tabToken, param)
-        return when (val contentResult = getContent(tabToken, param)) {
+        val contentToken = getContentTokenFromParam(param)
+        val titleItems = getTitlePreShow(contentToken, param)
+        return when (val contentResult = getContent(contentToken, param)) {
             is ContentResult.Error -> {
                 BucketLoadResult.Error(contentResult.error)
             }
@@ -59,17 +59,17 @@ abstract class MultiTabsItemSource<Param : Any> : ItemsBucketSource<Param>() {
                 val contentItems = contentResult.items
                 val itemsBucketMap: MutableMap<Int, ItemsBucket> = mutableMapOf()
                 itemsBucketMap[TITLE_BUCKET_ID] = ItemsBucket(TITLE_BUCKET_ID, DEFAULT_ITEMS_TOKEN, titleItems)
-                itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, tabToken, contentItems)
+                itemsBucketMap[CONTENT_BUCKET_ID] = ItemsBucket(CONTENT_BUCKET_ID, contentToken, contentItems)
                 BucketLoadResult.Success(itemsBucketIds, itemsBucketMap)
             }
         }
     }
 
     protected abstract fun isEmptyContent(items: List<FlatListItem>): Boolean
-    protected abstract suspend fun getTitlePreShow(tabToken: Any, param: Param): List<FlatListItem>
-    protected abstract suspend fun getContentPreShow(tabToken: Any, param: Param): List<FlatListItem>
-    protected abstract suspend fun getContent(tabToken: Any, param: Param): ContentResult
-    protected abstract fun getTabTokenFromParam(param: Param): Any
+    protected abstract suspend fun getTitlePreShow(contentToken: Any, param: Param): List<FlatListItem>
+    protected abstract suspend fun getContentPreShow(contentToken: Any, param: Param): List<FlatListItem>
+    protected abstract suspend fun getContent(contentToken: Any, param: Param): ContentResult
+    protected abstract fun getContentTokenFromParam(param: Param): Any
 
     sealed class ContentResult {
 

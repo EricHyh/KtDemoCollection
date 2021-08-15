@@ -210,12 +210,6 @@ abstract class ItemSource<Param : Any, Item : Any> {
         }
     }
 
-    data class ItemsBucket(
-        val bucketId: Int,
-        val itemsToken: Any,
-        val items: List<FlatListItem>
-    )
-
     class PreShowParams<Param : Any, Item : Any>(
         val param: Param,
         val displayedData: SourceDisplayedData<Item>

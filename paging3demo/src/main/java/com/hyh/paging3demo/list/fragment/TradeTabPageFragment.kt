@@ -15,7 +15,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hyh.RefreshActuator
 import com.hyh.list.*
 import com.hyh.list.adapter.MultiItemSourceAdapter
-import com.hyh.list.decoration.ItemSourceFrameDecoration
+import com.hyh.list.decoration.MultiSourceFrameDecoration
+import com.hyh.list.decoration.SingleSourceFrameDecoration
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.flow.collect
@@ -56,7 +57,7 @@ class TradeTabPageFragment : Fragment() {
             recyclerView.itemAnimator = null
         }
 
-        recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
+        //recyclerView.addItemDecoration(SingleSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
         recyclerView.adapter = multiItemSourceAdapter
         multiItemSourceAdapter.submitData(TradeTabItemSourceRepo().flow)
 
@@ -66,6 +67,9 @@ class TradeTabPageFragment : Fragment() {
                 Log.d(TAG, "onViewCreated repoLoadStateFlow 1: $it")
             }
         }
+
+        val multiSourceFrameDecoration = MultiSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt())
+        recyclerView.addItemDecoration(multiSourceFrameDecoration)
 
         lifecycleScope.launch {
             multiItemSourceAdapter.repoLoadStateFlow.collect {
@@ -83,11 +87,25 @@ class TradeTabPageFragment : Fragment() {
                             Log.d(TAG, "onViewCreated SourceLoadState 2: $it")
                         }
                     }
+
+                    val sourceTokens = multiItemSourceAdapter.sourceTokens
+                    val supportedSourceGroups = mutableListOf<List<Any>>()
+                    var sourceGroup: MutableList<Any>? = null
+                    sourceTokens.forEachIndexed { index, any ->
+                        if (sourceGroup == null) {
+                            sourceGroup = mutableListOf()
+                        }
+                        sourceGroup!!.add(any)
+                        if (sourceGroup!!.size == 2) {
+                            supportedSourceGroups.add(sourceGroup!!)
+                            sourceGroup = null
+                        }
+                    }
+                    multiSourceFrameDecoration.setSupportedSourceGroups(supportedSourceGroups)
+                    recyclerView.invalidateItemDecorations()
                 }
             }
         }
-
-
     }
 }
 

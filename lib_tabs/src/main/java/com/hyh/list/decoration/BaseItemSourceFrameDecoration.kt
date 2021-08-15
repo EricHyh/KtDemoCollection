@@ -6,7 +6,6 @@ import androidx.annotation.ColorInt
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.adapter.IListAdapter
 import com.hyh.list.adapter.ItemLocalInfo
-import kotlin.properties.Delegates
 
 abstract class BaseItemSourceFrameDecoration(
     outRect: Rect,
@@ -41,7 +40,7 @@ abstract class BaseItemSourceFrameDecoration(
         for (index in 0 until childCount) {
             val child = parent.getChildAt(index)
             val itemLocalInfo = adapter.findItemLocalInfo(child, parent) ?: continue
-            if (!shouldDrawOver(itemLocalInfo.sourceToken)) return
+            if (!shouldDrawOver(adapter, itemLocalInfo.sourceToken)) return
 
             parent.getDecoratedBoundsWithMargins(child, itemBoundWithDecoration)
 
@@ -51,15 +50,15 @@ abstract class BaseItemSourceFrameDecoration(
 
             val itemBottomWithDecoration = itemBoundWithDecoration.bottom + child.translationY
 
-            if (isSourceFirstItem(itemLocalInfo) && isSourceLastItem(itemLocalInfo)) {
+            if (isFirstItem(adapter, itemLocalInfo) && isLastItem(adapter, itemLocalInfo)) {
                 val itemTop = child.top.toFloat()
                 val itemBottom = child.bottom.toFloat()
                 drawTop(itemTopWithDecoration, itemTop, itemLeft, itemRight, canvas)
                 drawBottom(itemBottomWithDecoration, itemBottom, itemRight, itemLeft, canvas)
-            } else if (isSourceFirstItem(itemLocalInfo)) {
+            } else if (isFirstItem(adapter, itemLocalInfo)) {
                 val itemTop = child.top.toFloat()
                 drawTop(itemTopWithDecoration, itemTop, itemLeft, itemRight, canvas)
-            } else if (isSourceLastItem(itemLocalInfo)) {
+            } else if (isLastItem(adapter, itemLocalInfo)) {
                 val itemBottom = child.bottom.toFloat()
                 drawBottom(itemBottomWithDecoration, itemBottom, itemRight, itemLeft, canvas)
             }
@@ -88,20 +87,24 @@ abstract class BaseItemSourceFrameDecoration(
         val adapter = parent.adapter ?: return
         if (adapter !is IListAdapter<*>) return
         val itemLocalInfo = adapter.findItemLocalInfo(view, parent) ?: return
-        if (!shouldDrawOver(itemLocalInfo.sourceToken)) return
+        if (!shouldDrawOver(adapter, itemLocalInfo.sourceToken)) return
 
-        if (isSourceFirstItem(itemLocalInfo) && isSourceLastItem(itemLocalInfo)) {
+        if (isFirstItem(adapter, itemLocalInfo) && isLastItem(adapter, itemLocalInfo)) {
             outRect.set(sourceOutRect.left, sourceOutRect.top, sourceOutRect.right, sourceOutRect.bottom)
-        } else if (isSourceFirstItem(itemLocalInfo)) {
+        } else if (isFirstItem(adapter, itemLocalInfo)) {
             outRect.set(sourceOutRect.left, sourceOutRect.top, sourceOutRect.right, 0)
-        } else if (isSourceLastItem(itemLocalInfo)) {
+        } else if (isLastItem(adapter, itemLocalInfo)) {
             outRect.set(sourceOutRect.left, 0, sourceOutRect.right, sourceOutRect.bottom)
         } else {
             outRect.set(sourceOutRect.left, 0, sourceOutRect.right, 0)
         }
     }
 
-    protected abstract fun shouldDrawOver(sourceToken: Any): Boolean
+    protected abstract fun shouldDrawOver(adapter: IListAdapter<*>, sourceToken: Any): Boolean
+
+    protected abstract fun isFirstItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean
+
+    protected abstract fun isLastItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean
 
     private fun drawTop(
         itemTopWithDecoration: Float,
@@ -174,15 +177,5 @@ abstract class BaseItemSourceFrameDecoration(
         path.close()
 
         canvas.drawPath(path, paint)
-    }
-
-    private fun isSourceFirstItem(itemLocalInfo: ItemLocalInfo?): Boolean {
-        if (itemLocalInfo == null) return false
-        return itemLocalInfo.localPosition == 0
-    }
-
-    private fun isSourceLastItem(itemLocalInfo: ItemLocalInfo?): Boolean {
-        if (itemLocalInfo == null) return false
-        return itemLocalInfo.localPosition == itemLocalInfo.sourceItemCount - 1
     }
 }

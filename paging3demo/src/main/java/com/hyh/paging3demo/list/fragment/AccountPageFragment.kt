@@ -16,7 +16,7 @@ import com.hyh.RefreshActuator
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
 import com.hyh.list.adapter.MultiItemSourceAdapter
-import com.hyh.list.decoration.ItemSourceFrameDecoration
+import com.hyh.list.decoration.SingleSourceFrameDecoration
 import com.hyh.list.internal.ListItemWrapper
 import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.page.pageContext
@@ -58,7 +58,7 @@ class AccountPageFragment : Fragment() {
             recyclerView.itemAnimator = null
         }
 
-        recyclerView.addItemDecoration(ItemSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
+        recyclerView.addItemDecoration(SingleSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
         recyclerView.adapter = multiItemSourceAdapter
         //sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)
         multiItemSourceAdapter.submitData(
@@ -70,7 +70,7 @@ class AccountPageFragment : Fragment() {
 }
 
 
-class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<Int>() {
+class AccountItemSource(private val testEmpty: Boolean) : MultiContentItemSource<Int>() {
 
     override val sourceToken: Any = testEmpty
 
@@ -144,7 +144,7 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiTabsItemSource<In
         return ContentResult.Success(emptyList())
     }
 
-    override fun getTabTokenFromParam(param: Int): Any {
+    override fun getContentTokenFromParam(param: Int): Any {
         return param
     }
 

@@ -4,7 +4,7 @@ import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.list.FlatListItem
-import com.hyh.list.ItemSource
+import com.hyh.list.ItemsBucket
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -309,6 +309,7 @@ interface IElementDiff<E> {
         }
 
         override fun areItemsTheSame(oldElement: FlatListItem, newElement: FlatListItem): Boolean {
+            if (oldElement.getItemViewType() != newElement.getItemViewType()) return false
             return oldElement.areItemsTheSame(newElement)
         }
 
@@ -340,25 +341,25 @@ interface IElementDiff<E> {
         }
     }
 
-    class BucketDiff : IElementDiff<ItemSource.ItemsBucket> {
+    class BucketDiff : IElementDiff<ItemsBucket> {
 
         override fun isSupportUpdate(
-            oldElement: ItemSource.ItemsBucket,
-            newElement: ItemSource.ItemsBucket
+            oldElement: ItemsBucket,
+            newElement: ItemsBucket
         ): Boolean = true
 
-        override fun areItemsTheSame(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Boolean {
+        override fun areItemsTheSame(oldElement: ItemsBucket, newElement: ItemsBucket): Boolean {
             return oldElement.bucketId == newElement.bucketId
         }
 
         override fun areContentsTheSame(
-            oldElement: ItemSource.ItemsBucket,
-            newElement: ItemSource.ItemsBucket
+            oldElement: ItemsBucket,
+            newElement: ItemsBucket
         ): Boolean {
             return oldElement.itemsToken == newElement.itemsToken
         }
 
-        override fun getChangePayload(oldElement: ItemSource.ItemsBucket, newElement: ItemSource.ItemsBucket): Any? {
+        override fun getChangePayload(oldElement: ItemsBucket, newElement: ItemsBucket): Any? {
             return newElement.itemsToken
         }
     }

@@ -15,7 +15,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlin.random.Random
 
-class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSource<Int>() {
+class TestMultiContentItemSource(override val sourceToken: Any) : MultiContentItemSource<Int>() {
 
     companion object {
         private const val TAG = "TestMultiTabsItemSource"
@@ -76,7 +76,7 @@ class TestMultiTabsItemSource(override val sourceToken: Any) : MultiTabsItemSour
         return ContentResult.Success(emptyList())
     }
 
-    override fun getTabTokenFromParam(param: Int): Any {
+    override fun getContentTokenFromParam(param: Int): Any {
         return param
     }
 

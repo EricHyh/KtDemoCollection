@@ -13,6 +13,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
+import kotlin.contracts.contract
 
 
 class ItemFetcher<Param : Any, Item : Any>(
@@ -117,13 +118,19 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
 ) {
 
     val processor: SourceResultProcessor = {
-        if (dispatcher != null && sourceDisplayedData.originalItems != null) {
-            withContext(dispatcher) {
+        if (shouldUseDispatcher()) {
+            withContext(dispatcher!!) {
                 processResult()
             }
         } else {
             processResult()
         }
+    }
+
+    private fun shouldUseDispatcher(): Boolean {
+        return (dispatcher != null
+                && !sourceDisplayedData.originalItems.isNullOrEmpty()
+                && items.isNotEmpty())
     }
 
     private fun processResult(): SourceProcessedResult {

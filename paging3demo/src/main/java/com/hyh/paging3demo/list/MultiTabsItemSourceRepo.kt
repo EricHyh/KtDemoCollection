@@ -26,7 +26,7 @@ class MultiTabsItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
 
         val sources = ListConfig.randomTypes()
             .map {
-                TestMultiTabsItemSource(it)
+                TestMultiContentItemSource(it)
             }
         return LoadResult.Success(sources)
     }

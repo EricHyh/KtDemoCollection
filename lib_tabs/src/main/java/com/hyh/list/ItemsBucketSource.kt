@@ -2,6 +2,8 @@ package com.hyh.list
 
 import com.hyh.Invoke
 import com.hyh.list.internal.*
+import java.util.*
+import kotlin.collections.LinkedHashMap
 
 abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrapper>() {
 
@@ -81,7 +83,6 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
     protected abstract suspend fun getPreShow(param: Param, displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?): BucketPreShowResult
     protected abstract suspend fun load(param: Param, displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?): BucketLoadResult
 
-
     override fun onProcessResult(
         resultItems: List<ListItemWrapper>,
         resultExtra: Any?,
@@ -97,6 +98,8 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
             val items = mutableListOf<FlatListItem>()
             resultItemsBucketMap[it] = ItemsBucket(it, DEFAULT_ITEMS_TOKEN, items)
         }
+
+        val invokes: MutableList<Invoke> = mutableListOf()
 
         resultItems.forEach { wrapper ->
             var itemsBucket = resultItemsBucketMap[wrapper.itemsBucketId]
@@ -122,22 +125,54 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
             IElementDiff.BucketDiff()
         )
 
-        val invokes: MutableList<Invoke> = mutableListOf()
-
-
         itemsBucketsResult.elementOperates.changedElements.forEach { change ->
             invokes.add {
+
+                val cacheItems = IdentityHashMap<FlatListItem, Unit>()
+                storage.take(
+                    change.second.bucketId,
+                    change.second.itemsToken
+                )?.items?.forEach {
+                    cacheItems[it] = Unit
+                }
+
+                // 将当前显示的Item列表标记为未缓存
+                val itemsBucket = resultItemsBucketMap[change.second.bucketId]
+                val displayedItems = itemsBucket?.items
+                displayedItems?.forEach {
+                    it.delegate.cached = false
+                    cacheItems.remove(it)
+                }
+                if (cacheItems.isNotEmpty()) {
+                    cacheItems.keys.forEach {
+                        it.delegate.cached = false
+                        it.delegate.onItemDetached()
+                    }
+                }
+
                 storage.take(
                     change.first.bucketId,
                     change.first.itemsToken
                 )?.items?.forEach {
                     it.delegate.cached = false
+                    it.delegate.onItemDetached()
                 }
 
                 storage.store(change.first)
-
                 change.first.items.forEach {
                     it.delegate.cached = true
+                }
+            }
+        }
+
+        itemsBucketsResult.elementOperates.removedElements.forEach { remove ->
+            invokes.add {
+                storage.take(
+                    remove.bucketId,
+                    remove.itemsToken
+                )?.items?.forEach {
+                    it.delegate.cached = false
+                    it.delegate.onItemDetached()
                 }
             }
         }
@@ -273,3 +308,9 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         }
     }
 }
+
+data class ItemsBucket(
+    val bucketId: Int,
+    val itemsToken: Any,
+    val items: List<FlatListItem>
+)
