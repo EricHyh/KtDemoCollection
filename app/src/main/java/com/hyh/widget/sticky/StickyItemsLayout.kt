@@ -34,8 +34,8 @@ class StickyItemsLayout : ViewGroup {
 
     private var visibleItemFinder: VisibleItemFinder = DefaultVisibleItemFinder()
 
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var stickyItemsAdapter: IStickyItemsAdapter<RecyclerView.ViewHolder>
+    private var recyclerView: RecyclerView? = null
+    private var stickyItemsAdapter: IStickyItemsAdapter<RecyclerView.ViewHolder>? = null
 
     private var stickyItemDecoration: StickyItemDecoration? = null
 
@@ -57,14 +57,14 @@ class StickyItemsLayout : ViewGroup {
 
         override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
             super.onScrollStateChanged(recyclerView, newState)
-            stickyHeaders.updateStickyItem()
-            stickyFooters.updateStickyItem()
+            stickyHeaders.updateStickyItem(recyclerView)
+            stickyFooters.updateStickyItem(recyclerView)
         }
 
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
             super.onScrolled(recyclerView, dx, dy)
-            stickyHeaders.updateStickyItem()
-            stickyFooters.updateStickyItem()
+            stickyHeaders.updateStickyItem(recyclerView)
+            stickyFooters.updateStickyItem(recyclerView)
         }
     }
 
@@ -79,8 +79,10 @@ class StickyItemsLayout : ViewGroup {
     fun setMaxStickyItems(maxStickyHeaders: Int, maxStickyFooters: Int) {
         this.maxStickyHeaders = maxStickyHeaders
         this.maxStickyFooters = maxStickyFooters
-        stickyHeaders.updateStickyItem(recyclerView.scrollState, true)
-        stickyFooters.updateStickyItem(recyclerView.scrollState, true)
+        recyclerView?.let {
+            stickyHeaders.updateStickyItem(it, it.scrollState, true)
+            stickyFooters.updateStickyItem(it, it.scrollState, true)
+        }
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -93,8 +95,10 @@ class StickyItemsLayout : ViewGroup {
 
     fun setStickyItemDecoration(decoration: StickyItemDecoration) {
         this.stickyItemDecoration = decoration
-        stickyHeaders.updateStickyItem(recyclerView.scrollState, true)
-        stickyFooters.updateStickyItem(recyclerView.scrollState, true)
+        recyclerView?.let {
+            stickyHeaders.updateStickyItem(it, it.scrollState, true)
+            stickyFooters.updateStickyItem(it, it.scrollState, true)
+        }
     }
 
     fun getDecoratedBoundsWithMargins(view: View, outBounds: Rect) {
@@ -146,6 +150,7 @@ class StickyItemsLayout : ViewGroup {
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        val recyclerView = this.recyclerView ?: return super.dispatchTouchEvent(ev)
 
         fun contains(viewGroup: ViewGroup, target: View, set: HashSet<View>): Boolean {
             for (index in 0 until viewGroup.childCount) {
@@ -165,7 +170,7 @@ class StickyItemsLayout : ViewGroup {
             return false
         }
 
-        fun findParent(): View? {
+        fun findParent(recyclerView: RecyclerView): View? {
             var recyclerViewParent = recyclerView.parent ?: return null
             if (recyclerViewParent !is ViewGroup) return null
             val set: HashSet<View> = hashSetOf()
@@ -207,7 +212,7 @@ class StickyItemsLayout : ViewGroup {
 
                 if (tx > touchSlop || ty > touchSlop) {
                     if (ty > tx) {
-                        return findParent()?.let {
+                        return findParent(recyclerView)?.let {
                             scrollVertically = true
                             val newEvent = MotionEvent.obtain(ev)
                             newEvent.action = MotionEvent.ACTION_DOWN
@@ -223,8 +228,8 @@ class StickyItemsLayout : ViewGroup {
                     scrollVertically = false
                     touchedStickyItems?.let {
                         recyclerView.postIdleTask {
-                            it.updateStickyItem(RecyclerView.SCROLL_STATE_DRAGGING)
-                            it.updateStickyItem(RecyclerView.SCROLL_STATE_IDLE)
+                            it.updateStickyItem(recyclerView, RecyclerView.SCROLL_STATE_DRAGGING)
+                            it.updateStickyItem(recyclerView, RecyclerView.SCROLL_STATE_IDLE)
                         }
                     }
                 }
@@ -235,6 +240,7 @@ class StickyItemsLayout : ViewGroup {
     }
 
     override fun canScrollVertically(direction: Int): Boolean {
+        val recyclerView = this.recyclerView ?: return super.canScrollVertically(direction)
         return super.canScrollVertically(direction) || recyclerView.canScrollVertically(direction)
     }
 
@@ -286,14 +292,15 @@ class StickyItemsLayout : ViewGroup {
     }
 
     private fun isHeaderPosition(position: Int): Boolean {
-        return stickyItemsAdapter.isStickyHeader(position)
+        return stickyItemsAdapter?.isStickyHeader(position) ?: false
     }
 
     private fun isFooterPosition(position: Int): Boolean {
-        return stickyItemsAdapter.isStickyFooter(position)
+        return stickyItemsAdapter?.isStickyFooter(position) ?: false
     }
 
     private fun findItemViewBounds(position: Int): Rect? {
+        val recyclerView = this.recyclerView ?: return null
         val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) ?: return null
         val stickyItemDecoration = this.stickyItemDecoration
         return if (stickyItemDecoration == null) {
@@ -358,57 +365,57 @@ class StickyItemsLayout : ViewGroup {
 
         override fun onChanged() {
             super.onChanged()
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
             super.onItemRangeRemoved(positionStart, itemCount)
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
 
         override fun onItemRangeMoved(fromPosition: Int, toPosition: Int, itemCount: Int) {
             super.onItemRangeMoved(fromPosition, toPosition, itemCount)
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
 
         override fun onStateRestorationPolicyChanged() {
             super.onStateRestorationPolicyChanged()
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
             super.onItemRangeInserted(positionStart, itemCount)
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
 
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
             super.onItemRangeChanged(positionStart, itemCount)
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
 
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
             super.onItemRangeChanged(positionStart, itemCount, payload)
-            recyclerView.postIdleTask {
-                stickyHeaders.updateStickyItem(dataChanged = true)
-                stickyFooters.updateStickyItem(dataChanged = true)
+            recyclerView?.postIdleTask {
+                stickyHeaders.updateStickyItem(this, dataChanged = true)
+                stickyFooters.updateStickyItem(this, dataChanged = true)
             }
         }
     }
@@ -456,6 +463,7 @@ class StickyItemsLayout : ViewGroup {
         abstract fun onLayout()
 
         open fun updateStickyItem(
+            recyclerView: RecyclerView,
             scrollState: Int = recyclerView.scrollState,
             dataChanged: Boolean = false
         ) {
@@ -490,14 +498,14 @@ class StickyItemsLayout : ViewGroup {
                     val tempOldAttachedItem = oldAttachedItem
                     if (tempOldAttachedItem != null) {
                         if (tempOldAttachedItem.itemViewType == itemViewType) {
-                            stickyItem = createStickyItem(adapter, it, tempOldAttachedItem)
+                            stickyItem = createStickyItem(recyclerView, adapter, it, tempOldAttachedItem)
                         } else {
-                            stickyItem = createStickyItem(adapter, it)
+                            stickyItem = createStickyItem(recyclerView, adapter, it)
                             stickyItem.attach()
                             tempOldAttachedItem.detach()
                         }
                     } else {
-                        stickyItem = createStickyItem(adapter, it)
+                        stickyItem = createStickyItem(recyclerView, adapter, it)
                         stickyItem.attach()
                     }
                     oldAttachedItem = tempOldAttachedItem?.next
@@ -525,7 +533,7 @@ class StickyItemsLayout : ViewGroup {
 
                 positions.forEach {
                     val stickyItem = attachedItemMap.remove(it)
-                        ?: createStickyItem(adapter, it).apply {
+                        ?: createStickyItem(recyclerView, adapter, it).apply {
                             attach()
                             bindStickyItemViewHolder(true)
                         }
@@ -568,6 +576,7 @@ class StickyItemsLayout : ViewGroup {
         abstract fun findCurrentItemsPosition(recyclerView: RecyclerView): Collection<Int>
 
         abstract fun createStickyItem(
+            recyclerView: RecyclerView,
             adapter: RecyclerView.Adapter<*>,
             position: Int,
             recycled: StickyItem? = null
@@ -682,11 +691,16 @@ class StickyItemsLayout : ViewGroup {
             return positions
         }
 
-        override fun createStickyItem(adapter: RecyclerView.Adapter<*>, position: Int, recycled: StickyItem?): StickyItem {
+        override fun createStickyItem(
+            recyclerView: RecyclerView,
+            adapter: RecyclerView.Adapter<*>,
+            position: Int,
+            recycled: StickyItem?
+        ): StickyItem {
             return if (recycled != null) {
                 createStickyHeader(adapter, position, recycled)
             } else {
-                createStickyHeader(adapter, position)
+                createStickyHeader(recyclerView, adapter, position)
             }
         }
 
@@ -707,6 +721,7 @@ class StickyItemsLayout : ViewGroup {
 
 
         private fun createStickyHeader(
+            recyclerView: RecyclerView,
             adapter: RecyclerView.Adapter<*>,
             position: Int
         ): StickyItem {
@@ -742,6 +757,7 @@ class StickyItemsLayout : ViewGroup {
         }
 
         private fun getNextHeaderBounds(lastAttachedHeaderPosition: Int): Rect? {
+            val recyclerView = this@StickyItemsLayout.recyclerView ?: return null
             if (attachedItemMap.size < maxStickyHeaders) return null
             if (lastAttachedHeaderPosition < 0) return null
             val nextHeaderPosition = findNextHeaderPosition(recyclerView, lastAttachedHeaderPosition)
@@ -786,12 +802,12 @@ class StickyItemsLayout : ViewGroup {
 
         private fun findFirstHeaderPosition(startPosition: Int, endPosition: Int): Int {
             if (startPosition > endPosition) return RecyclerView.NO_POSITION
-            return stickyItemsAdapter.let {
+            return stickyItemsAdapter?.let {
                 for (position in startPosition..endPosition) {
                     if (it.isStickyHeader(position)) return@let position
                 }
                 RecyclerView.NO_POSITION
-            }
+            } ?: RecyclerView.NO_POSITION
         }
     }
 
@@ -872,11 +888,16 @@ class StickyItemsLayout : ViewGroup {
             return positions
         }
 
-        override fun createStickyItem(adapter: RecyclerView.Adapter<*>, position: Int, recycled: StickyItem?): StickyItem {
+        override fun createStickyItem(
+            recyclerView: RecyclerView,
+            adapter: RecyclerView.Adapter<*>,
+            position: Int,
+            recycled: StickyItem?
+        ): StickyItem {
             return if (recycled != null) {
                 createStickyFooter(adapter, position, recycled)
             } else {
-                createStickyFooter(adapter, position)
+                createStickyFooter(recyclerView, adapter, position)
             }
         }
 
@@ -899,6 +920,7 @@ class StickyItemsLayout : ViewGroup {
 
 
         private fun createStickyFooter(
+            recyclerView: RecyclerView,
             adapter: RecyclerView.Adapter<*>,
             position: Int
         ): StickyItem {
@@ -933,6 +955,7 @@ class StickyItemsLayout : ViewGroup {
         }
 
         private fun getNextFooterBounds(lastAttachedFooterPosition: Int): Rect? {
+            val recyclerView = this@StickyItemsLayout.recyclerView ?: return null
             if (attachedItemMap.size < maxStickyFooters) return null
             if (lastAttachedFooterPosition >= getItemCount()) return null
             val nextHeaderPosition = findNextFooterPosition(recyclerView, lastAttachedFooterPosition)
@@ -983,16 +1006,16 @@ class StickyItemsLayout : ViewGroup {
 
         private fun findFirstFooterPosition(startPosition: Int, endPosition: Int): Int {
             if (startPosition < endPosition) return RecyclerView.NO_POSITION
-            return stickyItemsAdapter.let {
+            return stickyItemsAdapter?.let {
                 for (position in startPosition downTo endPosition) {
                     if (it.isStickyFooter(position)) return@let position
                 }
                 RecyclerView.NO_POSITION
-            }
+            } ?: RecyclerView.NO_POSITION
         }
 
         private fun getItemCount(): Int {
-            return recyclerView.adapter?.itemCount ?: 0
+            return recyclerView?.adapter?.itemCount ?: 0
         }
     }
 
@@ -1048,6 +1071,7 @@ class StickyItemsLayout : ViewGroup {
         }
 
         fun bindItemViewHolder() {
+            val recyclerView = this@StickyItemsLayout.recyclerView ?: return
             if (!stickyItemBound) return
             if (!isVisibleItem(position)) return
             val adapter = recyclerView.adapter ?: return
@@ -1058,6 +1082,7 @@ class StickyItemsLayout : ViewGroup {
         }
 
         fun bindStickyItemViewHolder(force: Boolean = false) {
+            val stickyItemsAdapter = this@StickyItemsLayout.stickyItemsAdapter ?: return
             if (!force && stickyItemBound) return
             stickyItemsAdapter.onBindStickyViewHolder(viewHolder, position)
             stickyItemBound = true
@@ -1125,6 +1150,7 @@ class StickyItemsLayout : ViewGroup {
         }
 
         private fun isVisibleItem(position: Int): Boolean {
+            val recyclerView = this@StickyItemsLayout.recyclerView ?: return false
             val firstVisibleItemPosition =
                 visibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
             val lastVisibleItemPosition =

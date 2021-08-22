@@ -21,17 +21,22 @@
 
         </activity>
 
+        <activity android:name="com.hyh.activity.DialogTestActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+
 
         <activity
             android:name="com.hyh.activity.TestPopActivity"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
             android:screenOrientation="behind"
             android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
 
