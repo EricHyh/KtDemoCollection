@@ -76,18 +76,6 @@ class TradeTabPageFragment : Fragment() {
                 Log.d(TAG, "onViewCreated repoLoadStateFlow 2: $it")
                 if (it is RepoLoadState.Success) {
                     recyclerView.scrollToPosition(0)
-                    lifecycleScope.launch {
-                        multiItemSourceAdapter.getSourceLoadState(0)?.collect {
-                            Log.d(TAG, "onViewCreated SourceLoadState 1: $it")
-                        }
-                    }
-
-                    lifecycleScope.launch {
-                        multiItemSourceAdapter.getSourceLoadState(0)?.collect {
-                            Log.d(TAG, "onViewCreated SourceLoadState 2: $it")
-                        }
-                    }
-
                     val sourceTokens = multiItemSourceAdapter.sourceTokens
                     val supportedSourceGroups = mutableListOf<List<Any>>()
                     var sourceGroup: MutableList<Any>? = null
@@ -104,6 +92,15 @@ class TradeTabPageFragment : Fragment() {
                     multiSourceFrameDecoration.setSupportedSourceGroups(supportedSourceGroups)
                     recyclerView.invalidateItemDecorations()
                 }
+            }
+        }
+        lifecycleScope.launch {
+            multiItemSourceAdapter.sourceLoadStatesFlow.collect {
+                Log.d(TAG, "onViewCreated sourceLoadStatesFlow start: $it")
+                it.sourceStateMap.forEach { entry ->
+                    Log.d(TAG, "onViewCreated sourceLoadStatesFlow: key = ${entry.key}, value = ${entry.value}")
+                }
+                Log.d(TAG, "onViewCreated sourceLoadStatesFlow end: $it")
             }
         }
     }

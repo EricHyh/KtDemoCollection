@@ -1,6 +1,7 @@
 package com.hyh.list.adapter
 
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.InvokeWithParam
 import com.hyh.coroutine.*
 import com.hyh.coroutine.SingleRunner
 import com.hyh.coroutine.simpleScan
@@ -17,7 +18,10 @@ import kotlinx.coroutines.flow.*
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() {
+class FlatListItemAdapter(
+    pageContext: PageContext,
+    private val onStateChanged: InvokeWithParam<SourceLoadState>
+) : BaseFlatListItemAdapter() {
 
     companion object {
         private const val TAG = "FlatListItemAdapter"
@@ -66,6 +70,7 @@ class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() 
                     when (event) {
                         is SourceEvent.Loading -> {
                             _loadStateFlow.value = SourceLoadState.Loading
+                            onStateChanged(SourceLoadState.Loading)
                             event.onReceived()
                         }
                         is SourceEvent.PreShowing -> {
@@ -76,6 +81,7 @@ class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() 
                         }
                         is SourceEvent.RefreshError -> {
                             _loadStateFlow.value = SourceLoadState.Error(event.error, event.preShowing)
+                            onStateChanged(SourceLoadState.Error(event.error, event.preShowing))
                             event.onReceived()
                         }
                         is SourceEvent.ItemRemoved -> {
@@ -122,6 +128,7 @@ class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() 
                         processedResult.onResultUsed()
                         ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
                         _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItems.size)
+                        onStateChanged(SourceLoadState.PreShow(processedResult.resultItems.size))
                         sourceEvent.onReceived()
                     }
                     is SourceEvent.RefreshSuccess -> {
@@ -130,6 +137,7 @@ class FlatListItemAdapter(pageContext: PageContext) : BaseFlatListItemAdapter() 
                         processedResult.onResultUsed()
                         ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
                         _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
+                        onStateChanged(SourceLoadState.Success(processedResult.resultItems.size))
                         sourceEvent.onReceived()
                     }
                     else -> {

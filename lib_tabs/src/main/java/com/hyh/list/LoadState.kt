@@ -1,8 +1,5 @@
 package com.hyh.list
 
-import androidx.lifecycle.LiveData
-import com.hyh.coroutine.SimpleStateFlow
-
 /**
  * [ItemSourceRepo]的加载状态
  *
@@ -45,12 +42,29 @@ sealed class SourceLoadState {
 }
 
 
-interface LoadStates {
+class SourceLoadStates(
+    val sourceStateMap: Map<Any, SourceLoadState>,
+) {
 
-    val sourceStates: List<SourceLoadState>
+    companion object {
+        val Initial = SourceLoadStates(emptyMap())
+    }
 
-    val sourceStateCount: SimpleStateFlow<SourceStateCount>
+    override fun hashCode(): Int {
+        return sourceStateMap.hashCode()
+    }
 
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is SourceLoadStates) return false
+        if (this.sourceStateMap.size != other.sourceStateMap.size) return false
+        if (this.sourceStateMap.isEmpty() && other.sourceStateMap.isEmpty()) return true
+        this.sourceStateMap.forEach {
+            if (it.value != other.sourceStateMap[it.key]) {
+                return false
+            }
+        }
+        return true
+    }
 }
 
 data class SourceStateCount(

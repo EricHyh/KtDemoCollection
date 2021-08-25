@@ -21,7 +21,7 @@ interface VisibleItemFinder {
 
 class DefaultVisibleItemFinder : VisibleItemFinder {
 
-    var mTempIntArray: IntArray? = null
+    var tempIntArray: IntArray? = null
 
     override fun findFirstVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
         if (layoutManager == null) return RecyclerView.NO_POSITION
@@ -88,11 +88,11 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
     }
 
     private fun obtainIntArray(size: Int): IntArray {
-        return if (size == mTempIntArray?.size) {
-            mTempIntArray!!
+        return if (size == tempIntArray?.size) {
+            tempIntArray!!
         } else {
-            mTempIntArray = IntArray(size)
-            mTempIntArray!!
+            tempIntArray = IntArray(size)
+            tempIntArray!!
         }
     }
 

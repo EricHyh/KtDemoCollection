@@ -11,6 +11,7 @@ import com.hyh.coroutine.SingleRunner
 import com.hyh.list.FlatListItem
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
+import com.hyh.list.SourceLoadStates
 import com.hyh.list.internal.*
 import com.hyh.page.PageContext
 import kotlinx.coroutines.*
@@ -32,8 +33,6 @@ class MultiItemSourceAdapter<Param : Any>(
         private const val TAG = "MultiItemSourceAdapter"
     }
 
-
-
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
     private val sourceAdapterCallback = SourceAdapterCallback()
@@ -41,14 +40,26 @@ class MultiItemSourceAdapter<Param : Any>(
     private var receiver: UiReceiverForRepo<Param>? = null
 
     //private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
-    private val _loadStateFlow: SimpleMutableStateFlow<RepoLoadState> = SimpleMutableStateFlow(RepoLoadState.Initial)
+    private val _repoLoadStateFlow: SimpleMutableStateFlow<RepoLoadState> = SimpleMutableStateFlow(RepoLoadState.Initial)
     override val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
-        get() = _loadStateFlow.asStateFlow()
+        get() = _repoLoadStateFlow.asStateFlow()
+
+    private val _sourceLoadStatesFlow: SimpleMutableStateFlow<SourceLoadStates> = SimpleMutableStateFlow(SourceLoadStates.Initial)
+    override val sourceLoadStatesFlow: SimpleStateFlow<SourceLoadStates>
+        get() = _sourceLoadStatesFlow.asStateFlow()
+
 
     override val sourceTokens: List<Any>
         get() = wrapperMap.keys.toList()
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage.SharedIdRangeViewTypeStorage()
+
+    private val onStateChanged: (Any, SourceLoadState) -> Unit = { sourceToken, _ ->
+        val wrapper = wrapperMap[sourceToken]
+        if (wrapper != null) {
+            _sourceLoadStatesFlow.value = createSourceLoadStates()
+        }
+    }
 
     override fun getViewTypeStorage(): ViewTypeStorage {
         return viewTypeStorage
@@ -79,25 +90,6 @@ class MultiItemSourceAdapter<Param : Any>(
 
     override fun refreshRepo(param: Param) {
         receiver?.refresh(param)
-    }
-
-    override fun getSourceLoadState(sourceIndex: Int): SimpleStateFlow<SourceLoadState>? {
-        if (sourceIndex !in 0 until wrapperMap.size) {
-            return null
-        }
-        var index = 0
-        wrapperMap.forEach {
-            if (index == sourceIndex) {
-                return@getSourceLoadState it.value.flatListItemAdapter.loadStateFlow
-            }
-            index++
-        }
-        return null
-    }
-
-    override fun getSourceLoadState(sourceToken: Any): SimpleStateFlow<SourceLoadState>? {
-        val wrapper = wrapperMap[sourceToken] ?: return null
-        return wrapper.flatListItemAdapter.loadStateFlow
     }
 
     override fun getItemSnapshot(): List<FlatListItem> {
@@ -219,13 +211,14 @@ class MultiItemSourceAdapter<Param : Any>(
                             result.refreshInvokes.forEach {
                                 it.invoke()
                             }
-                            _loadStateFlow.value = RepoLoadState.UsingCache(result.newWrapperMap.size)
+                            _sourceLoadStatesFlow.value = createSourceLoadStates()
+                            _repoLoadStateFlow.value = RepoLoadState.UsingCache(result.newWrapperMap.size)
                         }
                         is RepoEvent.Loading -> {
-                            _loadStateFlow.value = RepoLoadState.Loading
+                            _repoLoadStateFlow.value = RepoLoadState.Loading
                         }
                         is RepoEvent.Error -> {
-                            _loadStateFlow.value = RepoLoadState.Error(event.error, event.usingCache)
+                            _repoLoadStateFlow.value = RepoLoadState.Error(event.error, event.usingCache)
                         }
                         is RepoEvent.Success -> {
                             val processedResult = event.processor.invoke()
@@ -237,7 +230,8 @@ class MultiItemSourceAdapter<Param : Any>(
                             result.refreshInvokes.forEach {
                                 it.invoke()
                             }
-                            _loadStateFlow.value = RepoLoadState.Success(result.newWrapperMap.size)
+                            _sourceLoadStatesFlow.value = createSourceLoadStates()
+                            _repoLoadStateFlow.value = RepoLoadState.Success(result.newWrapperMap.size)
                         }
                     }
                     event.onReceived()
@@ -264,9 +258,6 @@ class MultiItemSourceAdapter<Param : Any>(
             val oldWrapper = oldWrapperMap[data.sourceToken]
             if (oldWrapper != null) {
                 newWrapperMap[data.sourceToken] = oldWrapper
-                /*reuseInvokes.add {
-                    oldWrapper.reuse(index, data.itemSource)
-                }*/
                 refreshInvokes.add {
                     oldWrapper.refresh()
                 }
@@ -319,26 +310,7 @@ class MultiItemSourceAdapter<Param : Any>(
         )
     }
 
-    override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
-        val globalPosition = recyclerView.getChildAdapterPosition(view)
-        val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition)
-        val wrapper: SourceAdapterWrapper? = binderLookup[viewHolder] as? SourceAdapterWrapper
-        if (wrapper != null) {
-            val itemsBefore = countItemsBefore(wrapper)
-            val localPosition: Int = globalPosition - itemsBefore
-            if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
-                return findItemLocalInfo(globalPosition)
-            }
-            val item = wrapper.flatListItemAdapter.findItem(localPosition)
-            if (item != null) {
-                return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount, item)
-            }
-        }
-        return findItemLocalInfo(globalPosition)
-    }
-
-
-    private fun findItemLocalInfo(globalPosition: Int): ItemLocalInfo? {
+    override fun findItemLocalInfo(globalPosition: Int): ItemLocalInfo? {
         var resultWrapper: SourceAdapterWrapper? = null
         var localPosition: Int = globalPosition
         for (wrapperEntry in wrapperMap) {
@@ -360,14 +332,42 @@ class MultiItemSourceAdapter<Param : Any>(
         return ItemLocalInfo(resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount, item)
     }
 
+    override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
+        val globalPosition = recyclerView.getChildAdapterPosition(view)
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition)
+        val wrapper: SourceAdapterWrapper? = binderLookup[viewHolder] as? SourceAdapterWrapper
+        if (wrapper != null) {
+            val itemsBefore = countItemsBefore(wrapper)
+            val localPosition: Int = globalPosition - itemsBefore
+            if (localPosition < 0 || localPosition >= wrapper.adapter.itemCount) {
+                return findItemLocalInfo(globalPosition)
+            }
+            val item = wrapper.flatListItemAdapter.findItem(localPosition)
+            if (item != null) {
+                return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount, item)
+            }
+        }
+        return findItemLocalInfo(globalPosition)
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
-            FlatListItemAdapter(pageContext),
+            FlatListItemAdapter(pageContext) {
+                onStateChanged(sourceData.sourceToken, this)
+            },
             viewTypeStorage,
             sourceAdapterCallback
         )
+    }
+
+    private fun createSourceLoadStates(): SourceLoadStates {
+        val sourceStateMap = mutableMapOf<Any, SourceLoadState>()
+        wrapperMap.forEach {
+            sourceStateMap[it.key] = it.value.flatListItemAdapter.loadStateFlow.value
+        }
+        return SourceLoadStates(sourceStateMap)
     }
 
     // region inner class
@@ -591,7 +591,6 @@ object SimpleDispatchUpdatesHelper {
         var wrapper: AdapterWrapper? = null
     )
 }
-
 
 class SourceAdapterWrapper(
     val sourceToken: Any,

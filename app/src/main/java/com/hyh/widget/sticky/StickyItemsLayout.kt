@@ -24,8 +24,8 @@ import kotlin.math.roundToInt
  */
 class StickyItemsLayout : ViewGroup {
 
-    private var maxStickyHeaders = 3
-    private var maxStickyFooters = 3
+    private var maxStickyHeaders = 1
+    private var maxStickyFooters = 1
 
     private val rectPool = RectPool()
 

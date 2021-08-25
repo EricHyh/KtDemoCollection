@@ -6,6 +6,7 @@ import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.list.FlatListItem
 import com.hyh.list.RepoLoadState
 import com.hyh.list.SourceLoadState
+import com.hyh.list.SourceLoadStates
 import com.hyh.list.internal.RepoData
 import kotlinx.coroutines.flow.Flow
 
@@ -13,12 +14,11 @@ interface IListAdapter<Param : Any> {
 
     val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
 
+    val sourceLoadStatesFlow: SimpleStateFlow<SourceLoadStates>
+
     val sourceTokens: List<Any>
 
     fun submitData(flow: Flow<RepoData<Param>>)
-
-    fun getSourceLoadState(sourceIndex: Int): SimpleStateFlow<SourceLoadState>?
-    fun getSourceLoadState(sourceToken: Any): SimpleStateFlow<SourceLoadState>?
 
     fun getItemSnapshot(): List<FlatListItem>
     fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<FlatListItem>
@@ -28,6 +28,7 @@ interface IListAdapter<Param : Any> {
         return sourceTokens.indexOf(sourceToken)
     }
 
+    fun findItemLocalInfo(globalPosition: Int): ItemLocalInfo?
     fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo?
 
     fun refreshRepo(param: Param)
