@@ -1,29 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/test_coordinatorLayout"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
-    <com.google.android.material.appbar.AppBarLayout
+    <com.hyh.widget.CustomAppbarLayout
         android:id="@+id/appbarlayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_behavior="com.hyh.activity.AppBarLayoutBehavior">
+        app:layout_behavior="com.hyh.activity.FuckAppBarLayoutBehaviorV2">
 
-        <View
+        <FrameLayout
+            android:id="@+id/view_header"
             android:layout_width="match_parent"
             android:layout_height="100dp"
             android:background="#FF0000"
-            app:layout_scrollFlags="scroll"/>
+            app:layout_scrollFlags="scroll">
 
-    </com.google.android.material.appbar.AppBarLayout>
+            <View
+                android:id="@+id/header_icon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:background="#00FFFF" />
+
+        </FrameLayout>
+
+    </com.hyh.widget.CustomAppbarLayout>
 
 
     <com.hyh.activity.MyRecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="400dp"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -5,8 +5,12 @@ import android.graphics.Color
 import android.os.Bundle
 import android.util.AttributeSet
 import android.util.Log
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,10 +18,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.hyh.demo.R
-import java.util.HashSet
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 
 class DialogTestActivity2 : AppCompatActivity() {
@@ -36,19 +38,17 @@ class DialogTestActivity2 : AppCompatActivity() {
 
         val appbarlayout = dialogContent.findViewById<AppBarLayout>(R.id.appbarlayout)
 
-        val layoutParams = appbarlayout.layoutParams as CoordinatorLayout.LayoutParams
-        val behavior = layoutParams.behavior as AppBarLayoutBehavior
-
 
         val recyclerView = dialogContent.findViewById<MyRecyclerView>(R.id.recycler_view)
         recyclerView.apply {
-            recyclerView.appBarLayout = appbarlayout
-            recyclerView.appBarLayoutBehavior = behavior
             layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
             itemAnimator = null
             adapter = MyListAdapter1()
         }
 
+        dialogContent.findViewById<View>(R.id.view_header).setOnClickListener {
+            Toast.makeText(dialogContent.context, "点击", Toast.LENGTH_SHORT).show()
+        }
 
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -63,11 +63,19 @@ class DialogTestActivity2 : AppCompatActivity() {
             val root: View? = delegate.findViewById(com.google.android.material.R.id.design_bottom_sheet)
             root?.let {
                 val behavior: BottomSheetBehavior<*> = BottomSheetBehavior.from(root)
+
+                /*val params = root.layoutParams as CoordinatorLayout.LayoutParams
+                val behavior = BottomSheetBehavior<View>(root.context, null)
+                params.behavior = behavior*/
+
                 //behavior.isHideable = true
                 behavior.peekHeight = 1200
             }
 
+            setCanceledOnTouchOutside(false)
+
         }.show()
+
     }
 }
 
@@ -101,7 +109,10 @@ class ItemViewHolder1(itemView: View) : RecyclerView.ViewHolder(itemView)
 
 class AppBarLayoutBehavior(context: Context, attrs: AttributeSet) : AppBarLayout.Behavior(context, attrs) {
 
-    var enableNestedScroll = true
+
+    private var parentCoordinatorLayout: CoordinatorLayout? = null
+    private var bottomSheet: View? = null
+    private var parentBehavior: CoordinatorLayout.Behavior<View>? = null
 
     override fun onStartNestedScroll(
         parent: CoordinatorLayout,
@@ -111,80 +122,123 @@ class AppBarLayoutBehavior(context: Context, attrs: AttributeSet) : AppBarLayout
         nestedScrollAxes: Int,
         type: Int
     ): Boolean {
-        return enableNestedScroll && super.onStartNestedScroll(parent, child, directTargetChild, target, nestedScrollAxes, type)
-    }
-}
-
-class MyRecyclerView(context: Context, attrs: AttributeSet) : RecyclerView(context, attrs) {
-
-
-    private var initialTouchX: Int = 0
-    private var initialTouchY: Int = 0
-    private var lastTouchX: Int = 0
-    private var lastTouchY: Int = 0
-    private val touchSlop: Int by lazy {
-        ViewConfiguration.get(context).scaledTouchSlop
-    }
-    private var scrollDown = false
-    private var redispatchTouchEvent = false
-
-
-    var initialPosition = true
-
-    lateinit var appBarLayout: AppBarLayout
-    lateinit var appBarLayoutBehavior: AppBarLayoutBehavior
-
-
-    /*override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-
-        when (ev.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                if (redispatchTouchEvent) {
-                    redispatchTouchEvent = false
-                    scrollDown = false
-                    initialPosition = appBarLayout.top == 0
-                    return false
-                }
-                initialTouchX = ev.x.roundToInt()
-                initialTouchY = ev.y.roundToInt()
-                lastTouchX = initialTouchX
-                lastTouchY = initialTouchY
-
-                initialPosition = appBarLayout.top == 0
-            }
-            MotionEvent.ACTION_MOVE -> {
-                if (scrollDown) {
-                    return false
-                }
-                val curX = ev.x.roundToInt()
-                val curY = ev.y.roundToInt()
-
-                val tx = curX - initialTouchX
-                val ty = curY - initialTouchY
-
-                if (initialPosition && (abs(tx) > touchSlop || abs(ty) > touchSlop)) {
-                    if (ty > 0) {
-                        appBarLayoutBehavior.enableNestedScroll = false
-                        return rootView.let {
-                            scrollDown = true
-                            val newEvent = MotionEvent.obtain(ev)
-                            newEvent.action = MotionEvent.ACTION_DOWN
-                            redispatchTouchEvent = true
-                            it.dispatchTouchEvent(newEvent)
-                            false
-                        }
-                    }
-                }
-            }
-            MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP -> {
-                if (!redispatchTouchEvent) {
-                    scrollDown = false
-                    appBarLayoutBehavior.enableNestedScroll = true
-                }
-            }
+        if (!target.canScrollVertically(-1) && child.top == 0) {
+            val bottomSheet = parent.rootView.findViewById<View>(R.id.design_bottom_sheet)
+            val layoutParams = bottomSheet.layoutParams as CoordinatorLayout.LayoutParams
+            this.bottomSheet = bottomSheet
+            parentBehavior = layoutParams.behavior
+            parentCoordinatorLayout = bottomSheet.parent as CoordinatorLayout
+            parentBehavior?.onStartNestedScroll(parentCoordinatorLayout!!, bottomSheet, bottomSheet, target, nestedScrollAxes, type)
         }
-        return super.dispatchTouchEvent(ev)
-    }*/
+        return super.onStartNestedScroll(parent, child, directTargetChild, target, nestedScrollAxes, type)
+    }
 
+    override fun onNestedPreScroll(
+        coordinatorLayout: CoordinatorLayout,
+        child: AppBarLayout,
+        target: View,
+        dx: Int,
+        dy: Int,
+        consumed: IntArray,
+        type: Int
+    ) {
+        val bottomSheet = this.bottomSheet
+        if (bottomSheet == null || bottomSheet.top + bottomSheet.height == parentCoordinatorLayout?.height ?: 0) {
+            super.onNestedPreScroll(coordinatorLayout, child, target, dx, dy, consumed, type)
+        }
+        if (child.top == 0) {
+            val newConsumed = IntArray(2)
+            parentBehavior?.onNestedPreScroll(parentCoordinatorLayout!!, bottomSheet!!, target, dx, dy, newConsumed, type)
+            consumed[0] += newConsumed[0]
+            consumed[1] += newConsumed[1]
+        }
+    }
+
+    override fun onNestedPreFling(
+        coordinatorLayout: CoordinatorLayout,
+        child: AppBarLayout,
+        target: View,
+        velocityX: Float,
+        velocityY: Float
+    ): Boolean {
+        return child.top == 0 && parentBehavior?.onNestedPreFling(
+            parentCoordinatorLayout!!,
+            bottomSheet!!,
+            target,
+            velocityX,
+            velocityY
+        ) ?: false || super.onNestedPreFling(
+            coordinatorLayout,
+            child,
+            target,
+            velocityX,
+            velocityY
+        )
+    }
+
+    override fun onStopNestedScroll(coordinatorLayout: CoordinatorLayout, abl: AppBarLayout, target: View, type: Int) {
+        super.onStopNestedScroll(coordinatorLayout, abl, target, type)
+        parentBehavior?.onStopNestedScroll(parentCoordinatorLayout!!, bottomSheet!!, target, type)
+        this.parentBehavior = null
+        this.bottomSheet = null
+    }
+
+    override fun onNestedScroll(
+        coordinatorLayout: CoordinatorLayout,
+        child: AppBarLayout,
+        target: View,
+        dxConsumed: Int,
+        dyConsumed: Int,
+        dxUnconsumed: Int,
+        dyUnconsumed: Int,
+        type: Int
+    ) {
+        super.onNestedScroll(coordinatorLayout, child, target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, type)
+        if (child.top == 0) {
+            parentBehavior?.onNestedScroll(parentCoordinatorLayout!!, bottomSheet!!, target, dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, type)
+        }
+    }
+
+    override fun onNestedScrollAccepted(
+        coordinatorLayout: CoordinatorLayout,
+        child: AppBarLayout,
+        directTargetChild: View,
+        target: View,
+        axes: Int,
+        type: Int
+    ) {
+        super.onNestedScrollAccepted(coordinatorLayout, child, directTargetChild, target, axes, type)
+        parentBehavior?.onNestedScrollAccepted(parentCoordinatorLayout!!, bottomSheet!!, bottomSheet!!, target, axes, type)
+    }
+
+    override fun onNestedFling(
+        coordinatorLayout: CoordinatorLayout,
+        child: AppBarLayout,
+        target: View,
+        velocityX: Float,
+        velocityY: Float,
+        consumed: Boolean
+    ): Boolean {
+        return super.onNestedFling(coordinatorLayout, child, target, velocityX, velocityY, consumed)
+    }
 }
 
+class MyRecyclerView(context: Context, attrs: AttributeSet) : RecyclerView(context, attrs)
+
+
+class MyDialogFragment : BottomSheetDialogFragment() {
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return inflater.inflate(R.layout.layout_list, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val recyclerView = view.findViewById<MyRecyclerView>(R.id.recycler_view)
+        recyclerView.apply {
+            layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+            itemAnimator = null
+            adapter = MyListAdapter1()
+        }
+    }
+}
