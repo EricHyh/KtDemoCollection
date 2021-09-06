@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="lifecycleOnCreate"
+        android:onClick="lifecycleOnCreate"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="lifecycleOnStart"
+        android:onClick="lifecycleOnStart"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="lifecycleOnResume"
+        android:onClick="lifecycleOnResume"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="lifecycleOnPause"
+        android:onClick="lifecycleOnPause"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="lifecycleOnStop"
+        android:onClick="lifecycleOnStop"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="lifecycleOnDestroy"
+        android:onClick="lifecycleOnDestroy"/>
+
+
+</LinearLayout>
