@@ -14,6 +14,12 @@ public class MyClass {
     public static void main(String[] args) {
 
 
+
+        DecimalFormat propertyUSFormat = new DecimalFormat("###,##0.00##", new DecimalFormatSymbols(Locale.CHINA));
+        String format = propertyUSFormat.format(new BigDecimal("33605.695999"));
+
+        System.out.println("");
+
         double xx1 = 0.0;
         double xx2 = -0.0;
 

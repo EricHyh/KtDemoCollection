@@ -1,5 +1,7 @@
 package com.hyh.list
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.hyh.list.internal.ItemSourceFetcher
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.internal.RepoData
@@ -8,7 +10,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
-abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
+abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwner {
 
     private val itemSourceFetcher = object : ItemSourceFetcher<Param>(initialParam) {
 
@@ -27,6 +29,10 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) {
     }
 
     val flow: Flow<RepoData<Param>> = itemSourceFetcher.flow
+
+    final override fun getLifecycle(): Lifecycle {
+        return itemSourceFetcher.lifecycleOwner.lifecycle
+    }
 
     protected open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
 

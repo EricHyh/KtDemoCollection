@@ -1,5 +1,6 @@
 package com.hyh.list.internal
 
+import androidx.lifecycle.Lifecycle
 import com.hyh.Invoke
 import com.hyh.base.RefreshEventHandler
 import com.hyh.base.RefreshStrategy
@@ -7,6 +8,8 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
+import com.hyh.lifecycle.ChildLifecycleOwner
+import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
@@ -14,7 +17,9 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
 
 
-abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) {
+abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) : IChildLifecycleOwner {
+
+    override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
     private val repoDisplayedData = RepoDisplayedData()
 
@@ -29,6 +34,11 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
         val flow = refreshEventHandler.flow
 
+        override fun injectParentLifecycle(lifecycle: Lifecycle) {
+            bindParentLifecycle(lifecycle)
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
+        }
+
         override fun refresh(param: Param) {
             refreshEventHandler.onReceiveRefreshEvent(false, param)
         }
@@ -38,6 +48,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
         }
 
         override fun destroy() {
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             refreshEventHandler.onDestroy()
             this@ItemSourceFetcher.destroy()
         }
@@ -54,6 +65,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param? ->
                 previousSnapshot?.close()
                 ItemSourceFetcherSnapshot(
+                    lifecycleOwner.lifecycle,
                     param,
                     repoDisplayedData,
                     getCacheLoader(),
@@ -91,6 +103,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 }
 
 class RepoResultProcessorGenerator(
+    private val repoLifecycle: Lifecycle,
     private val repoDisplayedData: RepoDisplayedData,
     private val sources: List<ItemSource<out Any, out Any>>,
     private val resultExtra: Any?
@@ -107,6 +120,7 @@ class RepoResultProcessorGenerator(
             val lazyFlow: Lazy<Flow<SourceData>> = lazy {
                 itemSource.delegate.sourcePosition = index
                 val itemFetcher = ItemFetcher(itemSource)
+                itemSource.delegate.bindParentLifecycle(repoLifecycle)
                 itemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                 itemFetcher.flow
             }
@@ -184,6 +198,7 @@ class RepoResultProcessorGenerator(
 }
 
 class ItemSourceFetcherSnapshot<Param : Any>(
+    private val repoLifecycle: Lifecycle,
     private val param: Param?,
     private val displayedData: RepoDisplayedData,
     private val cacheLoader: SourceCacheLoader<Param>,
@@ -220,7 +235,12 @@ class ItemSourceFetcherSnapshot<Param : Any>(
         if (cacheResult is ItemSourceRepo.CacheResult.Success) {
             usingCache = true
             val event = RepoEvent.UsingCache(
-                RepoResultProcessorGenerator(displayedData, cacheResult.sources, cacheResult.resultExtra).processor
+                RepoResultProcessorGenerator(
+                    repoLifecycle,
+                    displayedData,
+                    cacheResult.sources,
+                    cacheResult.resultExtra
+                ).processor
             )
             repoEventCh.send(event)
         }
@@ -237,7 +257,12 @@ class ItemSourceFetcherSnapshot<Param : Any>(
         when (loadResult) {
             is ItemSourceRepo.LoadResult.Success -> {
                 val event = RepoEvent.Success(
-                    RepoResultProcessorGenerator(displayedData, loadResult.sources, loadResult.resultExtra).processor
+                    RepoResultProcessorGenerator(
+                        repoLifecycle,
+                        displayedData,
+                        loadResult.sources,
+                        loadResult.resultExtra
+                    ).processor
                 ) {
                     onRefreshComplete()
                 }

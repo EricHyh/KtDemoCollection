@@ -8,37 +8,82 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="lifecycleOnCreate"
-        android:onClick="lifecycleOnCreate"/>
+        android:onClick="lifecycleOnCreate" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="lifecycleOnStart"
-        android:onClick="lifecycleOnStart"/>
+        android:onClick="lifecycleOnStart" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="lifecycleOnResume"
-        android:onClick="lifecycleOnResume"/>
+        android:onClick="lifecycleOnResume" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="lifecycleOnPause"
-        android:onClick="lifecycleOnPause"/>
+        android:onClick="lifecycleOnPause" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="lifecycleOnStop"
-        android:onClick="lifecycleOnStop"/>
+        android:onClick="lifecycleOnStop" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="lifecycleOnDestroy"
-        android:onClick="lifecycleOnDestroy"/>
+        android:onClick="lifecycleOnDestroy" />
+
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:background="@android:color/darker_gray" />
+
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="parentLifecycleOnCreate"
+        android:onClick="parentLifecycleOnCreate" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="parentLifecycleOnStart"
+        android:onClick="parentLifecycleOnStart" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="parentLifecycleOnResume"
+        android:onClick="parentLifecycleOnResume" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="parentLifecycleOnPause"
+        android:onClick="parentLifecycleOnPause" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="parentLifecycleOnStop"
+        android:onClick="parentLifecycleOnStop" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="parentLifecycleOnDestroy"
+        android:onClick="parentLifecycleOnDestroy" />
 
 
 </LinearLayout>

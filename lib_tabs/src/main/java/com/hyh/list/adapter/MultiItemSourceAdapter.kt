@@ -197,7 +197,13 @@ class MultiItemSourceAdapter<Param : Any>(
 
     private suspend fun submitData(data: RepoData<Param>) {
         collectFromRunner.runInIsolation {
-            receiver = data.receiver
+            val oldReceiver = receiver
+            val newReceiver = data.receiver
+            if (oldReceiver != newReceiver) {
+                newReceiver.injectParentLifecycle(pageContext.lifecycleOwner.lifecycle)
+                oldReceiver?.destroy()
+                receiver = newReceiver
+            }
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {

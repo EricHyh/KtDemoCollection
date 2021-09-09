@@ -10,6 +10,9 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.RefreshActuator
@@ -171,6 +174,15 @@ class MultiTabsTitleFlatListItem(
     private val onTabClick: (tab: Int) -> Unit
 ) : IFlatListItem<MultiTabsTitleFlatListItem.TitleHolder>() {
 
+    init {
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                Log.d("FlatListItem", "MultiTabsTitleFlatListItem onStateChanged: $event")
+            }
+        })
+    }
+
+
     override fun getItemViewType(): Int {
         return 0
     }
@@ -234,6 +246,13 @@ class MultiTabsTitleFlatListItem(
 
 class LoadingFlatListItem() : IFlatListItem<LoadingFlatListItem.LoadingItemHolder>() {
 
+    init {
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                Log.d("FlatListItem", "LoadingFlatListItem onStateChanged: $event")
+            }
+        })
+    }
 
     override fun getItemViewType(): Int {
         return R.layout.item_loading
@@ -268,6 +287,14 @@ class LoadingFlatListItem() : IFlatListItem<LoadingFlatListItem.LoadingItemHolde
 
 
 class EmptyFlatListItem(val refresh: RefreshActuator) : IFlatListItem<EmptyFlatListItem.EmptyItemHolder>() {
+
+    init {
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                Log.d("FlatListItem", "EmptyFlatListItem onStateChanged: $event")
+            }
+        })
+    }
 
     override fun getItemViewType(): Int {
         return R.layout.item_empty
@@ -312,6 +339,14 @@ class Tab1FlatListItem(
 
     private val TAG = "Tab1FlatListItem"
 
+    init {
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                Log.d(TAG, "Tab1FlatListItem onStateChanged: $event - $this")
+            }
+        })
+    }
+
     override fun getItemViewType(): Int {
         return 1
     }
@@ -334,16 +369,16 @@ class Tab1FlatListItem(
     }
 
     override fun onViewAttachedToWindow(viewHolder: Tab1ItemHolder) {
-        Log.d(TAG, "onViewAttachedToWindow: $viewHolder")
+        Log.d(TAG, "onViewAttachedToWindow: $viewHolder - $this")
         super.onViewAttachedToWindow(viewHolder)
     }
 
     override fun onViewDetachedFromWindow(viewHolder: Tab1ItemHolder) {
         super.onViewDetachedFromWindow(viewHolder)
-        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder")
+        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder - $this")
     }
 
-    override fun onViewRecycled(viewHolder: Tab1ItemHolder) {
+    /*override fun onViewRecycled(viewHolder: Tab1ItemHolder) {
         super.onViewRecycled(viewHolder)
         Log.d(TAG, "onViewRecycled: $viewHolder")
     }
@@ -351,7 +386,7 @@ class Tab1FlatListItem(
     override fun onFailedToRecycleView(viewHolder: Tab1ItemHolder): Boolean {
         Log.d(TAG, "onFailedToRecycleView: $viewHolder")
         return super.onFailedToRecycleView(viewHolder)
-    }
+    }*/
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is Tab1FlatListItem) return false
@@ -378,6 +413,14 @@ class Tab2FlatListItem(
 
     private val TAG = "Tab2FlatListItem"
 
+    init {
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                Log.d(TAG, "Tab2FlatListItem onStateChanged: $event - $this")
+            }
+        })
+    }
+
     override fun getItemViewType(): Int {
         return 2
     }
@@ -400,16 +443,16 @@ class Tab2FlatListItem(
 
 
     override fun onViewAttachedToWindow(viewHolder: Tab2ItemHolder) {
-        Log.d(TAG, "onViewAttachedToWindow: $viewHolder")
+        Log.d(TAG, "onViewAttachedToWindow: $viewHolder - $this")
         super.onViewAttachedToWindow(viewHolder)
     }
 
     override fun onViewDetachedFromWindow(viewHolder: Tab2ItemHolder) {
         super.onViewDetachedFromWindow(viewHolder)
-        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder")
+        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder - $this")
     }
 
-    override fun onViewRecycled(viewHolder: Tab2ItemHolder) {
+    /*override fun onViewRecycled(viewHolder: Tab2ItemHolder) {
         super.onViewRecycled(viewHolder)
         Log.d(TAG, "onViewRecycled: $viewHolder")
     }
@@ -417,7 +460,7 @@ class Tab2FlatListItem(
     override fun onFailedToRecycleView(viewHolder: Tab2ItemHolder): Boolean {
         Log.d(TAG, "onFailedToRecycleView: $viewHolder")
         return super.onFailedToRecycleView(viewHolder)
-    }
+    }*/
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is Tab2FlatListItem) return false
@@ -426,7 +469,12 @@ class Tab2FlatListItem(
     }
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
-        return false
+        return true
+    }
+
+    override fun onItemDetached() {
+        super.onItemDetached()
+        Log.d(TAG, "onItemDetached: ")
     }
 
     class Tab2ItemHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -442,7 +490,15 @@ class Tab3FlatListItem(
     private val des: String
 ) : IFlatListItem<Tab3FlatListItem.Tab3ItemHolder>() {
 
-    private val TAG = "Tab2FlatListItem"
+    private val TAG = "Tab3FlatListItem"
+
+    init {
+        lifecycle.addObserver(object : LifecycleEventObserver {
+            override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+                Log.d(TAG, "Tab3FlatListItem onStateChanged: $event - $this")
+            }
+        })
+    }
 
     override fun getItemViewType(): Int {
         return 3
@@ -466,16 +522,16 @@ class Tab3FlatListItem(
     }
 
     override fun onViewAttachedToWindow(viewHolder: Tab3ItemHolder) {
-        Log.d(TAG, "onViewAttachedToWindow: $viewHolder")
+        Log.d(TAG, "onViewAttachedToWindow: $viewHolder - $this")
         super.onViewAttachedToWindow(viewHolder)
     }
 
     override fun onViewDetachedFromWindow(viewHolder: Tab3ItemHolder) {
         super.onViewDetachedFromWindow(viewHolder)
-        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder")
+        Log.d(TAG, "onViewDetachedFromWindow: $viewHolder - $this")
     }
 
-    override fun onViewRecycled(viewHolder: Tab3ItemHolder) {
+    /*override fun onViewRecycled(viewHolder: Tab3ItemHolder) {
         super.onViewRecycled(viewHolder)
         Log.d(TAG, "onViewRecycled: $viewHolder")
     }
@@ -483,7 +539,7 @@ class Tab3FlatListItem(
     override fun onFailedToRecycleView(viewHolder: Tab3ItemHolder): Boolean {
         Log.d(TAG, "onFailedToRecycleView: $viewHolder")
         return super.onFailedToRecycleView(viewHolder)
-    }
+    }*/
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is Tab3FlatListItem) return false

@@ -60,6 +60,7 @@ abstract class PageContext(
         }
     }
 
+    abstract val lifecycle: Lifecycle
     abstract val lifecycleScope: CoroutineScope
     abstract val eventChannel: IEventChannel
     abstract val storage: IStorage
@@ -105,7 +106,8 @@ class LazyPageContext(
     }
 
     private val realPageContext = obtain(viewModelStoreOwner, lifecycleOwner)
-
+    override val lifecycle: Lifecycle
+        get() = realPageContext.lifecycle
     override val lifecycleScope: CoroutineScope
         get() = realPageContext.lifecycleScope
     override val eventChannel: IEventChannel
@@ -142,6 +144,9 @@ class PageContextImpl(
             lifecycleOwner.lifecycle.addObserver(InnerLifecycleEventObserver())
         }
     }
+
+    override val lifecycle: Lifecycle
+        get() = lifecycleOwner.lifecycle
 
     override val lifecycleScope: CoroutineScope by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         LifecycleCoroutineScopeImpl(lifecycleOwner.lifecycle, SupervisorJob() + Dispatchers.Main.immediate).apply {

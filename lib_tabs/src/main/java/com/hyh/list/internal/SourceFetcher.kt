@@ -154,16 +154,17 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
             sourceDisplayedData.resultExtra = resultExtra
 
             flatListItems.forEach {
+                it.delegate.bindParentLifecycle(delegate.lifecycleOwner.lifecycle)
                 it.delegate.displayedItems = flatListItems
             }
+
+            delegate.onResultDisplayed(sourceDisplayedData)
 
             delegate.run {
                 onItemsRecycled(updateResult.elementOperates.removedElements)
                 onItemsChanged(updateResult.elementOperates.changedElements)
                 onItemsDisplayed(updateResult.elementOperates.addedElements)
             }
-
-            delegate.onResultDisplayed(sourceDisplayedData)
         }
     }
 }

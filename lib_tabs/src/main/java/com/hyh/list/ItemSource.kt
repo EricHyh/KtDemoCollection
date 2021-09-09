@@ -1,7 +1,11 @@
 package com.hyh.list
 
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import com.hyh.RefreshActuator
 import com.hyh.base.RefreshStrategy
+import com.hyh.lifecycle.ChildLifecycleOwner
+import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.internal.IElementDiff
 import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
@@ -13,9 +17,11 @@ import kotlinx.coroutines.Dispatchers
  * @param Param 参数泛型
  * @param Item 原始的 Item 数据泛型
  */
-abstract class ItemSource<Param : Any, Item : Any> {
+abstract class ItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
     internal val delegate: Delegate<Param, Item> = object : Delegate<Param, Item>() {
+
+        override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
         private var displayedData: SourceDisplayedData<Item>? = null
 
@@ -35,6 +41,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
             }
 
         override fun attach() {
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
             this@ItemSource.onAttached()
         }
 
@@ -80,6 +87,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
         }
 
         override fun detach() {
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             this@ItemSource.onDetached()
         }
     }
@@ -98,6 +106,11 @@ abstract class ItemSource<Param : Any, Item : Any> {
     private lateinit var _refreshActuator: RefreshActuator
     val refreshActuator: RefreshActuator
         get() = _refreshActuator
+
+
+    final override fun getLifecycle(): Lifecycle {
+        return delegate.lifecycleOwner.lifecycle
+    }
 
     protected open fun onAttached() {}
 
@@ -132,7 +145,7 @@ abstract class ItemSource<Param : Any, Item : Any> {
 
     protected open fun onDetached() {}
 
-    abstract class Delegate<Param : Any, Item : Any> {
+    abstract class Delegate<Param : Any, Item : Any> : IChildLifecycleOwner {
 
         abstract val displayedOriginalItemsSnapshot: List<Item>?
 

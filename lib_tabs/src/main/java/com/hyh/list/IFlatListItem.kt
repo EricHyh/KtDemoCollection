@@ -1,23 +1,48 @@
 package com.hyh.list
 
+import android.util.Log
 import android.view.ViewGroup
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.lifecycle.ChildLifecycleOwner
+import com.hyh.lifecycle.IChildLifecycleOwner
+import com.hyh.list.adapter.BaseFlatListItemAdapter
+import com.hyh.tabs.BuildConfig
 
 /**
  * [RecyclerView]中的一个 Item 对象，负责数据及 UI 渲染
  *
  * @param VH [RecyclerView.ViewHolder]泛型
  */
-abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
+abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
+
+    companion object {
+        private const val TAG = "IFlatListItem"
+    }
 
     internal val delegate = object : Delegate<VH>() {
 
+        override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
+
         override fun onItemAttached() {
             super.onItemAttached()
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
             this@IFlatListItem.onItemAttached()
         }
 
         override fun onItemActivated() {
+            val currentSelfState = lifecycleOwner.lifecycle.selfState
+            if (currentSelfState == Lifecycle.State.CREATED) {
+                lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
+            } else {
+                val errorMsg = getErrorMsg("onItemActivated", currentSelfState, Lifecycle.State.CREATED)
+                if (BuildConfig.DEBUG) {
+                    throw IllegalStateException(errorMsg)
+                } else {
+                    Log.e(TAG, errorMsg)
+                }
+            }
             this@IFlatListItem.onItemActivated()
         }
 
@@ -25,11 +50,28 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
             this@IFlatListItem.onUpdateItem(newItem)
         }
 
-        override fun onViewAttachedToWindow(viewHolder: VH) =
+        override fun onViewAttachedToWindow(viewHolder: VH) {
+            val currentSelfState = lifecycleOwner.lifecycle.selfState
+            if (currentSelfState == Lifecycle.State.STARTED) {
+                lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
+            } else {
+                val errorMsg = getErrorMsg("onViewAttachedToWindow", currentSelfState, Lifecycle.State.STARTED)
+                if (BuildConfig.DEBUG) {
+                    throw IllegalStateException(errorMsg)
+                } else {
+                    Log.e(TAG, errorMsg)
+                }
+            }
             this@IFlatListItem.onViewAttachedToWindow(viewHolder)
+        }
 
-        override fun onViewDetachedFromWindow(viewHolder: VH) =
+        override fun onViewDetachedFromWindow(viewHolder: VH) {
+            val currentSelfState = lifecycleOwner.lifecycle.selfState
+            if (currentSelfState == Lifecycle.State.RESUMED) {
+                lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
+            }
             this@IFlatListItem.onViewDetachedFromWindow(viewHolder)
+        }
 
         override fun onViewRecycled(viewHolder: VH) =
             this@IFlatListItem.onViewRecycled(viewHolder)
@@ -38,12 +80,24 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
             this@IFlatListItem.onFailedToRecycleView(viewHolder)
 
         override fun onItemInactivated() {
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
             this@IFlatListItem.onItemInactivated()
         }
 
         override fun onItemDetached() {
             super.onItemDetached()
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             this@IFlatListItem.onItemDetached()
+        }
+
+        private fun getErrorMsg(
+            methodName: String,
+            currentSelfState: Lifecycle.State,
+            targetState: Lifecycle.State
+        ): String {
+            return "IFlatListItem.$methodName: lifecycle state error, " +
+                    "current self state must be $targetState, " +
+                    "but now is $currentSelfState."
         }
     }
 
@@ -63,6 +117,23 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
      */
     val localPosition
         get() = delegate.displayedItems?.indexOf(this) ?: -1
+
+
+    /**
+     * 获取[IFlatListItem]对象的什么周期，各生命周期状态的描述如下：
+     * - [Lifecycle.State.INITIALIZED]：Item 被创建后的初始状态
+     * - [Lifecycle.State.CREATED]：Item 在缓存中，还未被添加到列表中的状态，对应回调[onItemAttached]
+     * - [Lifecycle.State.STARTED]：Item 被添加到列表中的状态，对应回调[onItemActivated]
+     * - [Lifecycle.State.RESUMED]：Item 绑定的 ItemView 添加到 ViewTree 上的状态，对应回调[onViewAttachedToWindow]
+     * - [Lifecycle.State.DESTROYED]：Item 被销毁的状态，对应回调[onItemDetached]
+     *
+     * 特别的，Item 的 Lifecycle 最终绑定了 外层页面（如：Fragment）的 Lifecycle。例如：
+     * tem 自身的生命周期状态为[Lifecycle.State.RESUMED]，Fragment 的生命周期状态从[Lifecycle.State.RESUMED]，
+     * 切换到了[Lifecycle.State.STARTED]，那么 Item 的 Lifecycle 也会切换到[Lifecycle.State.STARTED]
+     */
+    final override fun getLifecycle(): Lifecycle {
+        return delegate.lifecycleOwner.lifecycle
+    }
 
     /**
      * 当 Item 开始被使用时的回调，与[onItemDetached]是一对
@@ -144,7 +215,8 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> {
      */
     open fun onItemDetached() {}
 
-    internal abstract class Delegate<VH : RecyclerView.ViewHolder> {
+    internal abstract class Delegate<VH : RecyclerView.ViewHolder> : IChildLifecycleOwner {
+
 
         private var _attached = false
         val attached
