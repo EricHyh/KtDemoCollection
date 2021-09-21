@@ -5,7 +5,7 @@ import androidx.annotation.ColorInt
 import com.hyh.list.adapter.IListAdapter
 import com.hyh.list.adapter.ItemLocalInfo
 
-class MultiSourceFrameDecoration(
+class MultiSourceCardDecoration(
     outRect: Rect,
     radius: FloatArray,
     colorInt: Int,
@@ -33,14 +33,14 @@ class MultiSourceFrameDecoration(
         resetSupportedSourceGroupsMap(supportedSourceGroups)
     }
 
-    override fun isFirstItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean {
+    override fun isCardTopItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean {
         if (itemLocalInfo.localPosition != 0) return false
         val sourceGroup = supportedSourceGroupsMap[itemLocalInfo.sourceToken] ?: return false
         if (sourceGroup.isEmpty()) return false
         return sourceGroup.first() == itemLocalInfo.sourceToken
     }
 
-    override fun isLastItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean {
+    override fun isCardBottomItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean {
         if (itemLocalInfo.localPosition != itemLocalInfo.sourceItemCount - 1) return false
         val sourceGroup = supportedSourceGroupsMap[itemLocalInfo.sourceToken] ?: return false
         if (sourceGroup.isEmpty()) return false

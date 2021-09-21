@@ -50,15 +50,15 @@ abstract class BaseItemSourceFrameDecoration(
 
             val itemBottomWithDecoration = itemBoundWithDecoration.bottom + child.translationY
 
-            if (isFirstItem(adapter, itemLocalInfo) && isLastItem(adapter, itemLocalInfo)) {
+            if (isCardTopItem(adapter, itemLocalInfo) && isCardBottomItem(adapter, itemLocalInfo)) {
                 val itemTop = child.top.toFloat()
                 val itemBottom = child.bottom.toFloat()
                 drawTop(itemTopWithDecoration, itemTop, itemLeft, itemRight, canvas)
                 drawBottom(itemBottomWithDecoration, itemBottom, itemRight, itemLeft, canvas)
-            } else if (isFirstItem(adapter, itemLocalInfo)) {
+            } else if (isCardTopItem(adapter, itemLocalInfo)) {
                 val itemTop = child.top.toFloat()
                 drawTop(itemTopWithDecoration, itemTop, itemLeft, itemRight, canvas)
-            } else if (isLastItem(adapter, itemLocalInfo)) {
+            } else if (isCardBottomItem(adapter, itemLocalInfo)) {
                 val itemBottom = child.bottom.toFloat()
                 drawBottom(itemBottomWithDecoration, itemBottom, itemRight, itemLeft, canvas)
             }
@@ -89,11 +89,11 @@ abstract class BaseItemSourceFrameDecoration(
         val itemLocalInfo = adapter.findItemLocalInfo(view, parent) ?: return
         if (!shouldDrawOver(adapter, itemLocalInfo.sourceToken)) return
 
-        if (isFirstItem(adapter, itemLocalInfo) && isLastItem(adapter, itemLocalInfo)) {
+        if (isCardTopItem(adapter, itemLocalInfo) && isCardBottomItem(adapter, itemLocalInfo)) {
             outRect.set(sourceOutRect.left, sourceOutRect.top, sourceOutRect.right, sourceOutRect.bottom)
-        } else if (isFirstItem(adapter, itemLocalInfo)) {
+        } else if (isCardTopItem(adapter, itemLocalInfo)) {
             outRect.set(sourceOutRect.left, sourceOutRect.top, sourceOutRect.right, 0)
-        } else if (isLastItem(adapter, itemLocalInfo)) {
+        } else if (isCardBottomItem(adapter, itemLocalInfo)) {
             outRect.set(sourceOutRect.left, 0, sourceOutRect.right, sourceOutRect.bottom)
         } else {
             outRect.set(sourceOutRect.left, 0, sourceOutRect.right, 0)
@@ -102,9 +102,9 @@ abstract class BaseItemSourceFrameDecoration(
 
     protected abstract fun shouldDrawOver(adapter: IListAdapter<*>, sourceToken: Any): Boolean
 
-    protected abstract fun isFirstItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean
+    protected abstract fun isCardTopItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean
 
-    protected abstract fun isLastItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean
+    protected abstract fun isCardBottomItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean
 
     private fun drawTop(
         itemTopWithDecoration: Float,

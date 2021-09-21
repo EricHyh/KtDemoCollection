@@ -9,14 +9,14 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.RefreshActuator
 import com.hyh.list.*
 import com.hyh.list.adapter.MultiItemSourceAdapter
-import com.hyh.list.decoration.MultiSourceFrameDecoration
-import com.hyh.list.decoration.SingleSourceFrameDecoration
+import com.hyh.list.decoration.MultiSourceCardDecoration
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import kotlinx.coroutines.flow.collect
@@ -68,7 +68,7 @@ class TradeTabPageFragment : Fragment() {
             }
         }
 
-        val multiSourceFrameDecoration = MultiSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt())
+        val multiSourceFrameDecoration = MultiSourceCardDecoration(40, 20F, 0xFFEEEEEE.toInt())
         recyclerView.addItemDecoration(multiSourceFrameDecoration)
 
         lifecycleScope.launch {

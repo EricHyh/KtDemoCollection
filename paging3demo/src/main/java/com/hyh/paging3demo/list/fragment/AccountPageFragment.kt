@@ -1,6 +1,7 @@
 package com.hyh.paging3demo.list.fragment
 
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -19,7 +20,9 @@ import com.hyh.RefreshActuator
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.*
 import com.hyh.list.adapter.MultiItemSourceAdapter
-import com.hyh.list.decoration.SingleSourceFrameDecoration
+import com.hyh.list.decoration.RoundCorner
+import com.hyh.list.decoration.RoundCornerBuilder
+import com.hyh.list.decoration.SingleSourceCardDecoration
 import com.hyh.list.internal.ListItemWrapper
 import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.page.pageContext
@@ -46,7 +49,11 @@ class AccountPageFragment : Fragment() {
         super.onCreate(savedInstanceState)
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
         return inflater.inflate(R.layout.fragment_trade_tab_page, container, false)
     }
 
@@ -56,12 +63,23 @@ class AccountPageFragment : Fragment() {
             multiItemSourceAdapter.refreshRepo(Unit)
         }
         val recyclerView = view.findViewById<RecyclerView>(R.id.recycler_view)
-        recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
+        recyclerView.layoutManager =
+            LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
         if (!withItemAnimator) {
             recyclerView.itemAnimator = null
         }
 
-        recyclerView.addItemDecoration(SingleSourceFrameDecoration(40, 20F, 0xFFEEEEEE.toInt()))
+        val corners = RoundCornerBuilder()
+            .topLeft(40F, RoundCorner.DIRECTION_IN)
+            .topRight(40F, RoundCorner.DIRECTION_IN)
+            .bottomLeft(40F, RoundCorner.DIRECTION_IN)
+            .bottomRight(40F, RoundCorner.DIRECTION_IN)
+            .build()
+
+        val cardDecoration =
+            SingleSourceCardDecoration(Rect(20, 20, 20, 20), corners, 0xFFEEEEEE.toInt())
+        recyclerView.addItemDecoration(cardDecoration)
+
         recyclerView.adapter = multiItemSourceAdapter
         //sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)
         multiItemSourceAdapter.submitData(
@@ -155,13 +173,24 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiContentItemSource
         return selectedTab
     }
 
-    override fun getFetchDispatcher(param: Int, displayedData: SourceDisplayedData<ListItemWrapper>): CoroutineDispatcher {
+    override fun getFetchDispatcher(
+        param: Int,
+        displayedData: SourceDisplayedData<ListItemWrapper>
+    ): CoroutineDispatcher {
         return Dispatchers.IO
     }
 
     private fun getRandomColor(): Int {
         val colorIntList = listOf(
-            Color.WHITE, Color.GRAY, Color.BLACK, Color.RED, Color.BLUE, Color.CYAN, Color.LTGRAY, Color.YELLOW, Color.MAGENTA
+            Color.WHITE,
+            Color.GRAY,
+            Color.BLACK,
+            Color.RED,
+            Color.BLUE,
+            Color.CYAN,
+            Color.LTGRAY,
+            Color.YELLOW,
+            Color.MAGENTA
         )
         return colorIntList[random.nextInt(0, colorIntList.size)]
     }
@@ -286,7 +315,8 @@ class LoadingFlatListItem() : IFlatListItem<LoadingFlatListItem.LoadingItemHolde
 }
 
 
-class EmptyFlatListItem(val refresh: RefreshActuator) : IFlatListItem<EmptyFlatListItem.EmptyItemHolder>() {
+class EmptyFlatListItem(val refresh: RefreshActuator) :
+    IFlatListItem<EmptyFlatListItem.EmptyItemHolder>() {
 
     init {
         lifecycle.addObserver(object : LifecycleEventObserver {
