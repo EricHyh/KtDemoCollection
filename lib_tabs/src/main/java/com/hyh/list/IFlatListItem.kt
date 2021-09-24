@@ -128,7 +128,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
      * - [Lifecycle.State.DESTROYED]：Item 被销毁的状态，对应回调[onItemDetached]
      *
      * 特别的，Item 的 Lifecycle 最终绑定了 外层页面（如：Fragment）的 Lifecycle。例如：
-     * tem 自身的生命周期状态为[Lifecycle.State.RESUMED]，Fragment 的生命周期状态从[Lifecycle.State.RESUMED]，
+     * item 自身的生命周期状态为[Lifecycle.State.RESUMED]，Fragment 的生命周期状态从[Lifecycle.State.RESUMED]，
      * 切换到了[Lifecycle.State.STARTED]，那么 Item 的 Lifecycle 也会切换到[Lifecycle.State.STARTED]
      */
     final override fun getLifecycle(): Lifecycle {

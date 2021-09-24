@@ -79,8 +79,10 @@ class ExampleUnitTest {
             }
         })
 
+        print("")
 
-        /*val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+
+        /*val diffResult = TestDiffUtil.calculateDiff(object : TestDiffUtil.Callback() {
 
             override fun getOldListSize(): Int {
                 return oldList.size
