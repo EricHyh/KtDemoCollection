@@ -9,8 +9,20 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.reflect.KClass
 
 
+/**
+ * 事件数据接口，被发射的事件需要实现该接口
+ *
+ * @author eriche
+ * @data 2021/6/18
+ */
 interface IEvent {
     companion object {
+
+        /**
+         * 将任意对象包装成事件数据
+         *
+         * @return
+         */
         fun Any.asEvent(): IEvent {
             return DataWrapperEvent.create(this)
         }
@@ -19,6 +31,13 @@ interface IEvent {
             return getObservable(T::class.java)
         }
 
+
+        /**
+         * 是否为指定数据类型的包装事件
+         *
+         * @param T 被包装的数据类型
+         * @return
+         */
         inline fun <reified T> IEvent.isDataWrapperEvent(): Boolean {
             if (this !is DataWrapperEvent) {
                 return false
@@ -27,6 +46,12 @@ interface IEvent {
             return T::class.java.isInstance(data)
         }
 
+        /**
+         * 将包装的数据解包出来
+         *
+         * @param T 被包装的数据类型
+         * @return
+         */
         inline fun <reified T> IEvent.unwrapData(): T? {
             if (isDataWrapperEvent<T>()) {
                 return (this as DataWrapperEvent).getData() as T
@@ -36,7 +61,12 @@ interface IEvent {
     }
 }
 
-class DataWrapperEvent private constructor(private val mData: Any) : IEvent {
+/**
+ * 包装数据事件类型
+ *
+ * @property data
+ */
+class DataWrapperEvent private constructor(private val data: Any) : IEvent {
 
     companion object {
         fun create(data: Any): DataWrapperEvent {
@@ -45,10 +75,13 @@ class DataWrapperEvent private constructor(private val mData: Any) : IEvent {
     }
 
     fun getData(): Any {
-        return mData
+        return data
     }
 }
 
+/**
+ * 提供给页面使用的事件通道，会绑定页面生命周期，在页面destroy后停止发射数据
+ */
 interface IEventChannel {
 
     object Factory {
@@ -59,28 +92,82 @@ interface IEventChannel {
 
     // region receive as observable
 
+    /**
+     * 提供一个[Observable]对象，该对象可以观察[T]类型及其子类型的事件.
+     *
+     * 注意：不使用时请注销观察者
+     *
+     *
+     * @param T 事件类型
+     * @param eventType 事件类型的java字节码对象
+     * @return
+     */
     fun <T : IEvent> getObservable(eventType: Class<T>): Observable<T>
     fun <T : IEvent> getObservable(eventType: KClass<T>): Observable<T> = getObservable(eventType.java)
 
+    /**
+     * 提供一个[Observable]对象，该对象可以观察[eventTypes]中每一项的类型及其子类型的事件
+     *
+     * 注意：不使用时请注销观察者
+     *
+     * @param eventTypes 事件类型的java字节码对象列表
+     * @return
+     */
     fun getObservable(vararg eventTypes: Class<out IEvent>): Observable<IEvent>
     fun getObservable(vararg eventTypes: KClass<out IEvent>): Observable<IEvent> = getObservable(*eventTypes.map { it.java }.toTypedArray())
 
+    /**
+     * 提供一个[Observable]对象，该对象可以观察事件通道中的所有事件
+     *
+     * 注意：不使用时请注销观察者
+     *
+     * @return
+     */
     fun getObservable(): Observable<IEvent>
 
     // endregion
 
     // region receive as flow
 
+    /**
+     * 提供一个[Flow]对象，该对象可以收集[T]类型及其子类型的事件
+     *
+     * 注意：不使用时请销毁协程任务
+     *
+     * @param T 事件类型
+     * @param eventType 事件类型的java字节码对象
+     * @return
+     */
     fun <T : IEvent> getFlow(eventType: Class<T>): Flow<T>
     fun <T : IEvent> getFlow(eventType: KClass<T>): Flow<T> = getFlow(eventType.java)
 
+    /**
+     * 提供一个[Flow]对象，该对象可以收集[eventTypes]中每一项的类型及其子类型的事件
+     *
+     * 注意：不使用时请销毁协程任务
+     *
+     * @param eventTypes 事件类型的java字节码对象列表
+     * @return
+     */
     fun getFlow(vararg eventTypes: Class<out IEvent>): Flow<IEvent>
     fun getFlow(vararg eventTypes: KClass<out IEvent>): Flow<IEvent> = getFlow(*eventTypes.map { it.java }.toTypedArray())
 
+    /**
+     * 提供一个[Flow]对象，使用该对象可以收集该事件通道中的所有事件
+     *
+     * 注意：不使用时请销毁协程任务
+     *
+     * @return
+     */
     fun getFlow(): Flow<IEvent>
 
     // endregion
 
+    /**
+     * 发射事件
+     *
+     * @param event 事件类型
+     */
     fun send(event: IEvent)
 }
 

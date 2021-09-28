@@ -43,7 +43,7 @@ sealed class SourceLoadState {
 
 
 class SourceLoadStates(
-    val sourceStateMap: Map<Any, SourceLoadState>,
+    val sourceStateMap: Map<Any, SourceLoadState>
 ) {
 
     companion object {

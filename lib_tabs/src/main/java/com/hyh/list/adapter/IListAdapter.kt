@@ -20,6 +20,8 @@ interface IListAdapter<Param : Any> {
 
     fun submitData(flow: Flow<RepoData<Param>>)
 
+    fun getItem(globalPosition: Int): FlatListItem? = findItemLocalInfo(globalPosition)?.item
+
     fun getItemSnapshot(): List<FlatListItem>
     fun getItemSnapshot(sourceIndexStart: Int, count: Int = 1): List<FlatListItem>
     fun getItemSnapshot(sourceTokenStart: Any, count: Int = 1): List<FlatListItem>

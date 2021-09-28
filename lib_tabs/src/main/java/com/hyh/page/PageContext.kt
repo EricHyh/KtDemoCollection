@@ -17,7 +17,6 @@ import kotlin.coroutines.CoroutineContext
  * @author eriche
  * @data 2021/4/28
  */
-
 abstract class PageContext(
     @Suppress("unused")
     val viewModelStoreOwner: ViewModelStoreOwner,
@@ -66,6 +65,16 @@ abstract class PageContext(
     abstract val storage: IStorage
     abstract fun invokeOnDestroy(block: () -> Unit)
 
+    /**
+     * 创建一个局部的页面上下文，该上下文拥有独立的事件通道和数据存储器.
+     *
+     * 当一个页面过于复杂时，可能这个页面分成很多区域，并且这些区域没有关联性，那么可以针对这些区域生成一个局部的上下文
+     *
+     * @return
+     */
+    fun createLocalPageContext(): PageContext {
+        return PageContextImpl(viewModelStoreOwner, lifecycleOwner)
+    }
 }
 
 
@@ -105,7 +114,17 @@ class LazyPageContext(
         }
     }
 
-    private val realPageContext = obtain(viewModelStoreOwner, lifecycleOwner)
+    private val realPageContext by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        obtain(viewModelStoreOwner, lifecycleOwner).apply {
+            invokeOnDestroy {
+                synchronized(lock) {
+                    val hashCode = System.identityHashCode(lifecycleOwner.lifecycle)
+                    val pageContextRef = pageContextMap.remove(hashCode)
+                    pageContextRef?.clear()
+                }
+            }
+        }
+    }
     override val lifecycle: Lifecycle
         get() = realPageContext.lifecycle
     override val lifecycleScope: CoroutineScope
@@ -236,7 +255,6 @@ class PageContextViewModel : ViewModel() {
         viewModelStoreOwner: ViewModelStoreOwner,
         lifecycleOwner: LifecycleOwner
     ): PageContext {
-        viewModelScope
         val pageContext = pageContextMap[lifecycleOwner.lifecycle]
         if (pageContext != null) {
             return pageContext
