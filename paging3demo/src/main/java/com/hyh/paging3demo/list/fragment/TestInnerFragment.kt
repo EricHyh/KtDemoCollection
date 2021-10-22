@@ -47,7 +47,7 @@ class TestInnerModel : ITestInnerModel {
     }
 }
 
-class UniversalItemSource(val id: Long) : SimpleItemSource<Unit>() {
+/*class UniversalItemSource(val id: Long) : SimpleItemSource<Unit>() {
 
     override val sourceToken: Any
         get() = id
@@ -62,7 +62,7 @@ class UniversalItemSource(val id: Long) : SimpleItemSource<Unit>() {
     override suspend fun load(param: Unit): LoadResult<FlatListItem> {
 
     }
-}
+}*/
 
 class NormalItemSource(val id: Long) : SimpleItemSource<Unit>() {
 

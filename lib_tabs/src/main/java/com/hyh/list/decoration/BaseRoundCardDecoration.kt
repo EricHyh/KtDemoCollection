@@ -36,7 +36,6 @@ abstract class BaseRoundCardDecoration(
             val itemLocalInfo = adapter.findItemLocalInfo(child, parent) ?: continue
             val cardPosition = getCardPosition(adapter, itemLocalInfo) ?: continue
 
-
             parent.getDecoratedBoundsWithMargins(child, itemBoundWithDecoration)
 
             val itemLeft = child.left.toFloat()
