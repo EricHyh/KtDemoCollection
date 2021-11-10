@@ -72,6 +72,13 @@ abstract class MultiSourceAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder
         releaseWrapperAndLocalPosition(wrapperAndPos)
     }
 
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        val wrapperAndPos = findWrapperAndLocalPosition(position)
+        wrapperAndPos.wrapper?.onBindViewHolder(holder, wrapperAndPos.localPosition, payloads)
+        binderLookup[holder] = wrapperAndPos.wrapper
+        releaseWrapperAndLocalPosition(wrapperAndPos)
+    }
+
     override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
         binderLookup[holder]?.adapter?.onViewAttachedToWindow(holder)
     }
@@ -471,7 +478,11 @@ open class AdapterWrapper(
     }
 
     fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, localPosition: Int) {
-        adapter.bindViewHolder(viewHolder, localPosition)
+        adapter.onBindViewHolder(viewHolder, localPosition)
+    }
+
+    fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, localPosition: Int, payloads: MutableList<Any>) {
+        adapter.onBindViewHolder(viewHolder, localPosition, payloads)
     }
 
     open fun destroy() {

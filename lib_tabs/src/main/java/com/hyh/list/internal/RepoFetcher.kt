@@ -1,5 +1,6 @@
 package com.hyh.list.internal
 
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import com.hyh.Invoke
 import com.hyh.base.RefreshEventHandler
@@ -18,6 +19,10 @@ import kotlinx.coroutines.flow.*
 
 
 abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) : IChildLifecycleOwner {
+
+    companion object {
+        private const val TAG = "ItemSourceFetcher"
+    }
 
     override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
@@ -40,6 +45,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
         }
 
         override fun refresh(param: Param) {
+            Log.i(TAG, "uiReceiver:$this refresh:$param")
             refreshEventHandler.onReceiveRefreshEvent(false, param)
         }
 
@@ -48,6 +54,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
         }
 
         override fun destroy() {
+            Log.i(TAG, "uiReceiver:$this destroy")
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             refreshEventHandler.onDestroy()
             this@ItemSourceFetcher.destroy()
@@ -151,6 +158,10 @@ class RepoResultProcessorGenerator(
             repoDisplayedData.lazySources = lazySources
             repoDisplayedData.sources = sources
             repoDisplayedData.resultExtra = resultExtra
+
+            lazySources.forEach {
+                it.lazyFlow.value
+            }
 
             updateResult.elementOperates.removedElements.forEach {
                 it.itemSource.delegate.detach()

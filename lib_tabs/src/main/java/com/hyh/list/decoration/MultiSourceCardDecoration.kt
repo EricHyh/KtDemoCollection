@@ -37,14 +37,14 @@ class MultiSourceCardDecoration(
         if (itemLocalInfo.localPosition != 0) return false
         val sourceGroup = supportedSourceGroupsMap[itemLocalInfo.sourceToken] ?: return false
         if (sourceGroup.isEmpty()) return false
-        return sourceGroup.first() == itemLocalInfo.sourceToken
+        return sourceGroup.firstOrNull() == itemLocalInfo.sourceToken
     }
 
     override fun isCardBottomItem(adapter: IListAdapter<*>, itemLocalInfo: ItemLocalInfo): Boolean {
         if (itemLocalInfo.localPosition != itemLocalInfo.sourceItemCount - 1) return false
         val sourceGroup = supportedSourceGroupsMap[itemLocalInfo.sourceToken] ?: return false
         if (sourceGroup.isEmpty()) return false
-        return sourceGroup.last() == itemLocalInfo.sourceToken
+        return sourceGroup.lastOrNull() == itemLocalInfo.sourceToken
     }
 
     private fun resetSupportedSourceGroupsMap(supportedSourceGroups: List<List<Any>>?) {

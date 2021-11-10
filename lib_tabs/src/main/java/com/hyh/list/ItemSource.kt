@@ -87,6 +87,13 @@ abstract class ItemSource<Param : Any, Item : Any> : LifecycleOwner {
         }
 
         override fun detach() {
+            displayedData?.let { displayedData ->
+                displayedData.flatListItems?.forEach { item ->
+                    item.delegate.onItemInactivated()
+                    item.delegate.onItemDetached()
+                }
+            }
+            displayedData = null
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             this@ItemSource.onDetached()
         }

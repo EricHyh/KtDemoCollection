@@ -29,13 +29,20 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             super.onItemAttached()
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
             this@IFlatListItem.onItemAttached()
+            Log.d(
+                TAG,
+                "onItemAttached: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
+            )
         }
 
         override fun onItemActivated() {
             val currentSelfState = lifecycleOwner.lifecycle.selfState
-            if (currentSelfState == Lifecycle.State.CREATED) {
-                lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
-            } else {
+            Log.d(
+                TAG,
+                "onItemActivated: ${this@IFlatListItem}, currentSelfState=$currentSelfState, currentState=${lifecycleOwner.lifecycle.currentState}"
+            )
+
+            if (currentSelfState != Lifecycle.State.CREATED) {
                 val errorMsg = getErrorMsg("onItemActivated", currentSelfState, Lifecycle.State.CREATED)
                 if (BuildConfig.DEBUG) {
                     throw IllegalStateException(errorMsg)
@@ -43,6 +50,8 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
                     Log.e(TAG, errorMsg)
                 }
             }
+
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
             this@IFlatListItem.onItemActivated()
         }
 
@@ -51,10 +60,9 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
         }
 
         override fun onViewAttachedToWindow(viewHolder: VH) {
+            Log.d(TAG, "onViewAttachedToWindow: $viewHolder - ${this@IFlatListItem}")
             val currentSelfState = lifecycleOwner.lifecycle.selfState
-            if (currentSelfState == Lifecycle.State.STARTED) {
-                lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
-            } else {
+            if (currentSelfState < Lifecycle.State.STARTED) {
                 val errorMsg = getErrorMsg("onViewAttachedToWindow", currentSelfState, Lifecycle.State.STARTED)
                 if (BuildConfig.DEBUG) {
                     throw IllegalStateException(errorMsg)
@@ -62,10 +70,12 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
                     Log.e(TAG, errorMsg)
                 }
             }
+            lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
             this@IFlatListItem.onViewAttachedToWindow(viewHolder)
         }
 
         override fun onViewDetachedFromWindow(viewHolder: VH) {
+            Log.d(TAG, "onViewDetachedFromWindow: $viewHolder - ${this@IFlatListItem}")
             val currentSelfState = lifecycleOwner.lifecycle.selfState
             if (currentSelfState == Lifecycle.State.RESUMED) {
                 lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
@@ -80,6 +90,10 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             this@IFlatListItem.onFailedToRecycleView(viewHolder)
 
         override fun onItemInactivated() {
+            Log.d(
+                TAG,
+                "onItemInactivated: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
+            )
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
             this@IFlatListItem.onItemInactivated()
         }
@@ -88,6 +102,11 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             super.onItemDetached()
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             this@IFlatListItem.onItemDetached()
+
+            Log.d(
+                TAG,
+                "onItemDetached: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
+            )
         }
 
         private fun getErrorMsg(

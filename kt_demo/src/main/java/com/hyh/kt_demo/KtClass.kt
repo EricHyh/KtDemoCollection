@@ -4,9 +4,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.math.BigDecimal
 import kotlin.concurrent.thread
 
 fun main() {
+
+    val x: BigDecimal
+
+    x.rem()
+
+
+
 
     thread {
 

@@ -14,16 +14,22 @@ abstract class BaseRoundCardDecoration(
     @ColorInt val colorInt: Int
 ) : RecyclerView.ItemDecoration() {
 
-    private val itemBoundWithDecoration = Rect()
+    protected val itemBoundWithDecoration = Rect()
     private val arcRectF = RectF()
-    private val tempRect = Rect()
+    protected val tempRect = Rect()
     private val path = Path()
 
-    private val paint by lazy {
+    private var tempCardPosition = CardPosition()
+
+    protected val paint by lazy {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = colorInt
             style = Paint.Style.FILL
         }
+    }
+
+    fun setColorInt(@ColorInt colorInt: Int) {
+        paint.color = colorInt
     }
 
     override fun onDrawOver(canvas: Canvas, parent: RecyclerView, state: RecyclerView.State) {
@@ -34,7 +40,9 @@ abstract class BaseRoundCardDecoration(
         for (index in 0 until childCount) {
             val child = parent.getChildAt(index)
             val itemLocalInfo = adapter.findItemLocalInfo(child, parent) ?: continue
-            val cardPosition = getCardPosition(adapter, itemLocalInfo) ?: continue
+            val cardPosition = tempCardPosition
+            cardPosition.reset()
+            if (!getCardPosition(cardPosition, adapter, itemLocalInfo)) continue
 
             parent.getDecoratedBoundsWithMargins(child, itemBoundWithDecoration)
 
@@ -44,34 +52,34 @@ abstract class BaseRoundCardDecoration(
 
             val itemBottomWithDecoration = itemBoundWithDecoration.bottom + child.translationY
 
-            when (cardPosition) {
-                is CardPosition.Whole -> {
+            when (cardPosition.type) {
+                CardPosition.TYPE_WHOLE -> {
                     val itemTop = child.top.toFloat()
                     val itemBottom = child.bottom.toFloat()
                     drawTop(
                         itemTopWithDecoration, itemTop, itemLeft, itemRight,
-                        cardPosition.corners[0], cardPosition.corners[1],
+                        cardPosition.leftTopCorner, cardPosition.rightTopCorner,
                         canvas
                     )
                     drawBottom(
                         itemBottomWithDecoration, itemBottom, itemRight, itemLeft,
-                        cardPosition.corners[2], cardPosition.corners[3],
+                        cardPosition.leftBottomCorner, cardPosition.rightBottomCorner,
                         canvas
                     )
                 }
-                is CardPosition.Top -> {
+                CardPosition.TYPE_TOP -> {
                     val itemTop = child.top.toFloat()
                     drawTop(
                         itemTopWithDecoration, itemTop, itemLeft, itemRight,
-                        cardPosition.leftCorner, cardPosition.rightCorner,
+                        cardPosition.leftTopCorner, cardPosition.rightTopCorner,
                         canvas
                     )
                 }
-                is CardPosition.Bottom -> {
+                CardPosition.TYPE_BOTTOM -> {
                     val itemBottom = child.bottom.toFloat()
                     drawBottom(
                         itemBottomWithDecoration, itemBottom, itemRight, itemLeft,
-                        cardPosition.leftCorner, cardPosition.rightCorner,
+                        cardPosition.leftBottomCorner, cardPosition.rightBottomCorner,
                         canvas
                     )
                 }
@@ -112,9 +120,10 @@ abstract class BaseRoundCardDecoration(
     }
 
     protected abstract fun getCardPosition(
+        cardPosition: CardPosition,
         adapter: IListAdapter<*>,
-        itemLocalInfo: ItemLocalInfo
-    ): CardPosition?
+        itemLocalInfo: ItemLocalInfo,
+    ): Boolean
 
 
     protected abstract fun getItemOffsets(
@@ -247,9 +256,34 @@ abstract class BaseRoundCardDecoration(
     }
 }
 
-sealed class CardPosition {
+class CardPosition {
 
-    data class Whole(val corners: Array<RoundCorner>) : CardPosition() {
+    companion object {
+        const val TYPE_CONTENT: Int = 0
+        const val TYPE_WHOLE: Int = 1
+        const val TYPE_TOP: Int = 2
+        const val TYPE_BOTTOM: Int = 3
+    }
+
+    var type: Int = TYPE_CONTENT
+
+    val leftTopCorner: RoundCorner = RoundCorner()
+
+    val rightTopCorner: RoundCorner = RoundCorner()
+
+    val leftBottomCorner: RoundCorner = RoundCorner()
+
+    val rightBottomCorner: RoundCorner = RoundCorner()
+
+    fun reset() {
+        type = TYPE_CONTENT
+        leftTopCorner.reset()
+        rightTopCorner.reset()
+        leftBottomCorner.reset()
+        rightBottomCorner.reset()
+    }
+
+    /*data class Whole(val corners: Array<RoundCorner>) : CardPosition() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false
@@ -270,18 +304,23 @@ sealed class CardPosition {
 
     object Content : CardPosition()
 
-    data class Bottom(val leftCorner: RoundCorner, val rightCorner: RoundCorner) : CardPosition()
+    data class Bottom(val leftCorner: RoundCorner, val rightCorner: RoundCorner) : CardPosition()*/
 
 }
 
-data class RoundCorner(
-    val radius: Float,
-    val direction: Int = DIRECTION_OUT
+class RoundCorner(
+    var radius: Float = 0.0F,
+    var direction: Int = DIRECTION_OUT
 ) {
 
     companion object {
         const val DIRECTION_OUT: Int = 0
         const val DIRECTION_IN: Int = 1
+    }
+
+    fun reset() {
+        radius = 0.0F
+        direction = DIRECTION_OUT
     }
 }
 

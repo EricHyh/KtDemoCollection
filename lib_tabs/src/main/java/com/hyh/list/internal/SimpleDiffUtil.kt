@@ -9,6 +9,9 @@ import java.util.*
 
 /**
  * copy from [androidx.recyclerview.widget.DiffUtil] version:1.2.0
+ *
+ * @author eriche
+ * @data 2021/1/29
  */
 object SimpleDiffUtil {
 

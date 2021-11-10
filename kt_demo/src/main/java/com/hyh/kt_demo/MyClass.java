@@ -1,6 +1,7 @@
 package com.hyh.kt_demo;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Calendar;
@@ -13,6 +14,31 @@ public class MyClass {
 
     public static void main(String[] args) {
 
+
+        String numStr1 = "0";
+        String numStr2 = "-0.00000000000";
+        String numStr3 = "+0.00000000000";
+
+        double num1 = parseDouble(numStr1, 0.0);
+        double num2 = parseDouble(numStr2, 0.0);
+        double num3 = parseDouble(numStr3, 0.0);
+
+        int compare1 = Double.compare(num1, 0.0);
+        int compare2 = Double.compare(num2, 0.0);
+        int compare3 = Double.compare(num3, 0.0);
+
+        int colorFromThree1 = getColorFromThree(num1, 0.0);
+        int colorFromThree2 = getColorFromThree(num2, 0.0);
+        int colorFromThree3 = getColorFromThree(num3, 0.0);
+
+
+        String signum1 = getSignum(num1);
+        String signum2 = getSignum(num2);
+        String signum3 = getSignum(num3);
+
+        String s1 = formatAssetsValue(numStr1);
+        String s2 = formatAssetsValue(numStr2);
+        String s3 = formatAssetsValue(numStr3);
 
 
         DecimalFormat propertyUSFormat = new DecimalFormat("###,##0.00##", new DecimalFormatSymbols(Locale.CHINA));
@@ -131,6 +157,47 @@ public class MyClass {
             }
         }
         return true;
+    }
+
+    public static double parseDouble(String value, double defaultVal) {
+        double result = defaultVal;
+        try {
+            result = Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+        }
+        return result;
+    }
+
+    public static String getSignum(double value) {
+        String signum = "";
+        if (value > 0) {
+            signum = "+";
+        }
+        return signum;
+    }
+
+    public static String formatAssetsValue(String d) {
+        DecimalFormat assetsValueFormat = new DecimalFormat("###,##0.00", new DecimalFormatSymbols(Locale.CHINA));
+        assetsValueFormat.setRoundingMode(RoundingMode.DOWN);
+
+        try {
+            BigDecimal roundValue = new BigDecimal(d);
+            return assetsValueFormat.format(roundValue);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static int getColorFromThree(double v1, double v2) {
+        int color;
+        if (Double.compare(v1, v2) == 0) {
+            color = 1;
+        } else if (v1 > v2) {
+            color = 0;
+        } else {
+            color = 2;
+        }
+        return color;
     }
 }
 

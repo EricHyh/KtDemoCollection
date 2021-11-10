@@ -36,21 +36,33 @@ class MultiItemSourceAdapter<Param : Any>(
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
     private val sourceAdapterCallback = SourceAdapterCallback()
+
     private var wrapperMap = LinkedHashMap<Any, SourceAdapterWrapper>()
+        set(value) {
+            field = value
+            _sourceTokens = value.keys.toList()
+            wrappers = value.values.toList()
+        }
+
+    private var wrappers = emptyList<SourceAdapterWrapper>()
+
     private var receiver: UiReceiverForRepo<Param>? = null
 
     //private val _loadStateFlow: MutableStateFlow<RepoLoadState> = MutableStateFlow(RepoLoadState.Initial)
-    private val _repoLoadStateFlow: SimpleMutableStateFlow<RepoLoadState> = SimpleMutableStateFlow(RepoLoadState.Initial)
+    private val _repoLoadStateFlow: SimpleMutableStateFlow<RepoLoadState> =
+        SimpleMutableStateFlow(RepoLoadState.Initial)
     override val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
         get() = _repoLoadStateFlow.asStateFlow()
 
-    private val _sourceLoadStatesFlow: SimpleMutableStateFlow<SourceLoadStates> = SimpleMutableStateFlow(SourceLoadStates.Initial)
+    private val _sourceLoadStatesFlow: SimpleMutableStateFlow<SourceLoadStates> =
+        SimpleMutableStateFlow(SourceLoadStates.Initial)
     override val sourceLoadStatesFlow: SimpleStateFlow<SourceLoadStates>
         get() = _sourceLoadStatesFlow.asStateFlow()
 
-
+    private var _sourceTokens: List<Any> = emptyList()
     override val sourceTokens: List<Any>
-        get() = wrapperMap.keys.toList()
+        get() = _sourceTokens
+
 
     private val viewTypeStorage: ViewTypeStorage = ViewTypeStorage.SharedIdRangeViewTypeStorage()
 
@@ -66,7 +78,7 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
     override fun getItemDataAdapterWrappers(): List<AdapterWrapper> {
-        return wrapperMap.values.toList()
+        return wrappers
     }
 
     init {
@@ -89,6 +101,7 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
     override fun refreshRepo(param: Param) {
+        Log.d(TAG, "refreshRepo: $receiver")
         receiver?.refresh(param)
     }
 
@@ -196,10 +209,12 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
     private suspend fun submitData(data: RepoData<Param>) {
+        Log.i(TAG, "submitData: $this - ${data.receiver}")
         collectFromRunner.runInIsolation {
             val oldReceiver = receiver
             val newReceiver = data.receiver
             if (oldReceiver != newReceiver) {
+                Log.i(TAG, "submitData: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver")
                 newReceiver.injectParentLifecycle(pageContext.lifecycleOwner.lifecycle)
                 oldReceiver?.destroy()
                 receiver = newReceiver
@@ -282,6 +297,7 @@ class MultiItemSourceAdapter<Param : Any>(
         val removedWrappers = mutableListOf<AdapterWrapper>()
 
         wrapperMap = newWrapperMap
+
         reuseInvokes.forEach {
             it()
         }
@@ -340,7 +356,7 @@ class MultiItemSourceAdapter<Param : Any>(
 
     override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
         val globalPosition = recyclerView.getChildAdapterPosition(view)
-        val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition)
+        /*val viewHolder = recyclerView.findViewHolderForAdapterPosition(globalPosition)
         val wrapper: SourceAdapterWrapper? = binderLookup[viewHolder] as? SourceAdapterWrapper
         if (wrapper != null) {
             val itemsBefore = countItemsBefore(wrapper)
@@ -352,7 +368,7 @@ class MultiItemSourceAdapter<Param : Any>(
             if (item != null) {
                 return ItemLocalInfo(wrapper.sourceToken, localPosition, wrapper.cachedItemCount, item)
             }
-        }
+        }*/
         return findItemLocalInfo(globalPosition)
     }
 
