@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+
+    <declare-styleable name="HorizontalScrollLayout_Layout">
+        <attr name="android:layout_gravity" />
+    </declare-styleable>
+
+    <declare-styleable name="HorizontalScrollLayout">
+        <attr name="fixed_min_width" format="dimension" />
+        <attr name="fixed_max_width" format="dimension" />
+    </declare-styleable>
+
+</resources>

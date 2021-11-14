@@ -53,7 +53,7 @@ dependencies {
     implementation deps.okhttp_logging_interceptor
     implementation deps.glide.runtime
 
-
+    implementation project(path: ':lib_tabs')
 
     implementation "io.reactivex.rxjava2:rxjava:2.2.2"
     implementation "io.reactivex.rxjava2:rxandroid:2.1.0"

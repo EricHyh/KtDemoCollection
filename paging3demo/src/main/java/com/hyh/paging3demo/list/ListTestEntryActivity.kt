@@ -7,9 +7,13 @@ import com.hyh.paging3demo.R
 import com.hyh.paging3demo.list.fragment.AccountPageFragment
 import com.hyh.paging3demo.list.fragment.TTTFragment
 import com.hyh.paging3demo.list.fragment.TradeTabPageFragment
+import com.hyh.paging3demo.widget.TestFrameLayout
 
 class ListTestEntryActivity : AppCompatActivity() {
 
+    val testFrameLayout: TestFrameLayout by lazy {
+        findViewById<TestFrameLayout>(R.id.test_frame_layout)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -17,29 +21,32 @@ class ListTestEntryActivity : AppCompatActivity() {
     }
 
     fun openTradeTabPage(view: View) {
-        TradeTabPageFragment.withItemAnimator = false
+        testFrameLayout.requestLayout()
+        /*TradeTabPageFragment.withItemAnimator = false
         supportFragmentManager
             .beginTransaction()
             .add(android.R.id.content, TradeTabPageFragment::class.java, Bundle())
             .addToBackStack(null)
-            .commitAllowingStateLoss()
+            .commitAllowingStateLoss()*/
     }
 
     fun openTradeTabPageWithItemAnim(view: View) {
+        testFrameLayout.requestLayout()
         TradeTabPageFragment.withItemAnimator = true
-        supportFragmentManager
+        /*supportFragmentManager
             .beginTransaction()
             .add(android.R.id.content, TradeTabPageFragment::class.java, Bundle())
             .addToBackStack(null)
-            .commitAllowingStateLoss()
+            .commitAllowingStateLoss()*/
     }
 
     fun openAccountPage(view: View) {
-        supportFragmentManager
+        testFrameLayout.requestLayout()
+        /*supportFragmentManager
             .beginTransaction()
             .add(android.R.id.content, AccountPageFragment::class.java, Bundle())
             .addToBackStack(null)
-            .commitAllowingStateLoss()
+            .commitAllowingStateLoss()*/
     }
 
 
