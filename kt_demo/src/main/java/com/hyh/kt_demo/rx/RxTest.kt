@@ -1,6 +1,7 @@
 package com.hyh.kt_demo.rx
 
 import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.lang.RuntimeException
 
 /**
@@ -14,16 +15,54 @@ fun main() {
 
     println("start")
 
-    getPageAndNext(10).subscribe {
+    /*getPageAndNext(10).subscribe {
         println("next:$it")
-    }
+    }*/
 
     /*getPageAndNext(10)
         .subscribe {
         println("subscribe:$it")
     }*/
 
+
+
+    get1()
+        .concatWith(get2())
+        .doOnNext {
+            println("doOnNext $it")
+        }
+        .doOnEach {
+            println("doOnEach:$it")
+        }
+        .subscribe()
+
+
     println("end")
+
+    Thread.sleep(100000)
+}
+
+
+private fun get1(): Observable<String?> {
+    /*return Observable.just(1).map {
+        Thread.sleep(5000)
+        "1"
+    }.subscribeOn(Schedulers.io())*/
+    return Observable.create<String> {
+        it.onNext("1")
+        it.onComplete()
+    }.doOnNext {
+        println("get1 $it")
+    }
+}
+
+private fun get2(): Observable<String> {
+    return Observable.just(1).map {
+        Thread.sleep(1000)
+        "2"
+    }.subscribeOn(Schedulers.io()).doOnNext {
+        println("get2 $it")
+    }
 }
 
 

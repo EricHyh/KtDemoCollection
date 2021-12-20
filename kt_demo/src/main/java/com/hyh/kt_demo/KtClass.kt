@@ -11,7 +11,7 @@ fun main() {
 
     val x: BigDecimal
 
-    x.rem()
+    //x.rem()
 
 
 

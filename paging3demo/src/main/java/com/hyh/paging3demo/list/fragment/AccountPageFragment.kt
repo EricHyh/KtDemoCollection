@@ -22,7 +22,6 @@ import com.hyh.list.*
 import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.list.decoration.RoundCorner
 import com.hyh.list.decoration.RoundCornerBuilder
-import com.hyh.list.decoration.SingleSourceCardDecoration
 import com.hyh.list.internal.ListItemWrapper
 import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.page.pageContext
@@ -76,9 +75,6 @@ class AccountPageFragment : Fragment() {
             .bottomRight(40F, RoundCorner.DIRECTION_IN)
             .build()
 
-        val cardDecoration =
-            SingleSourceCardDecoration(Rect(20, 20, 20, 20), corners, 0xFFEEEEEE.toInt())
-        recyclerView.addItemDecoration(cardDecoration)
 
         recyclerView.adapter = multiItemSourceAdapter
         //sourceRepoAdapter.submitData(TradeTabItemSourceRepo().flow)

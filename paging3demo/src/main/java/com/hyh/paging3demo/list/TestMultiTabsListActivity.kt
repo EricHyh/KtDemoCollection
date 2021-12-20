@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.SingleItemSourceRepo
 import com.hyh.list.adapter.MultiItemSourceAdapter
-import com.hyh.list.decoration.SingleSourceCardDecoration
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 
@@ -27,9 +26,6 @@ class TestMultiTabsListActivity : AppCompatActivity() {
         recyclerView.itemAnimator = null
 
 
-
-
-        recyclerView.addItemDecoration(SingleSourceCardDecoration(40, 20F, 0xFFEEEEEE.toInt()))
 
         Handler().postDelayed({
             //multiSourceAdapter.submitData(MultiTabsItemSourceRepo().flow)

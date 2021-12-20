@@ -1,6 +1,8 @@
 package com.hyh.widget
 
 import android.content.Context
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
@@ -35,9 +37,7 @@ class TTT : FrameLayout {
     }
 
 
-
-
-    var childAt:View? = null
+    var childAt: View? = null
 
     private fun initView() {
         val inflate = LayoutInflater.from(context).inflate(R.layout.layout_ttt, this)

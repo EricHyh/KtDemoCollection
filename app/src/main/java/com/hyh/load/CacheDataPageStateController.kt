@@ -32,6 +32,11 @@ open class CacheDataPageStateController(
 
     fun requestPageData() {
         if (pageDataRepository.hasCache()) {
+            if (pageDataRepository.isEmptyData()) {
+                PageState.EMPTY
+            } else {
+                PageState.SUCCESS
+            }
             return
         }
         if (!hasReceivedResultAtLeastOnce) {
@@ -55,6 +60,10 @@ open class CacheDataPageStateController(
             }
         }
         _pageStateLiveData.postValue(pageState)
+    }
+
+    private fun postValue(pageState: PageState) {
+
     }
 }
 

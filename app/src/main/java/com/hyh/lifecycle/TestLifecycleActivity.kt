@@ -6,6 +6,9 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.*
 import com.hyh.demo.R
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 
 class TestLifecycleActivity : AppCompatActivity() {
 
@@ -40,6 +43,26 @@ class TestLifecycleActivity : AppCompatActivity() {
         //lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         lifecycle.currentState = Lifecycle.State.CREATED
         Log.d(TAG, "lifecycleOnCreate: ${lifecycle.currentState}")
+
+
+
+        Observable.fromIterable(listOf(0, 1, 2, 3))
+            .flatMap { int1 ->
+                Observable.range(0, 5)
+                    .observeOn(Schedulers.io())
+                    .map { int2 ->
+                        val result = "$int1 - $int2"
+                        Log.d(TAG, "map ${Thread.currentThread().name} - $result")
+                        result
+                    }
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .doOnNext {
+                        Log.d(TAG, "doOnNext ${Thread.currentThread().name} - $it")
+                    }
+            }
+            .subscribe()
+
+
     }
 
     fun lifecycleOnStart(v: View) {
