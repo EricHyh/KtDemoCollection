@@ -7,6 +7,9 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
+import com.hyh.list.internal.IElementDiff
+import com.hyh.list.internal.ListUpdate
+import com.hyh.list.internal.SimpleDiffUtil
 import com.hyh.tabs.ITab
 import com.hyh.tabs.TabInfo
 import com.hyh.tabs.TabSource
@@ -15,6 +18,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
 import java.util.*
+import kotlin.collections.LinkedHashMap
 
 abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Param?) {
 
@@ -101,13 +105,18 @@ internal class TabSourceResultProcessorGenerator<Tab : ITab>(
 
     private fun processResult(): TabSourceProcessedResult<Tab> {
         val oldTabs: List<TabInfo<Tab>>? = displayedData.tabs
-        val newTabs = tabs
-        val changed: Boolean = !Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())
+        val tabMap = tabs.associateByTo(LinkedHashMap()) { it.tabToken }
+        tabMap.forEach {
+
+        }
+        // TODO: eriche 2021/12/24  
+        val diffResult = ListUpdate.calculateDiff(oldTabs, tabs, IElementDiff.AnyDiff())
+        //val changed: Boolean = !Arrays.equals(oldTabs?.toTypedArray(), newTabs.toTypedArray())
         return TabSourceProcessedResult(
-            newTabs,
-            changed
+            diffResult.resultList,
+            diffResult.listOperates.isNotEmpty()
         ) {
-            displayedData.tabs = newTabs
+            displayedData.tabs = diffResult.resultList
             displayedData.resultExtra = resultExtra
         }
     }
