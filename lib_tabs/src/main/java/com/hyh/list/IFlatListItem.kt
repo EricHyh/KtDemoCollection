@@ -25,6 +25,12 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
         override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
+        override fun bindParentLifecycle(lifecycle: Lifecycle) {
+            if (enableParentLifecycle()) {
+                super.bindParentLifecycle(lifecycle)
+            }
+        }
+
         override fun onItemAttached() {
             super.onItemAttached()
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
@@ -154,6 +160,10 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
         return delegate.lifecycleOwner.lifecycle
     }
 
+    protected open fun enableParentLifecycle(): Boolean {
+        return false
+    }
+
     /**
      * 当 Item 开始被使用时的回调，与[onItemDetached]是一对
      */
@@ -195,7 +205,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
     fun bindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder, payloads)
 
-    protected fun onBindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder)
+    protected open fun onBindViewHolder(viewHolder: VH, payloads: List<Any>) = onBindViewHolder(viewHolder)
 
     protected abstract fun onBindViewHolder(viewHolder: VH)
 

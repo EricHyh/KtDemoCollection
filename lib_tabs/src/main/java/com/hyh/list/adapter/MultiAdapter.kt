@@ -373,6 +373,14 @@ open class AdapterWrapper(
         viewTypeStorage.createViewTypeWrapper(this)
     }
 
+    private val lock = Any()
+
+    @Volatile
+    private var adapterObserverRegistered = false
+
+    @Volatile
+    private var destroyed = false
+
     private val adapterObserver = object : RecyclerView.AdapterDataObserver() {
 
         override fun onChanged() {
@@ -462,7 +470,12 @@ open class AdapterWrapper(
     }
 
     init {
-        adapter.registerAdapterDataObserver(adapterObserver)
+        synchronized(lock) {
+            if (!destroyed && !adapterObserverRegistered) {
+                adapter.registerAdapterDataObserver(adapterObserver)
+                adapterObserverRegistered = true
+            }
+        }
     }
 
     fun getItemViewType(localPosition: Int): Int {
@@ -486,7 +499,13 @@ open class AdapterWrapper(
     }
 
     open fun destroy() {
-        adapter.unregisterAdapterDataObserver(adapterObserver)
+        synchronized(lock) {
+            destroyed = true
+            if (adapterObserverRegistered) {
+                adapterObserverRegistered = false
+                adapter.unregisterAdapterDataObserver(adapterObserver)
+            }
+        }
         viewTypeLookup.dispose()
     }
 

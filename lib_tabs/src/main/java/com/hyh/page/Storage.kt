@@ -1,6 +1,8 @@
 package com.hyh.page
 
+import android.os.Looper
 import androidx.lifecycle.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.reflect.KClass
 
@@ -51,6 +53,7 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
 
     private val isBoundLifeCycle: AtomicBoolean = AtomicBoolean(false)
     private val storeMap: MutableMap<Class<out IStore<*>>, MutableLiveData<Any?>> = mutableMapOf()
+    private val valueMap: MutableMap<Class<out IStore<*>>, Any?> = ConcurrentHashMap()
 
     override fun store(store: IStore<*>) {
         bindLifeCycle()
@@ -58,8 +61,13 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
         val value = store.value
         val cls: Class<out IStore<*>> = store::class.java
         val mutableLiveData = storeMap[cls]
+        valueMap[cls] = value
         if (mutableLiveData != null) {
-            mutableLiveData.value = value
+            if (Looper.getMainLooper()?.thread == Thread.currentThread()) {
+                mutableLiveData.value = value
+            } else {
+                mutableLiveData.postValue(value)
+            }
             return
         }
         prepareLiveData(cls = cls, value = value)
@@ -71,6 +79,7 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
         val value = store.value
         val cls: Class<out IStore<*>> = store::class.java
         val mutableLiveData = storeMap[cls]
+        valueMap[cls] = value
         if (mutableLiveData != null) {
             mutableLiveData.postValue(value)
             return
@@ -82,10 +91,13 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
     override fun <Value> get(cls: Class<out IStore<Value>>): Value? {
         if (lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val mutableLiveData = storeMap[cls] ?: return null
-        return mutableLiveData.value as? Value
+        return (mutableLiveData.value as? Value) ?: (valueMap[cls] as? Value)
     }
 
-    override fun <Value> observeForever(cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? {
+    override fun <Value> observeForever(
+        cls: Class<out IStore<Value>>,
+        onChanged: (value: Value) -> Unit
+    ): Observer<Value>? {
         if (lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val liveData = prepareLiveData(cls)
         val wrappedObserver = Observer<Value> { value -> onChanged.invoke(value) }
@@ -99,10 +111,16 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
         liveData.observeForever(observer)
     }
 
-    override fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, onChanged: (value: Value) -> Unit): Observer<Value>? {
+    override fun <Value> observe(
+        owner: LifecycleOwner,
+        cls: Class<out IStore<Value>>,
+        onChanged: (value: Value) -> Unit
+    ): Observer<Value>? {
         if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED) return null
         val liveData = prepareLiveData(cls)
-        return liveData.observe(owner, onChanged)
+        val wrappedObserver = Observer<Value> { t -> onChanged.invoke(t) }
+        liveData.observe(owner, wrappedObserver)
+        return wrappedObserver
     }
 
     override fun <Value> observe(owner: LifecycleOwner, cls: Class<out IStore<Value>>, observer: Observer<Value>) {
@@ -122,6 +140,7 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
         synchronized(storeMap) {
             storeMap.clear()
         }
+        valueMap.clear()
     }
 
     private fun <Value> prepareLiveData(cls: Class<out IStore<Value>>): MutableLiveData<Value> {
@@ -173,7 +192,11 @@ class StorageImpl private constructor(private val lifecycle: Lifecycle) : IStora
     }
 }
 
-
+/**
+ * 被存储的数据需要实现该接口，实现类被认为是数据的包装类型
+ *
+ * @param Value 被存储的数据
+ */
 interface IStore<Value> {
     val value: Value
 }

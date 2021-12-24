@@ -1,5 +1,7 @@
 package com.hyh.page.state
 
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,7 +11,15 @@ import com.hyh.page.PageContext
 
 class PageStateController(private val pageContext: PageContext) {
 
+
     companion object {
+
+        private const val TAG = "PageStateController"
+
+        private val handler: Handler by lazy {
+            Handler(Looper.getMainLooper())
+        }
+
         fun get(pageContext: PageContext): PageStateController {
             val controller = pageContext.storage.get(PageStateControllerStore::class)
             if (controller != null) {
@@ -40,12 +50,26 @@ class PageStateController(private val pageContext: PageContext) {
 
     private var pageStateStrategy: IPageStateStrategy = OneSuccessStrategy()
 
+    @Synchronized
     fun setPageStateStrategy(strategy: IPageStateStrategy) {
         if (!checkLifecycle()) return
         this.pageStateStrategy = strategy
         refreshState()
     }
 
+    @Synchronized
+    fun refresh() {
+        if (!checkLifecycle()) return
+        if (_pageStateLiveData.value != PageState.LOADING) {
+            _pageStateLiveData.value = PageState.LOADING
+        }
+        states.forEach {
+            it.forceRefreshState()
+        }
+        refreshState()
+    }
+
+    @Synchronized
     fun addPageUnitState(unitState: IPageUnitState) {
         if (!checkLifecycle() || states.contains(unitState)) return
         states.add(unitState)
@@ -53,6 +77,7 @@ class PageStateController(private val pageContext: PageContext) {
         refreshState()
     }
 
+    @Synchronized
     fun removePageUnitState(unitState: IPageUnitState) {
         if (!checkLifecycle()) return
         unitState.removeObserve(unitStateObserver)
@@ -62,10 +87,15 @@ class PageStateController(private val pageContext: PageContext) {
 
     private fun refreshState() {
         if (!checkLifecycle()) return
-        val states = states.map { it.getState() }
-        val newPageState = pageStateStrategy.calculatePageState(states)
-        if (_pageStateLiveData.value == newPageState) return
-        _pageStateLiveData.postValue(newPageState)
+        handler.post {
+            if (checkLifecycle()) {
+                val states = states.map { it.getState() }
+                val newPageState = pageStateStrategy.calculatePageState(states)
+                if (_pageStateLiveData.value != newPageState) {
+                    _pageStateLiveData.value = newPageState
+                }
+            }
+        }
     }
 
     private fun checkLifecycle(): Boolean {
