@@ -77,3 +77,9 @@ interface IPageDataRepository {
     fun request()
 
 }
+
+object GlobalLoadState {
+
+
+
+}

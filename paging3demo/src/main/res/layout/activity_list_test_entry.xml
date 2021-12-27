@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/test_frame_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@null"
-    android:foreground="@null">
+    android:foreground="@null"
+    android:orientation="vertical">
 
     <Button
         android:layout_width="match_parent"
@@ -88,26 +89,32 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="内容8" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="内容8" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="内容8" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="内容8" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="内容8" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="内容8" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -117,5 +124,25 @@
 
     </com.hyh.paging3demo.widget.HorizontalScrollLayout>
 
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FF0000"
+            android:text="固定部分"
+            app:layout_behavior="com.hyh.paging3demo.widget.behavior.FixedBehavior"
+            tools:layout_width="40dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_behavior="com.hyh.paging3demo.widget.behavior.ScrollableBehavior" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </LinearLayout>

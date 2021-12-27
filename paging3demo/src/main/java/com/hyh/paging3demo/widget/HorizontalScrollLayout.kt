@@ -302,7 +302,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(
     }
 
     private fun scrollByInternal(dx: Int, type: Int) {
-        if (currentDragWith != 0) {
+        /*if (currentDragWith != 0) {
             if (currentDragWith shr 31 == dx shr 31) {
                 if (dx > 0 && type == ViewCompat.TYPE_TOUCH) {
                     currentDragWith += (dx * BOUNCE_RATIO).toInt()
@@ -314,10 +314,10 @@ class HorizontalScrollLayout @JvmOverloads constructor(
 
                 }
             }
-        }
+        }*/
 
 
-        /*if (scrollableView.scrollX == 0) {
+        if (scrollableView.scrollX == 0) {
             if (dx > 0) {
                 if (type == ViewCompat.TYPE_TOUCH) {
                     currentDragWith += (dx * BOUNCE_RATIO).toInt()
@@ -382,7 +382,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(
                     scrollableView.scrollTo(scrollX, 0)
                 }
             }
-        }*/
+        }
     }
 
     fun releaseDrag() {
