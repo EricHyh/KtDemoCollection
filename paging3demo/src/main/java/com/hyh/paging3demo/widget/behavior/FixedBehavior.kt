@@ -58,10 +58,17 @@ class FixedBehavior(context: Context?, attrs: AttributeSet?) :
         this.parent = parent
         this.child = child
         val fixedWidth =
-            (fixedMinWidth /*+ (currentDragWith * DRAG_RATIO).toInt()*/).coerceAtMost(fixedMaxWidth)
+            (fixedMinWidth + (currentDragWith * DRAG_RATIO).toInt()).coerceAtMost(fixedMaxWidth)
         val fixedWidthMeasureSpec =
             View.MeasureSpec.makeMeasureSpec(fixedWidth, View.MeasureSpec.EXACTLY)
         child.measure(fixedWidthMeasureSpec, parentHeightMeasureSpec)
+        return true
+    }
+
+    override fun onLayoutChild(parent: CoordinatorLayout, child: View, layoutDirection: Int): Boolean {
+        val height = child.measuredHeight
+
+        child.layout(fixedMinWidth - child.measuredWidth, 0, fixedMinWidth, height)
         return true
     }
 

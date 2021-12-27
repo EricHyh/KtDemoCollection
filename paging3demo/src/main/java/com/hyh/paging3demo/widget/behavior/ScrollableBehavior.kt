@@ -53,7 +53,7 @@ class ScrollableBehavior(context: Context?, attrs: AttributeSet?) :
         val width = child.measuredWidth
         val height = child.measuredHeight
 
-        child.layout(dependenciesWidth, 0, dependenciesWidth + width, height)
+        child.layout(120, 0, 120 + width, height)
 
         return true
     }
