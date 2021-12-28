@@ -1,4 +1,4 @@
-package com.hyh.paging3demo.widget.behavior
+package com.hyh.paging3demo.widget.horizontal
 
 import android.animation.ValueAnimator
 import android.content.Context
@@ -7,8 +7,8 @@ import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 
-class FixedBehavior(context: Context?, attrs: AttributeSet?) :
-    CoordinatorLayout.Behavior<View>(context, attrs) {
+class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
+    CoordinatorLayout.Behavior<View>() {
 
     companion object {
         private const val TAG = "FixedBehavior"
@@ -16,18 +16,16 @@ class FixedBehavior(context: Context?, attrs: AttributeSet?) :
         private const val DRAG_RATIO = 0.6F
     }
 
-    private var fixedMinWidth = 120
-    private var fixedMaxWidth = Int.MAX_VALUE
+    var fixedMinWidth = fixedMinWidth
+    var fixedMaxWidth = fixedMaxWidth
 
     private var parent: View? = null
     private var child: View? = null
-
 
     private var currentDragWith: Int = 0
         set(value) {
             val oldValue = field
             if (oldValue != value) {
-                //Log.d(TAG, "currentBounceWith: ${field - value}")
                 field = value
                 child?.requestLayout()
                 parent?.scrollTo(-(value * DRAG_RATIO).toInt(), 0)
@@ -45,7 +43,6 @@ class FixedBehavior(context: Context?, attrs: AttributeSet?) :
     ): Boolean {
         return super.layoutDependsOn(parent, child, dependency)
     }
-
 
     override fun onMeasureChild(
         parent: CoordinatorLayout,
@@ -67,7 +64,6 @@ class FixedBehavior(context: Context?, attrs: AttributeSet?) :
 
     override fun onLayoutChild(parent: CoordinatorLayout, child: View, layoutDirection: Int): Boolean {
         val height = child.measuredHeight
-
         child.layout(fixedMinWidth - child.measuredWidth, 0, fixedMinWidth, height)
         return true
     }

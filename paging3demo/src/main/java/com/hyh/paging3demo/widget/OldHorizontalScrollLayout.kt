@@ -19,7 +19,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-class HorizontalScrollLayout @JvmOverloads constructor(
+class OldHorizontalScrollLayout @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null, defStyle: Int = 0
 ) : ViewGroup(context, attrs, defStyle) {
@@ -208,7 +208,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(
             }
             MotionEvent.ACTION_UP -> {
                 velocityTracker?.computeCurrentVelocity(1000, maximumVelocity.toFloat())
-                val xvel: Float = -(velocityTracker?.xVelocity ?: 0).toFloat()
+                val xvel: Float = -(velocityTracker?.xVelocity ?: 0.0F)
                 fling(xvel)
             }
             MotionEvent.ACTION_CANCEL -> {
@@ -588,7 +588,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(
                 reSchedulePostAnimationCallback = true
             } else {
                 removeCallbacks(this)
-                ViewCompat.postOnAnimation(this@HorizontalScrollLayout, this)
+                ViewCompat.postOnAnimation(this@OldHorizontalScrollLayout, this)
             }
         }
 
@@ -617,7 +617,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(
 
     interface OnScrollListener {
 
-        fun onScrollStateChanged(view: HorizontalScrollLayout, newState: Int) {}
+        fun onScrollStateChanged(view: OldHorizontalScrollLayout, newState: Int) {}
 
     }
 }

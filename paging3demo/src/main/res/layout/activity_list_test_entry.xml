@@ -27,7 +27,7 @@
         android:onClick="openAccountPage"
         android:text="仿账户页" />
 
-    <com.hyh.paging3demo.widget.HorizontalScrollLayout
+    <com.hyh.paging3demo.widget.OldHorizontalScrollLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:fixed_min_width="40dp">
@@ -122,7 +122,7 @@
 
         </LinearLayout>
 
-    </com.hyh.paging3demo.widget.HorizontalScrollLayout>
+    </com.hyh.paging3demo.widget.OldHorizontalScrollLayout>
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
@@ -134,14 +134,14 @@
             android:layout_height="wrap_content"
             android:background="#FF0000"
             android:text="固定部分"
-            app:layout_behavior="com.hyh.paging3demo.widget.behavior.FixedBehavior"
+            app:layout_behavior="com.hyh.paging3demo.widget.horizontal.FixedBehavior"
             tools:layout_width="40dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_behavior="com.hyh.paging3demo.widget.behavior.ScrollableBehavior" />
+            app:layout_behavior="com.hyh.paging3demo.widget.horizontal.ScrollableBehavior" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

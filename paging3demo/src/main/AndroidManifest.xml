@@ -32,13 +32,17 @@
             </intent-filter>-->
         </activity>
 
-
-        <activity android:name=".list.ListTestEntryActivity">
+        <activity android:name="com.hyh.paging3demo.list.RecyclerViewTestActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+
+        <activity android:name=".list.ListTestEntryActivity">
+
         </activity>
 
         <activity

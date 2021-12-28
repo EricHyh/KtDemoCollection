@@ -1,4 +1,4 @@
-package com.hyh.paging3demo.widget.behavior
+package com.hyh.paging3demo.widget.horizontal
 
 import android.content.Context
 import android.util.AttributeSet
