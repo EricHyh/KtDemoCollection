@@ -9,29 +9,16 @@ import androidx.recyclerview.widget.RecyclerView
  */
 interface Scrollable<T> {
 
-    fun setOnScrollChangeListener(listener: OnScrollChangedListener)
-
     fun getScrollData(): T
 
     fun scrollTo(t: T)
 
+    fun resetScroll()
 
-    interface OnScrollChangedListener {
-        fun onScrollChanged()
-    }
 }
 
 
 class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollable<Int> {
-
-    override fun setOnScrollChangeListener(listener: Scrollable.OnScrollChangedListener) {
-        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                listener.onScrollChanged()
-            }
-        })
-    }
 
     override fun getScrollData(): Int {
         return recyclerView.computeHorizontalScrollOffset()
@@ -39,5 +26,9 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollabl
 
     override fun scrollTo(t: Int) {
         recyclerView.scrollBy(t - recyclerView.computeHorizontalScrollOffset(), 0)
+    }
+
+    override fun resetScroll() {
+        recyclerView.scrollBy(0 - recyclerView.computeHorizontalScrollOffset(), 0)
     }
 }

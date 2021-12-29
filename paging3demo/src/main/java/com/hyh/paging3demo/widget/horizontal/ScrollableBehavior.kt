@@ -1,13 +1,11 @@
 package com.hyh.paging3demo.widget.horizontal
 
-import android.content.Context
-import android.util.AttributeSet
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 
 
-class ScrollableBehavior(context: Context?, attrs: AttributeSet?) :
-    CoordinatorLayout.Behavior<View>(context, attrs) {
+class ScrollableBehavior(var fixedMinWidth: Int) :
+    CoordinatorLayout.Behavior<View>() {
 
     override fun layoutDependsOn(
         parent: CoordinatorLayout,
@@ -28,14 +26,31 @@ class ScrollableBehavior(context: Context?, attrs: AttributeSet?) :
         heightUsed: Int
     ): Boolean {
 
-        return super.onMeasureChild(
-            parent,
-            child,
-            parentWidthMeasureSpec,
-            widthUsed,
-            parentHeightMeasureSpec,
-            heightUsed
-        )
+        val maxWidth = parent.width - fixedMinWidth
+
+        val mode = View.MeasureSpec.getMode(parentWidthMeasureSpec)
+        val size = View.MeasureSpec.getSize(parentWidthMeasureSpec)
+
+        val width: Int
+        val widthMeasureSpec: Int
+
+        when (mode) {
+            View.MeasureSpec.EXACTLY -> {
+                width = size.coerceAtMost(maxWidth)
+                widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY)
+            }
+            View.MeasureSpec.AT_MOST -> {
+                width = size.coerceAtMost(maxWidth)
+                widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST)
+            }
+            else -> {
+                widthMeasureSpec = parentWidthMeasureSpec
+            }
+        }
+
+        child.measure(widthMeasureSpec, parentHeightMeasureSpec)
+
+        return true
     }
 
     override fun onLayoutChild(
@@ -43,18 +58,9 @@ class ScrollableBehavior(context: Context?, attrs: AttributeSet?) :
         child: View,
         layoutDirection: Int
     ): Boolean {
-        val dependencies = parent.getDependencies(child)
-        var dependenciesWidth = 0
-        if (dependencies.isNotEmpty()) {
-            for (dependency in dependencies) {
-                dependenciesWidth += dependency.measuredWidth
-            }
-        }
         val width = child.measuredWidth
         val height = child.measuredHeight
-
-        child.layout(120, 0, 120 + width, height)
-
+        child.layout(fixedMinWidth, 0, fixedMinWidth + width, height)
         return true
     }
 

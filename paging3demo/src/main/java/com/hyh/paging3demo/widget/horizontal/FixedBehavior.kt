@@ -7,7 +7,12 @@ import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 
-class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
+class FixedBehavior(
+    var fixedMinWidth: Int,
+    var fixedMaxWidth: Int = Int.MAX_VALUE,
+    private val scrollable: Scrollable<out Any>,
+    private val onScrollChanged: (scrollState: ScrollState, data: Any) -> Unit
+) :
     CoordinatorLayout.Behavior<View>() {
 
     companion object {
@@ -16,8 +21,6 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
         private const val DRAG_RATIO = 0.6F
     }
 
-    var fixedMinWidth = fixedMinWidth
-    var fixedMaxWidth = fixedMaxWidth
 
     private var parent: View? = null
     private var child: View? = null
@@ -36,12 +39,9 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
         ReleaseDragHelper()
     }
 
-    override fun layoutDependsOn(
-        parent: CoordinatorLayout,
-        child: View,
-        dependency: View
-    ): Boolean {
-        return super.layoutDependsOn(parent, child, dependency)
+
+    fun setDragWithByOthers(width: Int) {
+        this.currentDragWith = width
     }
 
     override fun onMeasureChild(
@@ -77,9 +77,6 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
         axes: Int,
         type: Int
     ): Boolean {
-        if (type == ViewCompat.TYPE_TOUCH) {
-            releaseDragHelper.stop()
-        }
         return true
     }
 
@@ -91,14 +88,19 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
         axes: Int,
         type: Int
     ) {
-        super.onNestedScrollAccepted(
-            coordinatorLayout,
-            child,
-            directTargetChild,
-            target,
-            axes,
-            type
-        )
+        when (type) {
+            ViewCompat.TYPE_TOUCH -> {
+                releaseDragHelper.stop()
+                if (currentDragWith != 0) {
+                    onScrollChanged(ScrollState.DRAG, currentDragWith)
+                } else {
+                    onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
+                }
+            }
+            ViewCompat.TYPE_NON_TOUCH -> {
+                onScrollChanged(ScrollState.SETTLING, scrollable.getScrollData())
+            }
+        }
     }
 
     override fun onNestedPreScroll(
@@ -128,6 +130,9 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
                 }
             }
         }
+        if (currentDragWith != 0) {
+            onScrollChanged(ScrollState.DRAG, currentDragWith)
+        }
     }
 
     override fun onNestedScroll(
@@ -153,6 +158,11 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
                 }
             }
         }
+        if (currentDragWith != 0) {
+            onScrollChanged(ScrollState.DRAG, currentDragWith)
+        } else {
+            onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData()!!)
+        }
     }
 
     override fun onStopNestedScroll(
@@ -161,11 +171,16 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
         target: View,
         type: Int
     ) {
-        if (type == ViewCompat.TYPE_TOUCH && currentDragWith > 0) {
-            releaseDragHelper.start()
+        if (type == ViewCompat.TYPE_TOUCH) {
+            if (currentDragWith != 0) {
+                releaseDragHelper.start()
+                onScrollChanged(ScrollState.REBOUND, currentDragWith)
+            }
+        }
+        if (currentDragWith == 0) {
+            onScrollChanged(ScrollState.IDLE, scrollable.getScrollData()!!)
         }
     }
-
 
     override fun onNestedPreFling(
         coordinatorLayout: CoordinatorLayout,
@@ -203,6 +218,7 @@ class FixedBehavior(fixedMinWidth: Int, fixedMaxWidth: Int = Int.MAX_VALUE) :
         override fun onAnimationUpdate(animation: ValueAnimator) {
             if (animator === animation) {
                 currentDragWith = animation.animatedValue as Int
+                onScrollChanged(ScrollState.REBOUND, currentDragWith)
             }
         }
     }

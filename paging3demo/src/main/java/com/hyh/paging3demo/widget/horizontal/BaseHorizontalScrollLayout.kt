@@ -10,34 +10,80 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
  *
  * @author eriche 2021/12/28
  */
-abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserver {
+abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSyncObserver {
     companion object {
         private const val TAG = "HorizontalScrollLayout"
     }
 
-    constructor(context: Context) : super(context)
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle)
+    constructor(context: Context) : super(context) {
+        init(null)
+    }
+
+    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+        init(attrs)
+    }
+
+    constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle) {
+        init(attrs)
+    }
+
+    var fixedMinWidth: Int = 0
+        set(value) {
+            if (field == value) return
+            field = value
+            if (!initialized) return
+            fixedBehavior.fixedMinWidth = value
+            scrollableBehavior.fixedMinWidth = value
+            requestLayout()
+        }
+
+    var fixedMaxWidth: Int = Int.MAX_VALUE
+        set(value) {
+            if (field == value) return
+            field = value
+            if (!initialized) return
+            fixedBehavior.fixedMaxWidth = value
+            requestLayout()
+        }
 
     private lateinit var fixedView: View
     private lateinit var scrollableView: View
-    private lateinit var scrollable: Scrollable<Any>
+    private lateinit var scrollable: Scrollable<T>
+
+    private lateinit var fixedBehavior: FixedBehavior
+    private lateinit var scrollableBehavior: ScrollableBehavior
 
     private var initialized: Boolean = false
 
 
     private var helper: HorizontalScrollSyncHelper? = null
 
+    private fun init(attrs: AttributeSet?) {
+        attrs?.let {
+
+        }
+    }
+
     protected fun initView() {
         fixedView = findFixedView()
-        scrollableView = findFixedView()
+        scrollableView = findScrollableView()
         scrollable = asScrollable(scrollableView)
-        scrollable.setOnScrollChangeListener(object : Scrollable.OnScrollChangedListener {
-            override fun onScrollChanged() {
 
-            }
-        })
+        val fixedViewLayoutParams = fixedView.layoutParams as LayoutParams
+        fixedViewLayoutParams.behavior = FixedBehavior(fixedMinWidth, fixedMaxWidth, scrollable) { scrollState: ScrollState, data: Any ->
+            helper?.notifyScrollEvent(scrollState, data)
+        }.apply {
+            fixedBehavior = this
+        }
+
+        val scrollableViewLayoutParams = scrollableView.layoutParams as LayoutParams
+        scrollableViewLayoutParams.behavior = ScrollableBehavior(fixedMinWidth).apply {
+            scrollableBehavior = this
+        }
+
         initialized = true
+
+        requestLayout()
     }
 
 
@@ -48,9 +94,31 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
         this.helper?.addObserver(this)
     }
 
-    override fun onScroll(data: Any, scrollState: ScrollState) {
+    @Suppress("UNCHECKED_CAST")
+    override fun onScroll(scrollState: ScrollState, data: Any) {
         if (initialized) {
-            scrollable.scrollTo(data)
+            when (scrollState) {
+                ScrollState.IDLE -> {
+                    scrollable.scrollTo(data as T)
+                    fixedBehavior.setDragWithByOthers(0)
+                }
+                ScrollState.SCROLL -> {
+                    scrollable.scrollTo(data as T)
+                    fixedBehavior.setDragWithByOthers(0)
+                }
+                ScrollState.DRAG -> {
+                    scrollable.resetScroll()
+                    fixedBehavior.setDragWithByOthers(data as Int)
+                }
+                ScrollState.REBOUND -> {
+                    scrollable.resetScroll()
+                    fixedBehavior.setDragWithByOthers(data as Int)
+                }
+                ScrollState.SETTLING -> {
+                    scrollable.scrollTo(data as T)
+                    fixedBehavior.setDragWithByOthers(0)
+                }
+            }
         }
     }
 
@@ -68,7 +136,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
 
     protected abstract fun findScrollableView(): View
 
-    protected abstract fun asScrollable(scrollableView: View): Scrollable<Any>
+    protected abstract fun asScrollable(scrollableView: View): Scrollable<T>
 
 }
 

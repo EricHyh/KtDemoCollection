@@ -9,16 +9,34 @@ import java.util.*
  */
 class HorizontalScrollSyncHelper {
 
+    private var scrollData: ScrollData<Any>? = null
+
+    private val scrollSyncObservable = ScrollSyncObservable()
 
     fun addObserver(observer: ScrollSyncObserver) {
-
+        scrollSyncObservable.addObserver(observer)
+        scrollData?.let {
+            observer.onScroll(it.scrollState, it.data)
+        }
     }
 
     fun removeObserver(observer: ScrollSyncObserver) {
-
+        scrollSyncObservable.deleteObserver(observer)
     }
 
-    inner class ScrollSyncObservable : Observable() {
+    fun notifyScrollEvent(scrollState: ScrollState, data: Any) {
+        if (scrollData == null) {
+            scrollData = ScrollData(scrollState, data)
+        } else {
+            scrollData?.scrollState = scrollState
+            scrollData?.data = scrollState
+        }
+        scrollData?.apply {
+            scrollSyncObservable.setScrollData(this)
+        }
+    }
+
+    internal inner class ScrollSyncObservable : Observable() {
 
         private var scrollData: ScrollData<Any>? = null
 
@@ -43,12 +61,12 @@ interface ScrollSyncObserver : Observer {
     override fun update(o: Observable?, arg: Any?) {
         val scrollData = arg as? ScrollData<*> ?: return
         val data = scrollData.data ?: return
-        onScroll(data, scrollData.scrollState)
+        onScroll(scrollData.scrollState, data)
     }
 
-    fun onScroll(data: Any, scrollState: ScrollState)
+    fun onScroll(scrollState: ScrollState, data: Any)
 
 }
 
 
-class ScrollData<T>(var scrollState: ScrollState, var data: T)
+internal class ScrollData<T>(var scrollState: ScrollState, var data: T)
