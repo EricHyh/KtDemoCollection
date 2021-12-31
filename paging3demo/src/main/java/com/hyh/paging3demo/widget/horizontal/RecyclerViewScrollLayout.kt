@@ -27,11 +27,14 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs
 
     private val fixedViewContainer: FrameLayout = FrameLayout(context)
     private val recyclerView: RecyclerView = RecyclerView(context)
+    private val gridAdapter: GridAdapter = GridAdapter()
 
     init {
         addView(fixedViewContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(recyclerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+        recyclerView.adapter = gridAdapter
+        initView()
     }
 
     override fun findFixedView(): View = fixedViewContainer
@@ -42,6 +45,17 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs
         return RecyclerViewScrollable(recyclerView)
     }
 
+    fun setGrid(grid: IGrid<*>, grids: List<IGrid<*>>) {
+        renderFixedPositionGrid(grid = grid as IGrid<GridHolder>)
+        gridAdapter.setGrids(grids)
+    }
+
+    private fun renderFixedPositionGrid(grid: IGrid<GridHolder>) {
+        fixedViewContainer.removeAllViews()
+        val holder = grid.getGridHolderFactory().invoke(fixedViewContainer)
+        fixedViewContainer.addView(holder.view)
+        grid.render(holder, true)
+    }
 }
 
 
@@ -106,12 +120,9 @@ interface IGrid<Holder : GridHolder> {
 
 }
 
-
 typealias GridHolderFactory<Holder> = (parent: ViewGroup) -> Holder
 
-
 abstract class GridHolder(val view: View)
-
 
 class GridViewHolder(val holder: GridHolder) : RecyclerView.ViewHolder(holder.view)
 
@@ -139,8 +150,8 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
             }
         })
 
-    fun setGrids(grids: List<IGrid<GridHolder>>) {
-        differ.submitList(grids)
+    fun setGrids(grids: List<IGrid<*>>) {
+        differ.submitList(grids as List<IGrid<GridHolder>>)
     }
 
     override fun getItemViewType(position: Int): Int {
