@@ -24,6 +24,14 @@
 
         </activity>
 
+        <activity android:name="com.hyh.paging3demo.list.ScrollLayoutTestActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity android:name=".SqliteTestActivity">
             <!--<intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -33,11 +41,7 @@
         </activity>
 
         <activity android:name="com.hyh.paging3demo.list.RecyclerViewTestActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
 
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
 
 

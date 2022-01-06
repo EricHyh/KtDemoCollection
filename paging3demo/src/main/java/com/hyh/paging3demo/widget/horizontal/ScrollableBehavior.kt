@@ -4,7 +4,7 @@ import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 
 
-class ScrollableBehavior(var fixedMinWidth: Int) :
+internal class ScrollableBehavior(var fixedMinWidth: Int) :
     CoordinatorLayout.Behavior<View>() {
 
     override fun layoutDependsOn(
@@ -26,10 +26,9 @@ class ScrollableBehavior(var fixedMinWidth: Int) :
         heightUsed: Int
     ): Boolean {
 
-        val maxWidth = parent.width - fixedMinWidth
-
         val mode = View.MeasureSpec.getMode(parentWidthMeasureSpec)
         val size = View.MeasureSpec.getSize(parentWidthMeasureSpec)
+        val maxWidth = (size - fixedMinWidth).coerceAtLeast(0)
 
         val width: Int
         val widthMeasureSpec: Int

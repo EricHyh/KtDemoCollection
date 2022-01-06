@@ -19,7 +19,7 @@ import java.lang.ref.WeakReference
  * @author eriche 2021/12/29
  */
 class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyle: Int = 0) :
-    BaseHorizontalScrollLayout<Int>(context, attrs, defStyle) {
+    BaseHorizontalScrollLayout(context, attrs, defStyle) {
 
     companion object {
         private const val TAG = "HorizontalScrollLayout"
@@ -41,13 +41,16 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs
 
     override fun findScrollableView(): View = recyclerView
 
-    override fun asScrollable(scrollableView: View): Scrollable<Int> {
+    override fun asScrollable(scrollableView: View): Scrollable<*> {
         return RecyclerViewScrollable(recyclerView)
     }
 
+    @Suppress("UNCHECKED_CAST")
     fun setGrid(grid: IGrid<*>, grids: List<IGrid<*>>) {
         renderFixedPositionGrid(grid = grid as IGrid<GridHolder>)
         gridAdapter.setGrids(grids)
+        syncScroll()
+
     }
 
     private fun renderFixedPositionGrid(grid: IGrid<GridHolder>) {
@@ -150,6 +153,7 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
             }
         })
 
+    @Suppress("UNCHECKED_CAST")
     fun setGrids(grids: List<IGrid<*>>) {
         differ.submitList(grids as List<IGrid<GridHolder>>)
     }

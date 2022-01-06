@@ -13,27 +13,31 @@ class HorizontalScrollSyncHelper {
 
     private val scrollSyncObservable = ScrollSyncObservable()
 
-    fun addObserver(observer: ScrollSyncObserver) {
+    internal fun addObserver(observer: ScrollSyncObserver) {
         scrollSyncObservable.addObserver(observer)
         scrollData?.let {
             observer.onScroll(it.scrollState, it.data)
         }
     }
 
-    fun removeObserver(observer: ScrollSyncObserver) {
+    internal fun removeObserver(observer: ScrollSyncObserver) {
         scrollSyncObservable.deleteObserver(observer)
     }
 
-    fun notifyScrollEvent(scrollState: ScrollState, data: Any) {
+    internal fun notifyScrollEvent(scrollState: ScrollState, data: Any) {
         if (scrollData == null) {
             scrollData = ScrollData(scrollState, data)
         } else {
             scrollData?.scrollState = scrollState
-            scrollData?.data = scrollState
+            scrollData?.data = data
         }
         scrollData?.apply {
             scrollSyncObservable.setScrollData(this)
         }
+    }
+
+    internal fun notifyStopScroll() {
+        scrollSyncObservable.stopScroll()
     }
 
     internal inner class ScrollSyncObservable : Observable() {
@@ -51,22 +55,36 @@ class HorizontalScrollSyncHelper {
             setChanged()
             notifyObservers(this.scrollData)
         }
+
+        fun stopScroll() {
+            setChanged()
+            notifyObservers(StopScroll)
+        }
     }
 }
-
 
 interface ScrollSyncObserver : Observer {
 
     @Suppress("UNCHECKED_CAST")
     override fun update(o: Observable?, arg: Any?) {
-        val scrollData = arg as? ScrollData<*> ?: return
-        val data = scrollData.data ?: return
-        onScroll(scrollData.scrollState, data)
+        when (arg) {
+            is ScrollData<*> -> {
+                val data = arg.data ?: return
+                onScroll(arg.scrollState, data)
+            }
+            is StopScroll -> {
+                onStopScroll()
+            }
+        }
     }
 
     fun onScroll(scrollState: ScrollState, data: Any)
+
+    fun onStopScroll()
 
 }
 
 
 internal class ScrollData<T>(var scrollState: ScrollState, var data: T)
+
+internal object StopScroll

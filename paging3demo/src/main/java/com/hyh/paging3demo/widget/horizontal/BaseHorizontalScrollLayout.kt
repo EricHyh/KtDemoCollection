@@ -10,7 +10,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
  *
  * @author eriche 2021/12/28
  */
-abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSyncObserver {
+abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserver {
     companion object {
         private const val TAG = "HorizontalScrollLayout"
     }
@@ -48,7 +48,7 @@ abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSy
 
     private lateinit var fixedView: View
     private lateinit var scrollableView: View
-    private lateinit var scrollable: Scrollable<T>
+    private lateinit var scrollable: Scrollable<Any>
 
     private lateinit var fixedBehavior: FixedBehavior
     private lateinit var scrollableBehavior: ScrollableBehavior
@@ -64,15 +64,24 @@ abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSy
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     protected fun initView() {
         fixedView = findFixedView()
         scrollableView = findScrollableView()
-        scrollable = asScrollable(scrollableView)
+        scrollable = asScrollable(scrollableView) as Scrollable<Any>
 
         val fixedViewLayoutParams = fixedView.layoutParams as LayoutParams
-        fixedViewLayoutParams.behavior = FixedBehavior(fixedMinWidth, fixedMaxWidth, scrollable) { scrollState: ScrollState, data: Any ->
-            helper?.notifyScrollEvent(scrollState, data)
-        }.apply {
+        fixedViewLayoutParams.behavior = FixedBehavior(
+            fixedMinWidth,
+            fixedMaxWidth,
+            scrollable,
+            onScrollChanged = { scrollState: ScrollState, data: Any ->
+                helper?.notifyScrollEvent(scrollState, data)
+            },
+            onStopScroll = {
+                helper?.notifyStopScroll()
+            }
+        ).apply {
             fixedBehavior = this
         }
 
@@ -94,16 +103,19 @@ abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSy
         this.helper?.addObserver(this)
     }
 
-    @Suppress("UNCHECKED_CAST")
+    protected fun syncScroll() {
+        this.helper?.addObserver(this)
+    }
+
     override fun onScroll(scrollState: ScrollState, data: Any) {
         if (initialized) {
             when (scrollState) {
                 ScrollState.IDLE -> {
-                    scrollable.scrollTo(data as T)
+                    scrollable.scrollTo(data)
                     fixedBehavior.setDragWithByOthers(0)
                 }
                 ScrollState.SCROLL -> {
-                    scrollable.scrollTo(data as T)
+                    scrollable.scrollTo(data)
                     fixedBehavior.setDragWithByOthers(0)
                 }
                 ScrollState.DRAG -> {
@@ -115,11 +127,15 @@ abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSy
                     fixedBehavior.setDragWithByOthers(data as Int)
                 }
                 ScrollState.SETTLING -> {
-                    scrollable.scrollTo(data as T)
+                    scrollable.scrollTo(data)
                     fixedBehavior.setDragWithByOthers(0)
                 }
             }
         }
+    }
+
+    override fun onStopScroll() {
+        fixedBehavior.stopScroll()
     }
 
     override fun onAttachedToWindow() {
@@ -136,7 +152,7 @@ abstract class BaseHorizontalScrollLayout<T : Any> : CoordinatorLayout, ScrollSy
 
     protected abstract fun findScrollableView(): View
 
-    protected abstract fun asScrollable(scrollableView: View): Scrollable<T>
+    protected abstract fun asScrollable(scrollableView: View): Scrollable<*>
 
 }
 

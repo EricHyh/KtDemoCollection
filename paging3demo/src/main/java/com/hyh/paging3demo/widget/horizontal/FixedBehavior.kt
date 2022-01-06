@@ -3,17 +3,18 @@ package com.hyh.paging3demo.widget.horizontal
 import android.animation.ValueAnimator
 import android.content.Context
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 
-class FixedBehavior(
+internal class FixedBehavior(
     var fixedMinWidth: Int,
     var fixedMaxWidth: Int = Int.MAX_VALUE,
     private val scrollable: Scrollable<out Any>,
-    private val onScrollChanged: (scrollState: ScrollState, data: Any) -> Unit
-) :
-    CoordinatorLayout.Behavior<View>() {
+    private val onScrollChanged: (scrollState: ScrollState, data: Any) -> Unit,
+    private val onStopScroll: () -> Unit,
+) : CoordinatorLayout.Behavior<View>() {
 
     companion object {
         private const val TAG = "FixedBehavior"
@@ -39,9 +40,20 @@ class FixedBehavior(
         ReleaseDragHelper()
     }
 
+    override fun onInterceptTouchEvent(parent: CoordinatorLayout, child: View, ev: MotionEvent): Boolean {
+        if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
+            onStopScroll()
+        }
+        return super.onInterceptTouchEvent(parent, child, ev)
+    }
 
     fun setDragWithByOthers(width: Int) {
         this.currentDragWith = width
+    }
+
+    fun stopScroll() {
+        releaseDragHelper.stop()
+        scrollable.stopScroll()
     }
 
     override fun onMeasureChild(
@@ -161,7 +173,7 @@ class FixedBehavior(
         if (currentDragWith != 0) {
             onScrollChanged(ScrollState.DRAG, currentDragWith)
         } else {
-            onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData()!!)
+            onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
         }
     }
 
@@ -178,7 +190,7 @@ class FixedBehavior(
             }
         }
         if (currentDragWith == 0) {
-            onScrollChanged(ScrollState.IDLE, scrollable.getScrollData()!!)
+            onScrollChanged(ScrollState.IDLE, scrollable.getScrollData())
         }
     }
 
