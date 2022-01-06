@@ -1,12 +1,14 @@
 package com.hyh.paging3demo.widget.horizontal
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import com.hyh.paging3demo.R
 
 /**
- * TODO: Add Description
+ * 支持水平滑动的控件基类，分为固定部分与可滑动部分
  *
  * @author eriche 2021/12/28
  */
@@ -24,7 +26,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
     }
 
     constructor(context: Context, attrs: AttributeSet?, defStyle: Int) : super(context, attrs, defStyle) {
-        init(attrs)
+        init(attrs, defStyle)
     }
 
     var fixedMinWidth: Int = 0
@@ -58,9 +60,13 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
 
     private var helper: HorizontalScrollSyncHelper? = null
 
-    private fun init(attrs: AttributeSet?) {
+    @SuppressLint("CustomViewStyleable")
+    private fun init(attrs: AttributeSet?, defStyle: Int = 0) {
         attrs?.let {
-
+            val typedArray = context.obtainStyledAttributes(attrs, R.styleable.HorizontalScrollLayout, defStyle, 0)
+            fixedMinWidth = typedArray.getDimensionPixelSize(R.styleable.HorizontalScrollLayout_fixed_min_width, fixedMinWidth)
+            fixedMaxWidth = typedArray.getDimensionPixelSize(R.styleable.HorizontalScrollLayout_fixed_max_width, fixedMaxWidth)
+            typedArray.recycle()
         }
     }
 

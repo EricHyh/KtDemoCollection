@@ -14,7 +14,7 @@ import com.hyh.paging3demo.BuildConfig
 import java.lang.ref.WeakReference
 
 /**
- * TODO: Add Description
+ * 基于RecyclerView实现的水平滑动控件
  *
  * @author eriche 2021/12/29
  */

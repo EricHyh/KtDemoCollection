@@ -1,7 +1,7 @@
 package com.hyh.paging3demo.widget.horizontal
 
 /**
- * TODO: Add Description
+ * 滑动状态
  *
  * @author eriche 2021/12/28
  */

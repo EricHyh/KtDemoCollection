@@ -4,7 +4,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 /**
- * TODO: Add Description
+ * 可滑动控件接口描述
  *
  * @author eriche 2021/12/28
  */

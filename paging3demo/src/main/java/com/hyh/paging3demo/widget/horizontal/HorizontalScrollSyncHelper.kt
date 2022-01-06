@@ -3,7 +3,7 @@ package com.hyh.paging3demo.widget.horizontal
 import java.util.*
 
 /**
- * TODO: Add Description
+ * 水平滑动状态同步工具类
  *
  * @author eriche 2021/12/28
  */
