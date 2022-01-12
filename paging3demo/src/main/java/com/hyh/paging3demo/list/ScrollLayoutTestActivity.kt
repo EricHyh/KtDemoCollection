@@ -2,12 +2,14 @@ package com.hyh.paging3demo.list
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -42,7 +44,8 @@ class ScrollLayoutTestActivity : AppCompatActivity() {
 
 class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 
-    private val horizontalScrollSyncHelper: HorizontalScrollSyncHelper = HorizontalScrollSyncHelper()
+
+    private val horizontalScrollSyncHelperMap: MutableMap<Int, HorizontalScrollSyncHelper> = mutableMapOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScrollLayoutTestHolder {
         return ScrollLayoutTestHolder(
@@ -58,6 +61,9 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
     }
 
     override fun onBindViewHolder(holder: ScrollLayoutTestHolder, position: Int) {
+        val horizontalScrollSyncHelper = horizontalScrollSyncHelperMap.getOrPut(position / 10) {
+            HorizontalScrollSyncHelper()
+        }
         holder.recyclerViewScrollLayout.bindHorizontalScrollSyncHelper(horizontalScrollSyncHelper)
         holder.recyclerViewScrollLayout.setGrid(
             FixedTextGrid(0), listOf(

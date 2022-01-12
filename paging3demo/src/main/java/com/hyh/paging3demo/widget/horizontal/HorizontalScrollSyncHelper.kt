@@ -9,15 +9,21 @@ import java.util.*
  */
 class HorizontalScrollSyncHelper {
 
-    private var scrollData: ScrollData<Any>? = null
+    companion object {
+        private const val TAG = "ScrollSyncHelper"
+    }
+
+    private var scrollDataWrapper: ScrollDataWrapper = ScrollDataWrapper(ScrollState.INITIAL, Unit)
 
     private val scrollSyncObservable = ScrollSyncObservable()
 
     internal fun addObserver(observer: ScrollSyncObserver) {
         scrollSyncObservable.addObserver(observer)
-        scrollData?.let {
-            observer.onScroll(it.scrollState, it.data)
-        }
+        observer.onScroll(scrollDataWrapper.scrollState, scrollDataWrapper.data)
+    }
+
+    internal fun sync(observer: ScrollSyncObserver) {
+        observer.onScroll(scrollDataWrapper.scrollState, scrollDataWrapper.data)
     }
 
     internal fun removeObserver(observer: ScrollSyncObserver) {
@@ -25,15 +31,25 @@ class HorizontalScrollSyncHelper {
     }
 
     internal fun notifyScrollEvent(scrollState: ScrollState, data: Any) {
-        if (scrollData == null) {
-            scrollData = ScrollData(scrollState, data)
-        } else {
-            scrollData?.scrollState = scrollState
-            scrollData?.data = data
+        if (scrollState == scrollDataWrapper.scrollState && data == scrollDataWrapper.data) return
+        scrollDataWrapper.scrollState = scrollState
+        scrollDataWrapper.data = when (scrollState) {
+            ScrollState.IDLE, ScrollState.SCROLL, ScrollState.SETTLING -> {
+                val newScrollData = data as IScrollData
+                val oldScrollData = scrollDataWrapper.data
+                if (oldScrollData is IScrollData) {
+                    oldScrollData.copy(newScrollData)
+                    oldScrollData
+                } else {
+                    newScrollData.clone()
+                }
+            }
+            else -> {
+                data
+            }
         }
-        scrollData?.apply {
-            scrollSyncObservable.setScrollData(this)
-        }
+
+        scrollSyncObservable.setScrollData(scrollDataWrapper)
     }
 
     internal fun notifyStopScroll() {
@@ -42,18 +58,9 @@ class HorizontalScrollSyncHelper {
 
     internal inner class ScrollSyncObservable : Observable() {
 
-        private var scrollData: ScrollData<Any>? = null
-
-        fun setScrollData(scrollData: ScrollData<*>) {
-            if (this.scrollData == scrollData) return
-            if (this.scrollData == null) {
-                this.scrollData = ScrollData(scrollData.scrollState, scrollData.data as Any)
-            } else {
-                this.scrollData?.scrollState = scrollData.scrollState
-                this.scrollData?.data = scrollData.data as Any
-            }
+        fun setScrollData(scrollDataWrapper: ScrollDataWrapper) {
             setChanged()
-            notifyObservers(this.scrollData)
+            notifyObservers(scrollDataWrapper)
         }
 
         fun stopScroll() {
@@ -68,8 +75,8 @@ interface ScrollSyncObserver : Observer {
     @Suppress("UNCHECKED_CAST")
     override fun update(o: Observable?, arg: Any?) {
         when (arg) {
-            is ScrollData<*> -> {
-                val data = arg.data ?: return
+            is ScrollDataWrapper -> {
+                val data = arg.data
                 onScroll(arg.scrollState, data)
             }
             is StopScroll -> {
@@ -84,7 +91,6 @@ interface ScrollSyncObserver : Observer {
 
 }
 
-
-internal class ScrollData<T>(var scrollState: ScrollState, var data: T)
+internal data class ScrollDataWrapper(var scrollState: ScrollState, var data: Any)
 
 internal object StopScroll

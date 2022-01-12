@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
  *
  * @author eriche 2021/12/28
  */
-interface Scrollable<T> {
+interface Scrollable<T : IScrollData> {
 
     fun getScrollData(): T
 
@@ -19,6 +19,16 @@ interface Scrollable<T> {
     fun stopScroll()
 
 }
+
+
+interface IScrollData : Cloneable {
+
+    public override fun clone(): Any
+
+    fun copy(other: IScrollData)
+
+}
+
 
 class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollable<RecyclerViewScrollable.RecyclerViewScrollData> {
 
@@ -54,11 +64,26 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollabl
         linearLayoutManager.scrollToPositionWithOffset(0, 0)
     }
 
-    class RecyclerViewScrollData(
+    data class RecyclerViewScrollData(
         var position: Int = -1,
         var positionOffset: Int? = null,
         var globalOffset: Int = -1
-    )
+    ) : IScrollData {
+        override fun toString(): String {
+            return "RecyclerViewScrollData(position=$position, positionOffset=$positionOffset, globalOffset=$globalOffset)"
+        }
+
+        override fun clone(): Any {
+            return RecyclerViewScrollData(position, positionOffset, globalOffset)
+        }
+
+        override fun copy(other: IScrollData) {
+            if (other !is RecyclerViewScrollData) return
+            this.position = other.position
+            this.positionOffset = other.positionOffset
+            this.globalOffset = other.globalOffset
+        }
+    }
 
     override fun stopScroll() {
         recyclerView.stopScroll()

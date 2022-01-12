@@ -3,6 +3,7 @@ package com.hyh.paging3demo.widget.horizontal
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.hyh.paging3demo.R
@@ -50,7 +51,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
 
     private lateinit var fixedView: View
     private lateinit var scrollableView: View
-    private lateinit var scrollable: Scrollable<Any>
+    private lateinit var scrollable: Scrollable<IScrollData>
 
     private lateinit var fixedBehavior: FixedBehavior
     private lateinit var scrollableBehavior: ScrollableBehavior
@@ -74,7 +75,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
     protected fun initView() {
         fixedView = findFixedView()
         scrollableView = findScrollableView()
-        scrollable = asScrollable(scrollableView) as Scrollable<Any>
+        scrollable = asScrollable(scrollableView) as Scrollable<IScrollData>
 
         val fixedViewLayoutParams = fixedView.layoutParams as LayoutParams
         fixedViewLayoutParams.behavior = FixedBehavior(
@@ -106,35 +107,54 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
         val oldHelper = this.helper
         this.helper = helper
         oldHelper?.removeObserver(this)
-        this.helper?.addObserver(this)
+        if (isAttachedToWindow) {
+            this.helper?.addObserver(this)
+        }
     }
 
     protected fun syncScroll() {
-        this.helper?.addObserver(this)
+        this.helper?.sync(this)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                helper?.notifyStopScroll()
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                fixedBehavior.tryRebound()
+            }
+        }
+        return super.dispatchTouchEvent(ev) || fixedBehavior.currentDragWith != 0
     }
 
     override fun onScroll(scrollState: ScrollState, data: Any) {
+        if (!isAttachedToWindow) return
         if (initialized) {
             when (scrollState) {
+                ScrollState.INITIAL -> {
+                    scrollable.resetScroll()
+                    fixedBehavior.currentDragWith = 0
+                }
                 ScrollState.IDLE -> {
-                    scrollable.scrollTo(data)
-                    fixedBehavior.setDragWithByOthers(0)
+                    scrollable.scrollTo(data as IScrollData)
+                    fixedBehavior.currentDragWith = 0
                 }
                 ScrollState.SCROLL -> {
-                    scrollable.scrollTo(data)
-                    fixedBehavior.setDragWithByOthers(0)
+                    scrollable.scrollTo(data as IScrollData)
+                    fixedBehavior.currentDragWith = 0
                 }
                 ScrollState.DRAG -> {
                     scrollable.resetScroll()
-                    fixedBehavior.setDragWithByOthers(data as Int)
+                    fixedBehavior.currentDragWith = data as Int
                 }
                 ScrollState.REBOUND -> {
                     scrollable.resetScroll()
-                    fixedBehavior.setDragWithByOthers(data as Int)
+                    fixedBehavior.currentDragWith = data as Int
                 }
                 ScrollState.SETTLING -> {
-                    scrollable.scrollTo(data)
-                    fixedBehavior.setDragWithByOthers(0)
+                    scrollable.scrollTo(data as IScrollData)
+                    fixedBehavior.currentDragWith = 0
                 }
             }
         }

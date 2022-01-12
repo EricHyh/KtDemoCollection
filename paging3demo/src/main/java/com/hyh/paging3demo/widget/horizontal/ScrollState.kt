@@ -7,6 +7,6 @@ package com.hyh.paging3demo.widget.horizontal
  */
 enum class ScrollState {
 
-    IDLE, SCROLL, DRAG, REBOUND, SETTLING
+    INITIAL, IDLE, SCROLL, DRAG, REBOUND, SETTLING
 
 }
