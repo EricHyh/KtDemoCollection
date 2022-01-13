@@ -8,6 +8,7 @@ import android.view.animation.AlphaAnimation
 import android.view.animation.AnimationSet
 import android.view.animation.TranslateAnimation
 import androidx.core.view.forEach
+import androidx.core.view.forEachIndexed
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.R
@@ -47,12 +48,13 @@ class Mode2Fragment : CommonBaseFragment() {
 
     fun animIn() {
         contentView?.apply {
-            forEach {
+            forEachIndexed { index, view ->
+                if (index == 0) return@forEachIndexed
                 val animationSet = AnimationSet(true)
                 animationSet.addAnimation(AlphaAnimation(0.0F, 1.0F))
                 animationSet.addAnimation(TranslateAnimation(0F, 0F, 100F, 0F))
-                animationSet.duration = 500
-                it.startAnimation(animationSet)
+                animationSet.duration = 200
+                view.startAnimation(animationSet)
             }
             alpha = 1.0F
         }
@@ -64,19 +66,11 @@ class Mode2ListAdapter : RecyclerView.Adapter<Mode2Holder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Mode2Holder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_anim_test_mode1_1, parent, false)
-        view.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-            override fun onViewAttachedToWindow(v: View) {
-
-            }
-
-            override fun onViewDetachedFromWindow(v: View) {
-            }
-        })
         return Mode2Holder(view)
     }
 
     override fun getItemCount(): Int {
-        return 2
+        return 3
     }
 
     override fun onBindViewHolder(holder: Mode2Holder, position: Int) {

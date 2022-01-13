@@ -10,6 +10,7 @@ import android.view.animation.Animation
 import android.view.animation.AnimationSet
 import android.view.animation.TranslateAnimation
 import androidx.core.view.forEach
+import androidx.core.view.forEachIndexed
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.R
@@ -27,7 +28,7 @@ class Mode1Fragment : CommonBaseFragment() {
 
     private val anim: Boolean by lazy { arguments?.getBoolean("anim", false) ?: false }
 
-    private var contentView: ViewGroup? = null
+    private var contentView: RecyclerView? = null
 
     override fun initData() {
     }
@@ -36,7 +37,7 @@ class Mode1Fragment : CommonBaseFragment() {
         val context = container?.context ?: inflater.context
         return RecyclerView(context).apply {
             setBackgroundColor(Color.WHITE)
-            setPadding(0, 1000, 0, 0)
+            //setPadding(0, 1000, 0, 0)
             layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
             adapter = Mode1ListAdapter()
@@ -44,14 +45,15 @@ class Mode1Fragment : CommonBaseFragment() {
     }
 
     override fun initView(contentView: View?) {
-        this.contentView = contentView as ViewGroup
+        this.contentView = contentView as RecyclerView
     }
 
 
     fun animOut(action: () -> Unit) {
         var isAction = false
         contentView?.apply {
-            forEach {
+            forEachIndexed { index, view ->
+                if ( getChildAdapterPosition(view) == 0) return@forEachIndexed
                 val animationSet = AnimationSet(true)
                 animationSet.setAnimationListener(object : Animation.AnimationListener {
                     override fun onAnimationRepeat(animation: Animation?) {
@@ -69,8 +71,8 @@ class Mode1Fragment : CommonBaseFragment() {
                 })
                 animationSet.addAnimation(AlphaAnimation(1.0F, 0.0F))
                 animationSet.addAnimation(TranslateAnimation(0F, 0F, 0F, 100F))
-                animationSet.duration = 500
-                it.startAnimation(animationSet)
+                animationSet.duration = 200
+                view.startAnimation(animationSet)
             }
         }
     }
@@ -85,7 +87,7 @@ class Mode1ListAdapter : RecyclerView.Adapter<Mode1Holder>() {
     }
 
     override fun getItemCount(): Int {
-        return 3
+        return 15
     }
 
     override fun onBindViewHolder(holder: Mode1Holder, position: Int) {

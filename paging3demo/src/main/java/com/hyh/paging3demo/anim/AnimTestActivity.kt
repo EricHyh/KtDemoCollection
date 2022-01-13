@@ -7,6 +7,7 @@ import android.widget.RadioGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.hyh.paging3demo.R
+import com.hyh.paging3demo.anim.internal.FragmentStarter
 
 /**
  * TODO: Add Description
