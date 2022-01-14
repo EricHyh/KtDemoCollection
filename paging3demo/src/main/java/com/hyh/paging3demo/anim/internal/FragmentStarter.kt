@@ -44,9 +44,11 @@ class FragmentStarter(
             if (fragment.lifecycle.currentState < Lifecycle.State.CREATED) return
             val newInstance = clazz.newInstance()
             fragmentManager.add(newInstance, args, tag)
-            FragmentAnimFactory.getAnimOut(fragment).start {
-
-            }
+            FragmentAnimFactory
+                .getAnimOut(fragment)
+                .start {
+                    FragmentAnimFactory.getAnimIn(newInstance).start { }
+                }
         }
     }
 }
