@@ -1,7 +1,25 @@
 package com.hyh.kt_demo
 
+import java.math.BigDecimal
+
 
 fun main() {
+
+    var s: String? = ""
+
+    s.toString()
+
+    val aClazz = AA::class.java
+
+
+    aClazz?.let { }
+
+    println("")
+
+    "".toBigDecimalOrNull()
+
+
+
     //MP3MusicPlayer("双截棍").play()
 
     val marketList = listOf("MARKET_HK", "MARKET_US", "MARKET_SG", "MARKET_JP", "MARKET_SH", "MARKET_SZ")
@@ -43,6 +61,43 @@ fun main() {
 
 }
 
+
+enum class TestEnum {
+
+    T1
+
+}
+
+class AA {
+
+    private val a = 0
+
+    private val x: Integer = Integer(0)
+
+    var b = "0"
+
+    var c: CC<Int>? = null
+
+    var d: CC<DD<Int>>? = null
+
+    var e: CC<DD<*>>? = null
+
+    var f: List<Int>? = null
+
+    var g: List<DD<*>>? = null
+
+    var h: IntArray? = null
+
+    var i: Array<List<Int>>? = null
+
+    var j: TestEnum? = null
+
+}
+
+
+class CC<T>
+
+class DD<T>
 
 /*abstract class MusicPlayer {
 

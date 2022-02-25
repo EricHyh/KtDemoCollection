@@ -10,6 +10,5 @@ import android.view.ViewGroup
 class IWidgetGrouping {
 
 
-    fun grouping(root: ViewGroup):List<>
 
 }

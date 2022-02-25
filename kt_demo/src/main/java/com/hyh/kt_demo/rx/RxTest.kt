@@ -3,6 +3,7 @@ package com.hyh.kt_demo.rx
 import io.reactivex.rxjava3.core.Observable
 import io.reactivex.rxjava3.schedulers.Schedulers
 import java.lang.RuntimeException
+import java.util.concurrent.TimeUnit
 
 /**
  * TODO: Add Description
@@ -25,16 +26,22 @@ fun main() {
     }*/
 
 
-
     get1()
-        .concatWith(get2())
-        .doOnNext {
-            println("doOnNext $it")
+        .timeout(500, TimeUnit.MILLISECONDS)
+        .doOnError {
+            println("doOnError1 $it")
         }
-        .doOnEach {
-            println("doOnEach:$it")
-        }
-        .subscribe()
+        .subscribe(
+            {
+                println("subscribe $it")
+            },
+            {
+                println("doOnError2 $it")
+            },
+            {
+
+            }
+        )
 
 
     println("end")
@@ -49,11 +56,13 @@ private fun get1(): Observable<String?> {
         "1"
     }.subscribeOn(Schedulers.io())*/
     return Observable.create<String> {
+        Thread.sleep(1000)
         it.onNext("1")
         it.onComplete()
-    }.doOnNext {
-        println("get1 $it")
-    }
+    }.observeOn(Schedulers.io())
+        .doOnNext {
+            println("get1 $it")
+        }
 }
 
 private fun get2(): Observable<String> {

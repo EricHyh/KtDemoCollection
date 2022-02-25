@@ -39,7 +39,7 @@ class FragmentStarter(
             return this
         }
 
-        fun start() {
+        /*fun start() {
             val clazz = this.clazz ?: return
             if (fragment.lifecycle.currentState < Lifecycle.State.CREATED) return
             val newInstance = clazz.newInstance()
@@ -49,6 +49,6 @@ class FragmentStarter(
                 .start {
                     FragmentAnimFactory.getAnimIn(newInstance).start { }
                 }
-        }
+        }*/
     }
 }

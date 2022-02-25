@@ -9,11 +9,11 @@ import androidx.fragment.app.Fragment
  */
 object FragmentAnimFactory {
 
-    fun getAnimOut(fragment: Fragment): IFragmentAnim {
+    /*fun getAnimOut(fragment: Fragment): IFragmentAnim {
 
     }
 
     fun getAnimIn(fragment: Fragment): IFragmentAnim {
 
-    }
+    }*/
 }

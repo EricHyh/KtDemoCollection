@@ -7,13 +7,39 @@ import kotlinx.coroutines.runBlocking
 import java.math.BigDecimal
 import kotlin.concurrent.thread
 
+
+data class Test(
+    val i: Int, val any: Any
+)
+
+
 fun main() {
+
+    val any = Any()
+    val test1 = Test(1, any)
+    val test2 = test1.copy(i = 2)
+
+    println("test1=$test1")
+    println("test2=$test2")
+
+
+    val s1 = "1"
+
+    val sortedBy = listOf<String>("3", "1", "2", "1").sortedBy {
+        if (it == s1) {
+            0
+        } else {
+            1
+        }
+    }.filter {
+        it != "2"
+    }
+
+    println("")
 
     val x: BigDecimal
 
     //x.rem()
-
-
 
 
     thread {
@@ -43,18 +69,14 @@ fun main() {
 
             flow<String> {
 
-            }.collect(){
+            }.collect() {
 
             }
 
 
-
-
-
-
             val xx: Flow<Int> = flowOf(1)
 
-            xx.collect(){
+            xx.collect() {
 
             }
 
