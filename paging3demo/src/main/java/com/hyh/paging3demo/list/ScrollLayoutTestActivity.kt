@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -45,13 +46,17 @@ class ScrollLayoutTestActivity : AppCompatActivity() {
 class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 
 
-    private val horizontalScrollSyncHelperMap: MutableMap<Int, HorizontalScrollSyncHelper> = mutableMapOf()
+    private val horizontalScrollSyncHelperMap: MutableMap<Int, HorizontalScrollSyncHelper> =
+        mutableMapOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScrollLayoutTestHolder {
         return ScrollLayoutTestHolder(
             RecyclerViewScrollLayout(parent.context).apply {
                 fixedMinWidth = 200
-                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
             }
         )
     }
@@ -90,7 +95,8 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 }
 
 
-class ScrollLayoutTestHolder(val recyclerViewScrollLayout: RecyclerViewScrollLayout) : RecyclerView.ViewHolder(recyclerViewScrollLayout) {
+class ScrollLayoutTestHolder(val recyclerViewScrollLayout: RecyclerViewScrollLayout) :
+    RecyclerView.ViewHolder(recyclerViewScrollLayout) {
 }
 
 class FixedTextGrid(
@@ -105,7 +111,10 @@ class FixedTextGrid(
                 gravity = Gravity.CENTER_VERTICAL or Gravity.LEFT
                 ellipsize = TextUtils.TruncateAt.END
                 maxLines = 1
-                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
             }
             TextHolder(textView)
         }
@@ -137,7 +146,10 @@ class TextGrid(
                 textSize = 20F
                 setTextColor(Color.BLACK)
                 gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
-                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
             }
             TextHolder(textView)
         }
@@ -154,6 +166,9 @@ class TextGrid(
     @SuppressLint("SetTextI18n")
     override fun render(holder: TextHolder, showAssets: Boolean) {
         (holder.view as TextView).text = "数据: $gridFieldId"
+        holder.view.setOnClickListener {
+            Toast.makeText(holder.view.context, "数据: $gridFieldId", Toast.LENGTH_SHORT).show()
+        }
     }
 
 }

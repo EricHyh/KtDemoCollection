@@ -1,9 +1,67 @@
 package com.hyh.kt_demo
 
-import java.math.BigDecimal
+
+
+typealias Condition<E> = (E.() -> Boolean)
+
+fun <E> List<E>.sortedBy(priorityConditions: List<Condition<E>>): List<E> {
+    return this.sortedBy selector@{ element ->
+        priorityConditions.forEachIndexed { index, condition ->
+            if (element.condition()) {
+                return@selector index
+            }
+        }
+        return@selector priorityConditions.size
+    }
+}
+
+fun <E> List<E>.sortedBy(vararg priorityConditions: Condition<E>): List<E> {
+    return sortedBy(priorityConditions.toList())
+}
+
+
+fun <E> List<E>.filter(conditions: List<Condition<E>>): List<E> {
+    return filter { element ->
+        conditions.find { condition ->
+            element.condition()
+        } != null
+    }
+}
+
 
 
 fun main() {
+
+
+    val conditions = mutableListOf<Condition<String>>(
+        { this.contains('a') },
+        { this.contains('b') },
+        { this.contains('c') },
+        { this.contains('d') },
+        { this.contains('e') },
+    )
+
+    conditions += { this.contains('a') }
+
+
+    val sortedBy = listOf<String>(
+        "kkkkk",
+        "kkckk",
+        "kkkebk",
+        "kabck",
+        "kakek",
+        "kkdakk",
+        "kkakk",
+        "kkdkk",
+        "kkcdkk",
+        "kkckkk",
+        "kkckk",
+    ).sortedBy(
+        { this.contains('b') },
+        { this.contains('c') },
+        { this.contains('d') },
+        { this.contains('e') }
+    )
 
     var s: String? = ""
 
@@ -19,10 +77,10 @@ fun main() {
     "".toBigDecimalOrNull()
 
 
-
     //MP3MusicPlayer("双截棍").play()
 
-    val marketList = listOf("MARKET_HK", "MARKET_US", "MARKET_SG", "MARKET_JP", "MARKET_SH", "MARKET_SZ")
+    val marketList =
+        listOf("MARKET_HK", "MARKET_US", "MARKET_SG", "MARKET_JP", "MARKET_SH", "MARKET_SZ")
     //val marketList = listOf("MARKET_HK")
     val reduceIndexed = marketList.reduceIndexed { index, acc, s ->
         if (index == 1) {

@@ -1,6 +1,5 @@
 package com.hyh.kt_demo.flow1
 
-import jdk.nashorn.internal.objects.Global
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.*
 import kotlinx.coroutines.flow.*

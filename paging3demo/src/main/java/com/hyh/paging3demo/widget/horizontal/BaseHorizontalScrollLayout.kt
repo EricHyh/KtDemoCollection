@@ -119,10 +119,10 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         when (ev.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                helper?.notifyStopScroll()
+                //helper?.notifyStopScroll()
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                fixedBehavior.tryRebound()
+                //fixedBehavior.tryRebound()
             }
         }
         return super.dispatchTouchEvent(ev) || fixedBehavior.currentDragWith != 0

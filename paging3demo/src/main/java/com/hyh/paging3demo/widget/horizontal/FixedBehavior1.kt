@@ -9,7 +9,7 @@ import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 
-internal class FixedBehavior constructor(
+internal class FixedBehavior1 constructor(
     var fixedMinWidth: Int,
     var fixedMaxWidth: Int = Int.MAX_VALUE,
     private val scrollable: Scrollable<out IScrollData>,
@@ -26,6 +26,9 @@ internal class FixedBehavior constructor(
 
     private var parent: View? = null
     private var child: View? = null
+
+
+    var unitState: ScrollUnitState = ScrollUnitState.IDLE
 
     var currentDragWith: Int = 0
         set(value) {
@@ -102,15 +105,10 @@ internal class FixedBehavior constructor(
     ) {
         when (type) {
             ViewCompat.TYPE_TOUCH -> {
-                releaseDragHelper.stop()
-                if (currentDragWith != 0) {
-                    onScrollChanged(ScrollState.DRAG, currentDragWith)
-                } else {
-                    onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
-                }
+                unitState = ScrollUnitState.SCROLL
             }
             ViewCompat.TYPE_NON_TOUCH -> {
-                onScrollChanged(ScrollState.SETTLING, scrollable.getScrollData())
+                unitState = ScrollUnitState.SETTLING
             }
         }
     }
@@ -145,6 +143,15 @@ internal class FixedBehavior constructor(
         if (currentDragWith != 0) {
             onScrollChanged(ScrollState.DRAG, currentDragWith)
         }
+
+        when (type) {
+            ViewCompat.TYPE_TOUCH -> {
+                unitState = ScrollUnitState.SCROLL
+            }
+            ViewCompat.TYPE_NON_TOUCH -> {
+                unitState = ScrollUnitState.SETTLING
+            }
+        }
     }
 
     override fun onNestedScroll(
@@ -173,10 +180,15 @@ internal class FixedBehavior constructor(
         if (currentDragWith != 0) {
             onScrollChanged(ScrollState.DRAG, currentDragWith)
         } else {
-            if (type == ViewCompat.TYPE_TOUCH) {
-                onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
-            } else {
-                onScrollChanged(ScrollState.SETTLING, scrollable.getScrollData())
+            onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
+        }
+
+        when (type) {
+            ViewCompat.TYPE_TOUCH -> {
+                unitState = ScrollUnitState.SCROLL
+            }
+            ViewCompat.TYPE_NON_TOUCH -> {
+                unitState = ScrollUnitState.SETTLING
             }
         }
     }
@@ -189,15 +201,14 @@ internal class FixedBehavior constructor(
     ) {
         if (type == ViewCompat.TYPE_TOUCH) {
             if (currentDragWith != 0) {
-
                 releaseDragHelper.start()
-
                 onScrollChanged(ScrollState.REBOUND, currentDragWith)
             }
         }
         if (currentDragWith == 0) {
             onScrollChanged(ScrollState.IDLE, scrollable.getScrollData())
         }
+        unitState = ScrollUnitState.IDLE
     }
 
     override fun onNestedPreFling(
