@@ -1,18 +1,48 @@
 package com.hyh.kt_demo
 
 
-
 typealias Condition<E> = (E.() -> Boolean)
 
-fun <E> List<E>.sortedBy(priorityConditions: List<Condition<E>>): List<E> {
+
+fun <E> List<E>.sortedBy(priorityConditionsArray: Array<List<Condition<E>>>): List<E> {
+
+    fun getWeight(element: E): Int {
+        var weight = 0
+        var multiplier = 1
+        for (arrayIndex in priorityConditionsArray.indices.reversed()) {
+            val priorityConditions = priorityConditionsArray[arrayIndex]
+            for (index in priorityConditions.indices) {
+                val condition = priorityConditions[index]
+                if (element.condition()) {
+                    weight += (index + 1) * multiplier
+                    break
+                } else if (index == priorityConditions.size - 1) {
+                    weight += (priorityConditions.size + 1) * multiplier
+                    break
+                }
+            }
+            multiplier *= (priorityConditions.size + 1)
+        }
+
+        return weight
+    }
+
     return this.sortedBy selector@{ element ->
+        return@selector getWeight(element)
+    }
+}
+
+
+fun <E> List<E>.sortedBy(priorityConditions: List<Condition<E>>): List<E> {
+    /*return this.sortedBy selector@{ element ->
         priorityConditions.forEachIndexed { index, condition ->
             if (element.condition()) {
                 return@selector index
             }
         }
         return@selector priorityConditions.size
-    }
+    }*/
+    return this.sortedBy(arrayOf(priorityConditions))
 }
 
 fun <E> List<E>.sortedBy(vararg priorityConditions: Condition<E>): List<E> {
@@ -27,7 +57,6 @@ fun <E> List<E>.filter(conditions: List<Condition<E>>): List<E> {
         } != null
     }
 }
-
 
 
 fun main() {
@@ -75,6 +104,38 @@ fun main() {
     println("")
 
     "".toBigDecimalOrNull()
+
+
+    val sortedBy1 = listOf<String>(
+        "1kkkkk",
+        "3kkckk",
+        "6kkkebk",
+        "2kabck",
+        "10kakek",
+        "4kkdakk",
+        "4kkdakk",
+        "7kkdakk",
+        "1kkakk",
+        "3kkdkk",
+        "2kkcdkk",
+        "3kkckkk",
+        "1kkckk",
+        "8kkckk",
+    ).sortedBy(
+        arrayOf(
+            listOf(
+                { this.contains('1') },
+                { this.contains('2') },
+                { this.contains('3') },
+                { this.contains('4') }),
+
+            listOf(
+                { this.contains('a') },
+                { this.contains('b') },
+                { this.contains('c') },
+                { this.contains('d') }),
+        )
+    )
 
 
     //MP3MusicPlayer("双截棍").play()
