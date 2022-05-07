@@ -4,10 +4,72 @@ package com.hyh.kt_demo
 typealias Condition<E> = (E.() -> Boolean)
 
 
-fun <E> List<E>.sortedBy(priorityConditionsArray: Array<List<Condition<E>>>): List<E> {
+interface ElementWeightProvider<E> {
 
-    fun getWeight(element: E): Int {
-        var weight = 0
+    val maxWeight: Long
+
+    fun getWeight(element: E): Long
+
+}
+
+/**
+ * 5 - 10 - 20
+ *
+ *
+ * 1 - 19 - 20 - 21
+ * 21 - 42 - 210
+ *
+ *
+ * 0 - 20
+ *
+ *
+ *
+ * @param E
+ * @param elementWeightProviders
+ * @return
+ */
+
+
+fun <E> List<E>.sortedByWeightProvider(elementWeightProviders: List<ElementWeightProvider<E>>): List<E> {
+
+    fun getWeight(element: E): Long {
+        var weight = 0L
+        var multiplier = 1L
+        for (providerIndex in elementWeightProviders.indices.reversed()) {
+            val elementWeightProvider = elementWeightProviders[providerIndex]
+            weight += (elementWeightProvider.getWeight(element) + 1) * multiplier
+            multiplier *= (elementWeightProvider.maxWeight + 1)
+        }
+
+        return weight
+    }
+
+    return this.sortedBy selector@{ element ->
+        return@selector getWeight(element)
+    }
+}
+
+
+fun <E> List<E>.sortedBy(priorityConditionsArray: Array<List<Condition<E>>>): List<E> {
+    val elementWeightProviders = priorityConditionsArray.map { priorityConditions ->
+        object : ElementWeightProvider<E> {
+
+            override val maxWeight: Long = priorityConditions.size.toLong()
+
+            override fun getWeight(element: E): Long {
+                priorityConditions.forEachIndexed { index, condition ->
+                    if (element.condition()) {
+                        return@getWeight index.toLong()
+                    }
+                }
+                return maxWeight
+            }
+
+        }
+    }
+    return sortedByWeightProvider(elementWeightProviders)
+    /*fun getWeight(element: E): Long {
+        var weight = 0L
         var multiplier = 1
         for (arrayIndex in priorityConditionsArray.indices.reversed()) {
             val priorityConditions = priorityConditionsArray[arrayIndex]
@@ -29,7 +91,7 @@ fun <E> List<E>.sortedBy(priorityConditionsArray: Array<List<Condition<E>>>): Li
 
     return this.sortedBy selector@{ element ->
         return@selector getWeight(element)
-    }
+    }*/
 }
 
 
@@ -44,6 +106,7 @@ fun <E> List<E>.sortedBy(priorityConditions: List<Condition<E>>): List<E> {
     }*/
     return this.sortedBy(arrayOf(priorityConditions))
 }
+
 
 fun <E> List<E>.sortedBy(vararg priorityConditions: Condition<E>): List<E> {
     return sortedBy(priorityConditions.toList())
@@ -123,13 +186,13 @@ fun main() {
         "8kkckk",
     ).sortedBy(
         arrayOf(
-            listOf(
+            listOf<Condition<String>>(
                 { this.contains('1') },
                 { this.contains('2') },
                 { this.contains('3') },
                 { this.contains('4') }),
 
-            listOf(
+            listOf<Condition<String>>(
                 { this.contains('a') },
                 { this.contains('b') },
                 { this.contains('c') },

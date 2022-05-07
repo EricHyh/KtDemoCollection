@@ -38,7 +38,98 @@ abstract class TextView {
 
 val lock = Any()
 
+
+fun xxx(vararg brokerId: Int?) {
+    val toHashSet = brokerId.toHashSet().filterNotNull()
+    println()
+}
+
 fun main() {
+
+
+    val transform: (Int) -> Iterable<String> = {
+        listOf("$it:1", "$it:2", "$it:3")
+    }
+
+    val find = listOf<Int>(1, 2, 3)
+        .flatMap {
+            listOf("$it:1", "$it:2", "$it:3")
+        }
+        .find {
+            println("find:$it")
+            it == "2:2"
+        }
+
+
+
+
+
+    println("")
+
+
+
+
+
+
+
+
+
+
+
+    xxx(null)
+    xxx(null, 1, 2)
+    xxx(1, null, 2)
+    xxx(1, null, null)
+    xxx(1, 2, null)
+
+    val list1 = listOf<Int>(1, 2, 3)
+
+    val list2 = listOf<Pair<Int, String>>(
+        5 to "555",
+        4 to "4",
+        2 to "2",
+        1 to "1",
+        3 to "3",
+        5 to "5",
+        3 to "33",
+        4 to "44",
+        1 to "11",
+        2 to "22",
+        5 to "55",
+        6 to "55",
+    )
+
+
+    var weight = Int.MAX_VALUE / 2
+    val weightMap: MutableMap<Int, Int> = mutableMapOf()
+
+    val toMutableList: Any = list2.toMutableList().groupBy {
+        it.first
+    }.toSortedMap(kotlin.Comparator { t, t2 ->
+
+        var weight1 = list1.indexOf(t)
+        if (weight1 < 0) {
+            weight1 = weightMap.getOrPut(t, { weight++ })
+        }
+
+        var weight2 = list1.indexOf(t2)
+        if (weight2 < 0) {
+            weight2 = weightMap.getOrPut(t2, { weight++ })
+        }
+
+
+        weight1 - weight2
+
+    }).onEach {
+        (it.value as MutableList).add(0, Pair(it.key, "title"))
+    }.flatMap {
+        it.value
+    }.toMutableList()
+
+    println("")
+
+
+
 
 
     Observable.fromIterable(listOf(0, 1, 2, 3))
@@ -59,8 +150,6 @@ fun main() {
         }
 
     mutableListOf<Int>().removeFirstOrNull()
-
-
 
 
     /*val linkedHashMap = LinkedHashMap<Int, String>(8, 0.75F, true)
