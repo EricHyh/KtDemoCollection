@@ -1,5 +1,6 @@
 package com.hyh.paging3demo.list
 
+import android.util.Log
 import com.hyh.list.SimpleItemSourceRepo
 import com.hyh.base.RefreshStrategy
 import com.hyh.list.internal.RepoDisplayedData
@@ -20,10 +21,12 @@ class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
         return CacheResult.Unused
     }
 
+    var num = 0
+
     override suspend fun load(param: Unit): LoadResult {
         delay(1000)
         //SystemClock.sleep(1000)
-        val sources = listOf(NumItemSource("A"))
+        val sources = listOf(NumItemSource("${num++}"))
 
 
         /*val sources = ListConfig.randomTypes()
@@ -33,6 +36,7 @@ class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
                     NumItemSource(it)
                 )
             }*/
+        Log.d("TAG", "load: ")
         return LoadResult.Success(sources)
     }
 

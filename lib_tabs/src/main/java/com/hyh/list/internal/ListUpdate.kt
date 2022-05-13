@@ -386,7 +386,7 @@ interface IElementDiff<E> {
         override fun isSupportUpdate(oldElement: E, newElement: E): Boolean = true
 
         override fun areItemsTheSame(oldElement: E, newElement: E): Boolean {
-            return oldElement == newElement
+            return oldElement?.hashCode() == newElement?.hashCode()
         }
 
         override fun areContentsTheSame(oldElement: E, newElement: E): Boolean {

@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-class NumItemSource(private val type: String, override val sourceToken: Any = type) : SimpleItemSource<Unit>() {
+class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
 
 
     companion object {
@@ -24,6 +24,34 @@ class NumItemSource(private val type: String, override val sourceToken: Any = ty
 
 
     private var lastNums: List<Int> = emptyList()
+
+
+    //override val sourceToken: Any = Pair(NumItemSource::class.java, type)
+    //override val sourceToken: Any = NumItemSource::class.java
+    override val sourceToken: Any = SourceToken(NumItemSource::class.java, type)
+
+    private class SourceToken(
+        val any: Any,
+        val type: Any,
+    ) {
+        override fun hashCode(): Int {
+            return any.hashCode()
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+
+            if (other !is SourceToken) return false
+
+            //return this.type == other.type
+            return true
+        }
+    }
+
+    override fun onUpdateItemSource(newItemSource: ItemSource<Unit, FlatListItem>) {
+        super.onUpdateItemSource(newItemSource)
+        Log.d(TAG, "onUpdateItemSource: ")
+    }
 
     override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
         val titleItemData = TitleFlatListItem(type, lastNums, emptyList())
@@ -126,7 +154,8 @@ class TitleFlatListItem(
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is TitleFlatListItem) return false
-        return type == newItem.type
+        //return type == newItem.type
+        return true
     }
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
