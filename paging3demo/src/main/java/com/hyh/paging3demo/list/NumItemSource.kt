@@ -13,9 +13,10 @@ import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import java.util.*
 import kotlin.random.Random
 
-class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
+class NumItemSource(private var type: String) : SimpleItemSource<Unit>() {
 
 
     companion object {
@@ -26,31 +27,16 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
     private var lastNums: List<Int> = emptyList()
 
 
-    //override val sourceToken: Any = Pair(NumItemSource::class.java, type)
-    //override val sourceToken: Any = NumItemSource::class.java
-    override val sourceToken: Any = SourceToken(NumItemSource::class.java, type)
+    override val sourceToken: Any = NumItemSource::class.java
 
-    private class SourceToken(
-        val any: Any,
-        val type: Any,
-    ) {
-        override fun hashCode(): Int {
-            return any.hashCode()
-        }
+    override fun areSourceTheSame(newItemSource: ItemSource<Unit, FlatListItem>): Boolean {
+        if (newItemSource !is NumItemSource) return false
 
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-
-            if (other !is SourceToken) return false
-
-            //return this.type == other.type
-            return true
-        }
+        return type == newItemSource.type
     }
 
     override fun onUpdateItemSource(newItemSource: ItemSource<Unit, FlatListItem>) {
-        super.onUpdateItemSource(newItemSource)
-        Log.d(TAG, "onUpdateItemSource: ")
+        this.type = (newItemSource as NumItemSource).type
     }
 
     override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
@@ -87,7 +73,10 @@ class NumItemSource(private val type: String) : SimpleItemSource<Unit>() {
         return Dispatchers.IO
     }*/
 
-    override fun getFetchDispatcher(param: Unit, displayedData: SourceDisplayedData<FlatListItem>): CoroutineDispatcher {
+    override fun getFetchDispatcher(
+        param: Unit,
+        displayedData: SourceDisplayedData<FlatListItem>
+    ): CoroutineDispatcher {
         return Dispatchers.IO
     }
 }
@@ -130,7 +119,10 @@ class TitleFlatListItem(
             textView.setBackgroundColor(Color.GRAY)
             textView.setPadding(20, 10, 0, 10)
             textView.gravity = Gravity.CENTER_VERTICAL or Gravity.LEFT
-            textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            textView.layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
             object : RecyclerView.ViewHolder(textView) {}
         }
     }
@@ -160,7 +152,10 @@ class TitleFlatListItem(
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is TitleFlatListItem) return false
-        return false
+        if (type != newItem.type) return false
+        if (!lastNums.toTypedArray().contentEquals(newItem.lastNums.toTypedArray())) return false
+        if (!curNums.toTypedArray().contentEquals(newItem.curNums.toTypedArray())) return false
+        return true
     }
 }
 

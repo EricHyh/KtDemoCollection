@@ -83,6 +83,11 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
         val processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
+
+    class ItemUpdate(
+        val processor: SourceResultProcessor,
+        onReceived: (suspend () -> Unit) = {}
+    ) : SourceEvent(onReceived)
 }
 
 typealias SourceResultProcessor = suspend () -> SourceProcessedResult

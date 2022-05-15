@@ -18,7 +18,8 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
 
 
-abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) : IChildLifecycleOwner {
+abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) :
+    IChildLifecycleOwner {
 
     companion object {
         private const val TAG = "ItemSourceFetcher"
@@ -77,7 +78,10 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
                     repoDisplayedData,
                     getCacheLoader(),
                     getLoader(),
-                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(param, repoDisplayedData),
+                    if (param == null) Dispatchers.Unconfined else getFetchDispatcher(
+                        param,
+                        repoDisplayedData
+                    ),
                     uiReceiver::onRefreshComplete
                 )
             }
@@ -99,7 +103,10 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
     abstract suspend fun load(params: ItemSourceRepo.LoadParams<Param>): ItemSourceRepo.LoadResult
 
-    abstract fun getFetchDispatcher(param: Param, displayedData: RepoDisplayedData): CoroutineDispatcher
+    abstract fun getFetchDispatcher(
+        param: Param,
+        displayedData: RepoDisplayedData
+    ): CoroutineDispatcher
 
     private fun destroy() {
         //coroutineScope.cancel()
@@ -141,7 +148,7 @@ class RepoResultProcessorGenerator(
         val updateResult = ListUpdate.calculateDiff(
             repoDisplayedData.getItemSourceWrappers(),
             sourceWrappers,
-            IElementDiff.AnyDiff()
+            ItemSourceDiff()
         )
 
         val sourceIndexMap: MutableMap<Any, Int> = mutableMapOf()
@@ -172,7 +179,8 @@ class RepoResultProcessorGenerator(
             updateResult.elementOperates.changedElements.forEach {
                 val oldWrapper = it.first
                 val newWrapper = it.second
-                oldWrapper.itemSource.delegate.sourcePosition = sourceIndexMap[oldWrapper.sourceToken] ?: -1
+                oldWrapper.itemSource.delegate.sourcePosition =
+                    sourceIndexMap[oldWrapper.sourceToken] ?: -1
                 @Suppress("UNCHECKED_CAST")
                 (oldWrapper.itemSource.delegate as ItemSource.Delegate<Any, Any>)
                     .updateItemSource((newWrapper.itemSource as ItemSource<Any, Any>))
@@ -204,6 +212,37 @@ class RepoResultProcessorGenerator(
 
         override fun hashCode(): Int {
             return sourceToken.hashCode()
+        }
+    }
+
+    private class ItemSourceDiff : IElementDiff<ItemSourceWrapper> {
+
+        override fun isSupportUpdate(
+            oldElement: ItemSourceWrapper,
+            newElement: ItemSourceWrapper
+        ): Boolean = true
+
+        override fun areItemsTheSame(
+            oldElement: ItemSourceWrapper,
+            newElement: ItemSourceWrapper
+        ): Boolean {
+            return oldElement.sourceToken == newElement.sourceToken
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        override fun areContentsTheSame(
+            oldElement: ItemSourceWrapper,
+            newElement: ItemSourceWrapper
+        ): Boolean {
+            val delegate = oldElement.itemSource.delegate as ItemSource.Delegate<Any, Any>
+            return delegate.areSourceTheSame(newElement.itemSource as ItemSource<Any, Any>)
+        }
+
+        override fun getChangePayload(
+            oldElement: ItemSourceWrapper,
+            newElement: ItemSourceWrapper
+        ): Any? {
+            return null
         }
     }
 }

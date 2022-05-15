@@ -57,6 +57,10 @@ abstract class ItemSource<Param : Any, Item : Any> : LifecycleOwner {
             return this@ItemSource.mapItems(items)
         }
 
+        override fun areSourceTheSame(newItemSource: ItemSource<Param, Item>): Boolean {
+            return this@ItemSource.areSourceTheSame(newItemSource)
+        }
+
         override fun updateItemSource(newItemSource: ItemSource<Param, Item>) {
             onUpdateItemSource(newItemSource)
         }
@@ -120,9 +124,14 @@ abstract class ItemSource<Param : Any, Item : Any> : LifecycleOwner {
     }
 
     protected open fun onAttached() {}
-
     protected open fun onSourcePositionChanged(oldPosition: Int, newPosition: Int) {}
+
+    protected open fun areSourceTheSame(newItemSource: ItemSource<Param, Item>): Boolean {
+        return this.javaClass == newItemSource.javaClass
+    }
+
     protected open fun onUpdateItemSource(newItemSource: ItemSource<Param, Item>) {}
+
 
     protected abstract fun getElementDiff(): IElementDiff<Item>
     protected abstract fun mapItems(items: List<Item>): List<FlatListItem>
@@ -144,10 +153,16 @@ abstract class ItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
     protected open fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {}
 
-    open fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher =
+    open fun getFetchDispatcher(
+        param: Param,
+        displayedData: SourceDisplayedData<Item>
+    ): CoroutineDispatcher =
         Dispatchers.Unconfined
 
-    open fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher =
+    open fun getProcessDataDispatcher(
+        param: Param,
+        displayedData: SourceDisplayedData<Item>
+    ): CoroutineDispatcher =
         getFetchDispatcher(param, displayedData)
 
     protected open fun onDetached() {}
@@ -167,6 +182,7 @@ abstract class ItemSource<Param : Any, Item : Any> : LifecycleOwner {
         abstract fun getElementDiff(): IElementDiff<Item>
         abstract fun mapItems(items: List<Item>): List<FlatListItem>
 
+        abstract fun areSourceTheSame(newItemSource: ItemSource<Param, Item>): Boolean
         abstract fun updateItemSource(newItemSource: ItemSource<Param, Item>)
 
         abstract fun onItemsDisplayed(items: List<Item>)

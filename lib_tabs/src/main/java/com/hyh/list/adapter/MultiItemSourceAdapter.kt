@@ -1,5 +1,6 @@
 package com.hyh.list.adapter
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
@@ -261,6 +262,7 @@ class MultiItemSourceAdapter<Param : Any>(
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     @Suppress("UNCHECKED_CAST")
     private fun updateWrappers(
         sources: List<LazySourceData>,
@@ -418,7 +420,7 @@ object SimpleDispatchUpdatesHelper {
         listOperateOperates.forEach { operate ->
             when (operate) {
                 is ListOperate.OnChanged -> {
-                    onChanged(operate, wrapperStubs, operateInvokes)
+                    //ignore
                 }
                 is ListOperate.OnMoved -> {
                     onMoved(operate, wrapperStubs, newWrappers, operateInvokes)

@@ -91,6 +91,13 @@ class FlatListItemAdapter(
                             ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
                             event.onReceived()
                         }
+                        is SourceEvent.ItemUpdate -> {
+                            val processedResult = event.processor.invoke()
+                            _items = processedResult.resultItems
+                            processedResult.onResultUsed()
+                            ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
+                            event.onReceived()
+                        }
                     }
                 }
             }

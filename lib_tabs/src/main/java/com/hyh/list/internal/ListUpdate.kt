@@ -364,23 +364,6 @@ interface IElementDiff<E> {
         }
     }
 
-    class ItemSourceDiff : IElementDiff<LazySourceData> {
-
-        override fun isSupportUpdate(oldElement: LazySourceData, newElement: LazySourceData): Boolean = true
-
-        override fun areItemsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
-            return oldElement.sourceToken == newElement.sourceToken
-        }
-
-        override fun areContentsTheSame(oldElement: LazySourceData, newElement: LazySourceData): Boolean {
-            return oldElement.sourceToken == newElement.sourceToken
-        }
-
-        override fun getChangePayload(oldElement: LazySourceData, newElement: LazySourceData): Any? {
-            return null
-        }
-    }
-
     class AnyDiff<E> : IElementDiff<E> {
 
         override fun isSupportUpdate(oldElement: E, newElement: E): Boolean = true
