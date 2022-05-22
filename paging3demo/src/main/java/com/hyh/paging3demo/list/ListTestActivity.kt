@@ -47,7 +47,7 @@ class ListTestActivity : AppCompatActivity() {
         override fun run() {
             //testAdapter.refresh()
             multiSourceAdapter.refreshRepo(Unit)
-            handler.post(this)
+            handler.postDelayed(this,200)
         }
     }
 
@@ -57,9 +57,6 @@ class ListTestActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
-        getSupportActionBar()?.hide();
-
 
         ImmersionBar.with(this).init()
 
@@ -67,6 +64,7 @@ class ListTestActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
+        recyclerView.itemAnimator = null
 
         Handler().postDelayed({
             multiSourceAdapter.submitData(NumItemSourceRepo().flow)
@@ -98,32 +96,7 @@ class ListTestActivity : AppCompatActivity() {
 
     fun refresh(v: View) {
         multiSourceAdapter.refreshRepo(Unit)
-        /*val dialog = object : RightSlideInDialog(this) {
-            override fun initContentView(): View {
-                return TextView(context).apply {
-                    text = "test"
-                    setBackgroundColor(Color.WHITE)
-                }
-            }
 
-            override fun getDialogWidth(): Int {
-                return 300
-            }
-
-            override fun getDialogHeight(): Int {
-                return ViewGroup.LayoutParams.MATCH_PARENT
-            }
-
-            init {
-                setUpView()
-            }
-        }
-        //ImmersionBar.with(this, dialog).init()
-        setBar(dialog.window!!)
-        dialog.show()*/
-
-
-        //
     }
 
     fun startRefresh(v: View) {

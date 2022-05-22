@@ -40,26 +40,30 @@ class NumItemSource(private var type: String) : SimpleItemSource<Unit>() {
     }
 
     override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
-        val titleItemData = TitleFlatListItem(type, lastNums, emptyList())
-        return PreShowResult.Success(listOf(titleItemData))
+        /*val titleItemData = TitleFlatListItem(type, lastNums, emptyList())
+        return PreShowResult.Success(listOf(titleItemData))*/
+        return PreShowResult.Unused()
     }
 
+    var globalCount = 0
+
     override suspend fun load(param: Unit): LoadResult<FlatListItem> {
-        delay(1000)
+        //delay(1000)
         val items = mutableListOf<FlatListItem>()
         val random = Random(SystemClock.currentThreadTimeMillis())
         val count = random.nextLong(5, 10).toInt()
         val nums = mutableListOf<Int>()
-        for (index in 0 until count) {
+        for (index in 0 until 30) {
             nums.add(index)
         }
-        nums.sortBy {
+        /*nums.sortBy {
             Math.random()
-        }
-        val titleItemData = TitleFlatListItem(type, lastNums, nums)
+        }*/
+        globalCount++
+        val titleItemData = TitleFlatListItem(type, lastNums, nums, globalCount)
         lastNums = nums
 
-        val numItems = nums.map { NumFlatListItem(type, it) }
+        val numItems = nums.map { NumFlatListItem(type, it, globalCount) }
 
         items.add(titleItemData)
         items.addAll(numItems)
@@ -86,6 +90,7 @@ class TitleFlatListItem(
     private val type: String,
     private val lastNums: List<Int>,
     private val curNums: List<Int>,
+    private val count: Int = 0
 ) : IFlatListItem<RecyclerView.ViewHolder>() {
 
     var activated = false
@@ -146,13 +151,12 @@ class TitleFlatListItem(
 
     override fun areItemsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is TitleFlatListItem) return false
-        //return type == newItem.type
-        return true
+        return type == newItem.type
     }
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is TitleFlatListItem) return false
-        if (type != newItem.type) return false
+        if (count != newItem.count) return false
         if (!lastNums.toTypedArray().contentEquals(newItem.lastNums.toTypedArray())) return false
         if (!curNums.toTypedArray().contentEquals(newItem.curNums.toTypedArray())) return false
         return true
@@ -161,7 +165,8 @@ class TitleFlatListItem(
 
 class NumFlatListItem(
     private val type: String,
-    private val num: Int
+    private val num: Int,
+    private val count: Int
 ) : IFlatListItem<RecyclerView.ViewHolder>() {
 
     var activated = false
@@ -193,7 +198,7 @@ class NumFlatListItem(
             textView.setTextColor(Color.BLACK)
             textView.setBackgroundColor(Color.WHITE)
             textView.gravity = Gravity.CENTER
-            textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 100)
+            textView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 200)
             object : RecyclerView.ViewHolder(textView) {}
         }
     }
@@ -205,7 +210,7 @@ class NumFlatListItem(
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is NumFlatListItem) return false
-        return this.type == newItem.type && this.num == newItem.num
+        return this.count == newItem.count
     }
 
     @SuppressLint("SetTextI18n")

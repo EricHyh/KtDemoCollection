@@ -63,7 +63,7 @@ class ChildLifecycleRegistry(owner: LifecycleOwner) : LifecycleRegistry(owner) {
     }
 
     private fun getParentCurrentState(): State {
-        return parentLifecycle?.currentState ?: State.INITIALIZED
+        return parentLifecycle?.currentState ?: State.RESUMED
     }
 
     private fun updateState() {
