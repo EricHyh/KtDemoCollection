@@ -74,7 +74,8 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
                 Log.e(TAG, "ItemAdapter.onCreateViewHolder: viewHolderFactory can't be null, viewType = $viewType")
             }
         }
-        return viewHolderFactory?.invoke(parent) ?: object : RecyclerView.ViewHolder(ErrorItemView(parent.context)) {}
+        return viewHolderFactory?.invoke(parent)
+                ?: object : RecyclerView.ViewHolder(ErrorItemView(parent.context)) {}
     }
 
     override fun getItemCount(): Int {
@@ -91,36 +92,43 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
 
     override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
         super.onViewAttachedToWindow(holder)
-        getCacheFlatListItem(holder)?.delegate?.onViewAttachedToWindow(holder)
+        val boundPosition = getCacheBoundPosition(holder) ?: return
+        boundPosition.flatListItem.delegate.onViewAttachedToWindow(holder)
+        boundPosition.attached = true
     }
 
     override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
         super.onViewDetachedFromWindow(holder)
-        getCacheFlatListItem(holder)?.delegate?.onViewDetachedFromWindow(holder)
+        val boundPosition = getCacheBoundPosition(holder) ?: return
+        boundPosition.flatListItem.delegate.onViewDetachedFromWindow(holder)
+        boundPosition.attached = false
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         super.onViewRecycled(holder)
-        getCacheFlatListItem(holder)?.delegate?.onViewRecycled(holder)
+        val boundPosition = getCacheBoundPosition(holder) ?: return
+        boundPosition.flatListItem.delegate.onViewRecycled(holder)
     }
 
     override fun onFailedToRecycleView(holder: RecyclerView.ViewHolder): Boolean {
-        return getCacheFlatListItem(holder)?.delegate?.onFailedToRecycleView(holder) ?: false
+        val boundPosition = getCacheBoundPosition(holder) ?: return false
+        return boundPosition.flatListItem.delegate.onFailedToRecycleView(holder)
     }
 
     protected abstract fun getFlatListItems(): List<FlatListItem>?
 
 
-    private fun getCacheFlatListItem(holder: RecyclerView.ViewHolder): IFlatListItem<RecyclerView.ViewHolder>? {
-        val boundPosition = holder.itemView.getTag(BOUND_POSITION_TAG_ID) as? BoundPosition ?: return null
+    private fun getCacheBoundPosition(holder: RecyclerView.ViewHolder): BoundPosition? {
+        val boundPosition = holder.itemView.getTag(BOUND_POSITION_TAG_ID) as? BoundPosition
+                ?: return null
         if (holder.javaClass != boundPosition.holdType) return null
-        return boundPosition.flatListItem
+        return boundPosition
     }
 
     private fun dispatchBindViewHolder(
-        holder: RecyclerView.ViewHolder,
-        position: Int,
-        payloads: List<Any>
+            holder: RecyclerView.ViewHolder,
+            position: Int,
+            payloads: List<Any>
     ) {
         if (position == RecyclerView.NO_POSITION) return
         if (holder.itemView is ErrorItemView) return
@@ -135,13 +143,27 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
         }
         if (position in items.indices) {
             val flatListItem = items[position] as IFlatListItem<RecyclerView.ViewHolder>
+            val attached = holder.itemView.isAttachedToWindow
+
+            val cacheBoundPosition = getCacheBoundPosition(holder)
+            if (cacheBoundPosition != null && cacheBoundPosition.flatListItem !== flatListItem) {
+                if (cacheBoundPosition.attached) {
+                    cacheBoundPosition.attached = false
+                    cacheBoundPosition.flatListItem.delegate.onViewDetachedFromWindow(holder)
+                }
+            }
+
+            if (attached) {
+                flatListItem.delegate.onViewAttachedToWindow(holder)
+            }
+
             holder.itemView.setTag(
-                BOUND_POSITION_TAG_ID, BoundPosition(
+                    BOUND_POSITION_TAG_ID, BoundPosition(
                     holder.absoluteAdapterPosition,
                     position,
                     flatListItem,
-                    holder.javaClass
-                )
+                    holder.javaClass,
+                    attached)
             )
             flatListItem.bindViewHolder(holder, payloads)
         } else {
@@ -194,10 +216,11 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
 
     private class ErrorItemView(context: Context) : View(context)
 
-    private data class BoundPosition(
-        val globalPosition: Int,
-        val localPosition: Int,
-        val flatListItem: IFlatListItem<RecyclerView.ViewHolder>,
-        val holdType: Type
+    private data class BoundPosition constructor(
+            val globalPosition: Int,
+            val localPosition: Int,
+            val flatListItem: IFlatListItem<RecyclerView.ViewHolder>,
+            val holdType: Type,
+            var attached: Boolean,
     )
 }

@@ -116,9 +116,6 @@ class FlatListItemAdapter(
     fun destroy() {
         _loadStateFlow.close()
         resultFlow.close()
-        _items?.forEach {
-            it.delegate.onItemDetached()
-        }
         receiver?.destroy()
     }
 
