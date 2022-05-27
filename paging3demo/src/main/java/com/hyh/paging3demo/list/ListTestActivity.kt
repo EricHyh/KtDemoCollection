@@ -30,12 +30,7 @@ import android.view.WindowInsets
 import android.view.Gravity
 
 import android.widget.FrameLayout
-
-
-
-
-
-
+import com.hyh.paging3demo.utils.OSUtils
 
 
 class ListTestActivity : AppCompatActivity() {

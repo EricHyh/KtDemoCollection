@@ -28,6 +28,10 @@ fun main() {
         listOf<String>("骏利亨德森环", "骏利亨德森平", "Wells美国", "wells", "hello", "A-15", "14", "A", "zgood", "Z", "路博迈NB美果", "资本集体日本", "资本集体新世")
             .sortedWith(Collator.getInstance(Locale.CHINESE))*/
 
+    val s = "4761.499319"
+
+
+    println("${s.toIntOrNull()}")
 
     val sortedWith1 = listOf<String>(
         "骏利亨德森环",

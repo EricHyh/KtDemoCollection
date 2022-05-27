@@ -1,5 +1,7 @@
 package com.hyh.kt_demo
 
+import java.util.regex.Pattern
+
 
 typealias Condition<E> = (E.() -> Boolean)
 
@@ -123,6 +125,64 @@ fun <E> List<E>.filter(conditions: List<Condition<E>>): List<E> {
 
 
 fun main() {
+
+
+    /*val p = Pattern.compile("([a-z]+)(\\d+)");
+    val m = p.matcher("aaa2223bb");
+
+    println(m.find()); // 匹配aaa2223
+    println(m.groupCount()); // 返回2,因为有2组
+    println(m.start(1)); // 返回0 返回第一组匹配到的子字符串的第一个字符在原字符串中的索引号
+    println(m.start(2)); // 返回3 返回第二组匹配到的子字符串的第一个字符在原字符串中的索引号
+    println(m.end(1)); // 返回3 返回第一组匹配到的子字符串的最后一个字符在原字符串中的索引号
+    println(m.end(2)); // 返回7
+    println(m.group(1)); // 返回aaa,返回第一组匹配到的子字符串
+    println(m.group(2)); // 返回2223,返回第二组匹配到的子字符串*/
+
+
+    val len = 4
+    val compile = Pattern.compile("\\(\\d{" + len + "}\\)")
+    //val compile = Pattern.compile("\\d")
+    val matcher = compile.matcher("123(1234)456(2345)")
+
+    //val start = matcher.start(groupCount - 1)
+
+    matcher.find()
+    //val groupCount = matcher.groupCount()
+    val group1 = matcher.start()
+    matcher.find()
+    val group2 = matcher.start()
+
+
+    println()
+
+    val xx = listOf<Int>(1, 2, 3, 4).flatMapTo(
+        LinkedHashSet(), object : ((Int) -> Iterable<String>) {
+            override fun invoke(brokerId: Int): Iterable<String> {
+                return when (brokerId) {
+                    1 -> {
+                        listOf("3", "2", "1")
+                    }
+                    2 -> {
+                        listOf("4", "1", "3", "5")
+                    }
+                    3 -> {
+                        listOf("5", "2", "6")
+                    }
+                    4 -> {
+                        listOf("1", "7", "5", "8")
+                    }
+                    else -> {
+                        emptyList<String>()
+                    }
+                }
+            }
+        }
+    )
+
+
+
+    println()
 
 
     val conditions = mutableListOf<Condition<String>>(
