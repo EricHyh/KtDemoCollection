@@ -291,8 +291,16 @@ class StickyItemsLayout : ViewGroup {
         return null
     }
 
+    private fun isFixedHeaderPosition(position: Int): Boolean {
+        return stickyItemsAdapter?.isFixedStickyHeader(position) ?: false
+    }
+
     private fun isHeaderPosition(position: Int): Boolean {
         return stickyItemsAdapter?.isStickyHeader(position) ?: false
+    }
+
+    private fun isFixedFooterPosition(position: Int): Boolean {
+        return stickyItemsAdapter?.isFixedStickyFooter(position) ?: false
     }
 
     private fun isFooterPosition(position: Int): Boolean {
@@ -390,8 +398,8 @@ class StickyItemsLayout : ViewGroup {
         override fun onStateRestorationPolicyChanged() {
             super.onStateRestorationPolicyChanged()
             recyclerView?.postIdleTask {
-                stickyHeaders.updateStickyItem(this, dataChanged = true)
-                stickyFooters.updateStickyItem(this, dataChanged = true)
+                stickyHeaders.updateStickyItem(this, dataChanged = false)
+                stickyFooters.updateStickyItem(this, dataChanged = false)
             }
         }
 
@@ -468,7 +476,7 @@ class StickyItemsLayout : ViewGroup {
             dataChanged: Boolean = false
         ) {
             val adapter = recyclerView.adapter
-            val positions = findCurrentItemsPosition(recyclerView)
+            val positions = findCurrentItemsPosition(recyclerView, dataChanged)
             if (adapter == null || positions.isEmpty()) {
                 var attachedItem = this.firstAttachedItem
                 while (attachedItem != null) {
@@ -573,7 +581,7 @@ class StickyItemsLayout : ViewGroup {
             updateItemsOffsetY()
         }
 
-        abstract fun findCurrentItemsPosition(recyclerView: RecyclerView): Collection<Int>
+        abstract fun findCurrentItemsPosition(recyclerView: RecyclerView, dataChanged: Boolean): Collection<Int>
 
         abstract fun createStickyItem(
             recyclerView: RecyclerView,
@@ -620,6 +628,10 @@ class StickyItemsLayout : ViewGroup {
 
     private inner class StickyHeaders : StickyItems() {
 
+        private val cacheFixedPositions = mutableListOf<Int>()
+        private val cachePositions = mutableListOf<Int>()
+        private val tempPositions = mutableListOf<Int>()
+
         override fun onLayout() {
             firstAttachedItem?.iterator()?.forEach {
                 val child = it.itemView
@@ -632,17 +644,50 @@ class StickyItemsLayout : ViewGroup {
             }
         }
 
-        override fun findCurrentItemsPosition(recyclerView: RecyclerView): Collection<Int> {
-            if (recyclerView.computeVerticalScrollRange() <= 0) return emptyList()
+        override fun findCurrentItemsPosition(recyclerView: RecyclerView, dataChanged: Boolean): Collection<Int> {
+            if (recyclerView.computeVerticalScrollRange() <= 0) {
+                cacheFixedPositions.clear()
+                cachePositions.clear()
+                return emptyList()
+            }
 
             val firstCompletelyVisibleItemPosition =
                 visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
-            if (firstCompletelyVisibleItemPosition == 0) return emptyList()
+            if (firstCompletelyVisibleItemPosition == 0) {
+                cacheFixedPositions.clear()
+                cachePositions.clear()
+                return emptyList()
+            }
 
             val lastCompletelyVisibleItemPosition =
                 visibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
-            if (lastCompletelyVisibleItemPosition <= firstCompletelyVisibleItemPosition) return emptyList()
+            if (lastCompletelyVisibleItemPosition <= firstCompletelyVisibleItemPosition) {
+                cacheFixedPositions.clear()
+                cachePositions.clear()
+                return emptyList()
+            }
 
+
+            if (!dataChanged) {
+                var sizeChanged = false
+                while (cacheFixedPositions.isNotEmpty()) {
+                    val last = cacheFixedPositions.last()
+                    if (last < firstCompletelyVisibleItemPosition) {
+                        break
+                    } else {
+                        cacheFixedPositions.remove(last)
+                        sizeChanged = true
+                    }
+                }
+                if (sizeChanged) {
+
+                }
+            }
+
+
+            /*if (dataChanged) {
+
+            }*/
 
             val positions = TreeSet<Int>()
 
@@ -690,6 +735,14 @@ class StickyItemsLayout : ViewGroup {
 
             return positions
         }
+
+
+        private fun findFixedHeaders(
+            positions:
+        ) {
+
+        }
+
 
         override fun createStickyItem(
             recyclerView: RecyclerView,

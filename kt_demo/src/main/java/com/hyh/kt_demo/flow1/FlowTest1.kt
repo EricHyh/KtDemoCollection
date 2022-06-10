@@ -12,6 +12,9 @@ import kotlin.coroutines.EmptyCoroutineContext
  */
 
 fun main() {
+
+
+
     //collect(action) -> collect(FlowCollector) -> FlowCollector.block() ->
     //FlowCollector.emit(value) -> action(value)
 
@@ -124,6 +127,7 @@ fun main() {
 
 
 }
+
 val state = MutableStateFlow(Pair<Int, Boolean?>(0, null))
 val coroutineScope = CoroutineScope(EmptyCoroutineContext) + SupervisorJob()
 
