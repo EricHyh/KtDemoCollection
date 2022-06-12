@@ -126,6 +126,19 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
                 setBackgroundColor(Color.WHITE)
             }
             return object : RecyclerView.ViewHolder(item) {}
+        } else if (viewType == 2) {
+            val item = TextView(parent.context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    0
+                )
+                setPadding(0, 40, 0, 40)
+                textSize = 20F
+                gravity = Gravity.CENTER
+                setTextColor(Color.BLACK)
+                setBackgroundColor(Color.WHITE)
+            }
+            return object : RecyclerView.ViewHolder(item) {}
         }
         val item = TextView(parent.context).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -148,6 +161,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     override fun getItemViewType(position: Int): Int {
         val data = mData[position]
         if (data % 10 == 0) return 1
+        if (position == 13) return 2
         return super.getItemViewType(position)
     }
 
@@ -181,7 +195,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
 
     override fun isStickyHeader(position: Int): Boolean {
         val data = mData[position]
-        return data % 10 == 0
+        return data % 10 == 0 || position == 13
         //return position == 0
     }
 
