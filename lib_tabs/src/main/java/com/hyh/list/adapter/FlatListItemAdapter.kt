@@ -79,9 +79,17 @@ class FlatListItemAdapter(
                         is SourceEvent.RefreshSuccess -> {
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
+                        is SourceEvent.AppendSuccess -> {
+                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        }
                         is SourceEvent.RefreshError -> {
-                            _loadStateFlow.value = SourceLoadState.Error(event.error, event.preShowing)
-                            onStateChanged(SourceLoadState.Error(event.error, event.preShowing))
+                            _loadStateFlow.value = SourceLoadState.RefreshError(event.error, event.preShowing)
+                            onStateChanged(SourceLoadState.RefreshError(event.error, event.preShowing))
+                            event.onReceived()
+                        }
+                        is SourceEvent.AppendError -> {
+                            _loadStateFlow.value = SourceLoadState.AppendError(event.error, event.pageIndex)
+                            onStateChanged(SourceLoadState.AppendError(event.error, event.pageIndex))
                             event.onReceived()
                         }
                         is SourceEvent.ItemRemoved -> {
@@ -136,6 +144,15 @@ class FlatListItemAdapter(
                         sourceEvent.onReceived()
                     }
                     is SourceEvent.RefreshSuccess -> {
+                        val processedResult = sourceEvent.processor.invoke()
+                        _items = processedResult.resultItems
+                        processedResult.onResultUsed()
+                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
+                        _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
+                        onStateChanged(SourceLoadState.Success(processedResult.resultItems.size))
+                        sourceEvent.onReceived()
+                    }
+                    is SourceEvent.AppendSuccess-> {
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
                         processedResult.onResultUsed()

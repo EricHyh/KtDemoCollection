@@ -35,7 +35,8 @@ sealed class RepoEvent(val onReceived: OnEventReceived) {
         onReceived: OnEventReceived = {}
     ) : RepoEvent(onReceived)
 
-    class Error(val error: Throwable, val usingCache: Boolean, onReceived: OnEventReceived = {}) : RepoEvent(onReceived)
+    class Error(val error: Throwable, val usingCache: Boolean, onReceived: OnEventReceived = {}) :
+        RepoEvent(onReceived)
 
 }
 
@@ -76,6 +77,17 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
     class RefreshError(
         val error: Throwable,
         val preShowing: Boolean,
+        onReceived: (suspend () -> Unit) = {}
+    ) : SourceEvent(onReceived)
+
+    class AppendSuccess(
+        val processor: SourceResultProcessor,
+        onReceived: (suspend () -> Unit) = {}
+    ) : SourceEvent(onReceived)
+
+    class AppendError(
+        val error: Throwable,
+        val pageIndex: Int,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 

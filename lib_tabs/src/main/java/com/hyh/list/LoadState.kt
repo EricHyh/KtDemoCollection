@@ -37,7 +37,9 @@ sealed class SourceLoadState {
 
     data class Success(val itemCount: Int) : SourceLoadState()
 
-    data class Error(val error: Throwable, val preShowing: Boolean) : SourceLoadState()
+    data class RefreshError(val error: Throwable, val preShowing: Boolean) : SourceLoadState()
+
+    data class AppendError(val error: Throwable, val pageIndex: Int) : SourceLoadState()
 
 }
 
