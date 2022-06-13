@@ -217,7 +217,12 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     }
 
     override fun isFixedStickyHeader(position: Int): Boolean {
-        return position == 20
+        return position == 20 || position == 40 || position == 50
+        //return false
+    }
+
+    override fun isFixedStickyFooter(position: Int): Boolean {
+        return position == 34 || position == 68 || position == 102
     }
 }
 
