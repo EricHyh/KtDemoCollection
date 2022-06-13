@@ -25,8 +25,8 @@ import kotlin.math.roundToInt
  */
 class StickyItemsLayout : ViewGroup {
 
-    private var maxStickyHeaders = 2
-    private var maxStickyFooters = 4
+    private var maxStickyHeaders = 4
+    private var maxStickyFooters = 0
 
     private var maxFixedStickyHeaders = 2
     private var maxFixedStickyFooters = 3
@@ -93,7 +93,7 @@ class StickyItemsLayout : ViewGroup {
     )
 
     init {
-        isChildrenDrawingOrderEnabled = true
+        //isChildrenDrawingOrderEnabled = true
     }
 
     fun setMaxStickyItems(maxStickyHeaders: Int, maxStickyFooters: Int) {

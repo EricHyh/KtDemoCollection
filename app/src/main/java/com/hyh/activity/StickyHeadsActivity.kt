@@ -130,7 +130,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
             val item = TextView(parent.context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    0
+                    ViewGroup.LayoutParams.WRAP_CONTENT
                 )
                 setPadding(0, 40, 0, 40)
                 textSize = 20F
@@ -217,12 +217,12 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     }
 
     override fun isFixedStickyHeader(position: Int): Boolean {
-        return position == 20 || position == 40 || position == 50
+        return position == 20 || position == 40
         //return false
     }
 
     override fun isFixedStickyFooter(position: Int): Boolean {
-        return position == 34 || position == 68 || position == 102
+        return position == 34 || position == 68
     }
 }
 
