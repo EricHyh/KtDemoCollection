@@ -127,4 +127,28 @@ class StickyHeadersItemsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(
     override fun isStickyFooter(position: Int): Boolean {
         return false
     }
+
+    /**
+     * 最大悬停头部布局数量
+     */
+    override val maxStickyHeaders: Int
+        get() = 0
+
+    /**
+     * 最大悬停底部布局数量
+     */
+    override val maxStickyFooters: Int
+        get() = 0
+
+    /**
+     * 最大固定悬停头部布局数量（不会被顶出去）
+     */
+    override val maxFixedStickyHeaders: Int
+        get() = 0
+
+    /**
+     * 最大固定悬停底部布局数量（不会被顶出去）
+     */
+    override val maxFixedStickyFooters: Int
+        get() = 0
 }

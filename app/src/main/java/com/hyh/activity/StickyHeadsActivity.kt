@@ -85,8 +85,36 @@ class StickyHeadsActivity : AppCompatActivity() {
     }
 }
 
+
+
 class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     IStickyItemsAdapter<RecyclerView.ViewHolder> {
+
+
+    /**
+     * 最大悬停头部布局数量
+     */
+    override val maxStickyHeaders: Int
+        get() = 4
+
+    /**
+     * 最大悬停底部布局数量
+     */
+    override val maxStickyFooters: Int
+        get() = 0
+
+    /**
+     * 最大固定悬停头部布局数量（不会被顶出去）
+     */
+    override val maxFixedStickyHeaders: Int
+        get() = 2
+
+    /**
+     * 最大固定悬停底部布局数量（不会被顶出去）
+     */
+    override val maxFixedStickyFooters: Int
+        get() = 3
+
 
     var mData = mutableListOf<Int>()
     private var mNum = 0

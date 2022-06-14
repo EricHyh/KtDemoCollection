@@ -25,11 +25,17 @@ import kotlin.math.roundToInt
  */
 class StickyItemsLayout : ViewGroup {
 
-    private var maxStickyHeaders = 4
-    private var maxStickyFooters = 0
+    private val maxStickyHeaders
+        get() = stickyItemsAdapter?.maxStickyHeaders ?: 0
 
-    private var maxFixedStickyHeaders = 2
-    private var maxFixedStickyFooters = 3
+    private val maxStickyFooters
+        get() = stickyItemsAdapter?.maxStickyFooters ?: 0
+
+    private val maxFixedStickyHeaders
+        get() = stickyItemsAdapter?.maxFixedStickyHeaders ?: 0
+
+    private val maxFixedStickyFooters
+        get() = stickyItemsAdapter?.maxFixedStickyHeaders ?: 0
 
     private val rectPool = RectPool()
 
@@ -93,17 +99,15 @@ class StickyItemsLayout : ViewGroup {
     )
 
     init {
-        //isChildrenDrawingOrderEnabled = true
+        isChildrenDrawingOrderEnabled = true
     }
 
-    fun setMaxStickyItems(maxStickyHeaders: Int, maxStickyFooters: Int) {
-        this.maxStickyHeaders = maxStickyHeaders
-        this.maxStickyFooters = maxStickyFooters
-        recyclerView?.let {
-            updateStickyItem(it, it.scrollState, true)
-        }
-    }
-
+    /**
+     * 吸顶布局与[RecyclerView]建立联系
+     *
+     * @param recyclerView 列表控件
+     * @param adapter 吸顶布局适配器
+     */
     @Suppress("UNCHECKED_CAST")
     fun setup(recyclerView: RecyclerView, adapter: IStickyItemsAdapter<*>) {
         this.recyclerView = recyclerView
@@ -112,6 +116,12 @@ class StickyItemsLayout : ViewGroup {
         registerAdapterDataObserver(recyclerView)
     }
 
+
+    /**
+     * 吸顶布局装饰器（按需添加）
+     *
+     * @param decoration
+     */
     fun setStickyItemDecoration(decoration: StickyItemDecoration) {
         this.stickyItemDecoration = decoration
         recyclerView?.let {
@@ -1267,67 +1277,6 @@ class StickyItemsLayout : ViewGroup {
             }
         }
 
-        /*override fun findCurrentItemsPosition(
-            recyclerView: RecyclerView,
-            dataChanged: Boolean
-        ): Collection<Int> {
-            if (recyclerView.computeVerticalScrollRange() <= 0) return emptyList()
-
-
-            val lastCompletelyVisibleItemPosition =
-                visibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
-
-            if (lastCompletelyVisibleItemPosition == getItemCount() - 1) return emptyList()
-
-            val firstCompletelyVisibleItemPosition =
-                visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
-
-            if (lastCompletelyVisibleItemPosition <= firstCompletelyVisibleItemPosition) return emptyList()
-
-            val positions = TreeSet<Int>(kotlin.Comparator { o1, o2 ->
-                return@Comparator o2 - o1
-            })
-
-            for (position in (lastCompletelyVisibleItemPosition + 1) until getItemCount()) {
-                if (isFooterPosition(position)) {
-                    positions.add(position)
-                }
-                if (positions.size >= maxStickyFooters) {
-                    break
-                }
-            }
-
-            for (position in lastCompletelyVisibleItemPosition downTo firstCompletelyVisibleItemPosition) {
-                if (isFooterPosition(position)) {
-                    val bounds = findItemViewBounds(position) ?: return positions
-                    if (positions.size >= maxStickyFooters) {
-                        if (bounds.top > (height - itemsHeight)) {
-                            positions.remove(positions.first())
-                            positions.add(position)
-                        }
-                    } else {
-                        val stickyFooter = attachedItemMap[position]
-                        if (stickyFooter != null) {
-                            if (bounds.bottom > (height - itemsHeight) + stickyFooter.heightWithDecor) {
-                                positions.add(position)
-                                if (positions.size >= maxStickyFooters) {
-                                    break
-                                }
-                            }
-                        } else {
-                            if (bounds.bottom > (height - itemsHeight)) {
-                                positions.add(position)
-                                if (positions.size >= maxStickyFooters) {
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return positions
-        }
-*/
         override fun createStickyItem(
             recyclerView: RecyclerView,
             adapter: RecyclerView.Adapter<*>,
@@ -1678,15 +1627,6 @@ class StickyItemsLayout : ViewGroup {
             get() = isFixedFooterPosition(position)
 
         override fun updateOffsetY(itemsOffsetY: Float): Float {
-            /*var consumed = 0.0F
-            if (prev != null) {
-                val offsetY = (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor ?: 0)
-                itemView.translationY = offsetY
-            } else {
-                itemView.translationY = itemsOffsetY
-                consumed = itemsOffsetY
-            }
-            return itemsOffsetY - consumed*/
             val isFixedStickyItem = isFixedStickyItem
             var consumed = 0.0F
             if (prev != null) {
