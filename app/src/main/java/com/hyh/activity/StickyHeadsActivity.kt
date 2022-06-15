@@ -86,7 +86,6 @@ class StickyHeadsActivity : AppCompatActivity() {
 }
 
 
-
 class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     IStickyItemsAdapter<RecyclerView.ViewHolder> {
 
@@ -101,7 +100,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
      * 最大悬停底部布局数量
      */
     override val maxStickyFooters: Int
-        get() = 0
+        get() = 4
 
     /**
      * 最大固定悬停头部布局数量（不会被顶出去）
@@ -113,11 +112,12 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
      * 最大固定悬停底部布局数量（不会被顶出去）
      */
     override val maxFixedStickyFooters: Int
-        get() = 3
+        get() = 2
 
 
     var mData = mutableListOf<Int>()
     private var mNum = 0
+
 
     init {
         for (index in 0..200) {
@@ -189,7 +189,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     override fun getItemViewType(position: Int): Int {
         val data = mData[position]
         if (data % 10 == 0) return 1
-        if (position == 13) return 2
+        //if (position == 13) return 2
         return super.getItemViewType(position)
     }
 
@@ -210,29 +210,42 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
             "onBindViewHolder: position = $position, data = $data , ${holder.itemView}"
         )
         if (getItemViewType(position) == 1) {
-            (holder.itemView as TextView).setText("条目：$data - $mNum")
+
+            (holder.itemView as TextView).text = if (isFixedStickyHeader(position) || isFixedStickyFooter(position)) {
+                "固定的悬停条目：$data - $mNum"
+            } else if (isStickyHeader(position) || isStickyFooter(position)) {
+                "普通的悬停条目：$data - $mNum"
+            } else {
+                "非悬停条目：$data - $mNum"
+            }
+
+
+            //(holder.itemView as TextView).text = "条目：$data - $mNum"
 
             (holder.itemView as SwitchCompat).setOnCheckedChangeListener { buttonView, isChecked ->
                 mCheckedMap.put(data, isChecked)
             }
             (holder.itemView as SwitchCompat).isChecked = mCheckedMap.get(data) ?: false
         } else {
-            (holder.itemView as TextView).setText("条目：$data")
+            (holder.itemView as TextView).text = if (isFixedStickyHeader(position) || isFixedStickyFooter(position)) {
+                "固定的悬停条目：$data"
+            } else if (isStickyHeader(position) || isStickyFooter(position)) {
+                "普通的悬停条目：$data"
+            } else {
+                "非悬停条目：$data"
+            }
+            //(holder.itemView as TextView).setText("条目：$data")
         }
     }
 
     override fun isStickyHeader(position: Int): Boolean {
         val data = mData[position]
-        return data % 10 == 0 || position == 13
+        return data % 10 == 0 /*|| position == 13*/
         //return position == 0
     }
 
     override fun onBindStickyViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         onBindViewHolder(holder, position)
-
-        holder.layoutPosition
-        holder.absoluteAdapterPosition
-
         //viewHolder.itemView.background = ColorDrawable(Color.BLUE)
     }
 
@@ -245,12 +258,14 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
     }
 
     override fun isFixedStickyHeader(position: Int): Boolean {
-        return position == 20 || position == 40
+        val data = mData[position]
+        return data == 20 || data == 40
         //return false
     }
 
     override fun isFixedStickyFooter(position: Int): Boolean {
-        return position == 34 || position == 68
+        val data = mData[position]
+        return data == 68 || data == 102
     }
 }
 

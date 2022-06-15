@@ -102,7 +102,13 @@ class StickyHeadersItemsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        (holder.itemView as TextView).text = "条目：$position"
+        (holder.itemView as TextView).text = if (isFixedStickyHeader(position) || isFixedStickyFooter(position)) {
+            "固定的悬停条目：$position"
+        } else if (isStickyHeader(position) || isStickyFooter(position)) {
+            "普通的悬停条目：$position"
+        } else {
+            "非悬停条目：$position"
+        }
 
         if (holder.itemView is Switch) {
             (holder.itemView as Switch).setOnCheckedChangeListener { _, isChecked ->

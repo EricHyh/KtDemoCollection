@@ -24,11 +24,13 @@ interface IStickyItemsAdapter<VH : RecyclerView.ViewHolder> {
      * 最大固定悬停头部布局数量（不会被顶出去）
      */
     val maxFixedStickyHeaders: Int
+        get() = 0
 
     /**
      * 最大固定悬停底部布局数量（不会被顶出去）
      */
     val maxFixedStickyFooters: Int
+        get() = 0
 
     /**
      * 是否固定悬停头部布局（不会被顶出去）
