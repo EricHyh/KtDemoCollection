@@ -119,7 +119,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 class RepoResultProcessorGenerator(
     private val repoLifecycle: Lifecycle,
     private val repoDisplayedData: RepoDisplayedData,
-    private val sources: List<ItemSource<out Any, out Any>>,
+    private val sources: List<BaseItemSource<out Any, out Any>>,
     private val resultExtra: Any?
 ) {
 
@@ -133,7 +133,7 @@ class RepoResultProcessorGenerator(
             indexMap[itemSource.sourceToken] = index
             val lazyFlow: Lazy<Flow<SourceData>> = lazy {
                 itemSource.delegate.sourcePosition = index
-                val itemFetcher = ItemFetcher(itemSource)
+                val itemFetcher = ItemFetcher(null as ItemSource<*,*>)
                 itemSource.delegate.bindParentLifecycle(repoLifecycle)
                 itemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                 itemFetcher.flow
@@ -154,7 +154,7 @@ class RepoResultProcessorGenerator(
         val sourceIndexMap: MutableMap<Any, Int> = mutableMapOf()
 
         val lazySources = mutableListOf<LazySourceData>()
-        val sources = mutableListOf<ItemSource<out Any, out Any>>()
+        val sources = mutableListOf<BaseItemSource<out Any, out Any>>()
         updateResult.resultList.forEachIndexed { index, itemSourceWrapper ->
             lazySources.add(itemSourceWrapper.lazySourceData)
             sources.add(itemSourceWrapper.itemSource)
@@ -182,7 +182,7 @@ class RepoResultProcessorGenerator(
                 oldWrapper.itemSource.delegate.sourcePosition =
                     sourceIndexMap[oldWrapper.sourceToken] ?: -1
                 @Suppress("UNCHECKED_CAST")
-                (oldWrapper.itemSource.delegate as ItemSource.Delegate<Any, Any>)
+                (oldWrapper.itemSource.delegate as BaseItemSource.Delegate<Any, Any>)
                     .updateItemSource((newWrapper.itemSource as ItemSource<Any, Any>))
             }
         }
@@ -203,7 +203,7 @@ class RepoResultProcessorGenerator(
 
     private class ItemSourceWrapper(
         val sourceToken: Any,
-        val itemSource: ItemSource<out Any, out Any>,
+        val itemSource: BaseItemSource<out Any, out Any>,
         val lazySourceData: LazySourceData
     ) {
         override fun equals(other: Any?): Boolean {
@@ -234,7 +234,7 @@ class RepoResultProcessorGenerator(
             oldElement: ItemSourceWrapper,
             newElement: ItemSourceWrapper
         ): Boolean {
-            val delegate = oldElement.itemSource.delegate as ItemSource.Delegate<Any, Any>
+            val delegate = oldElement.itemSource.delegate as BaseItemSource.Delegate<Any, Any>
             return delegate.areSourceTheSame(newElement.itemSource as ItemSource<Any, Any>)
         }
 
@@ -296,8 +296,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
         }
 
         val loadParams = ItemSourceRepo.LoadParams(param, displayedData)
-        val loadResult: ItemSourceRepo.LoadResult
-        loadResult = if (fetchDispatcher == null) {
+        val loadResult: ItemSourceRepo.LoadResult = if (fetchDispatcher == null) {
             loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {

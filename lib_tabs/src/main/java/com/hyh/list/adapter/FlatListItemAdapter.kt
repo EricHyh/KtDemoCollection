@@ -92,14 +92,7 @@ class FlatListItemAdapter(
                             onStateChanged(SourceLoadState.AppendError(event.error, event.pageIndex))
                             event.onReceived()
                         }
-                        is SourceEvent.ItemRemoved -> {
-                            val processedResult = event.processor.invoke()
-                            _items = processedResult.resultItems
-                            processedResult.onResultUsed()
-                            ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                            event.onReceived()
-                        }
-                        is SourceEvent.ItemUpdate -> {
+                        is SourceEvent.ItemOperate -> {
                             val processedResult = event.processor.invoke()
                             _items = processedResult.resultItems
                             processedResult.onResultUsed()

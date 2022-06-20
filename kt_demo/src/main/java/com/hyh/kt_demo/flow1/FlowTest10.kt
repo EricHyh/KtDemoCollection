@@ -1,6 +1,5 @@
 package com.hyh.kt_demo.flow1
 
-import jdk.nashorn.internal.objects.NativeArray.forEach
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

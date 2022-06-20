@@ -5,24 +5,21 @@ import com.hyh.*
 import com.hyh.base.RefreshEventHandler
 import com.hyh.base.RefreshStrategy
 import com.hyh.coroutine.cancelableChannelFlow
-import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
 import com.hyh.list.ItemSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
-import kotlin.contracts.contract
 
 
 class ItemFetcher<Param : Any, Item : Any>(
     private val itemSource: ItemSource<Param, Item>
-) {
+) : BaseItemFetcher<Param, Item>(itemSource) {
 
-    private val sourceDisplayedData = SourceDisplayedData<Item>()
-
-    private val uiReceiver = object : UiReceiverForSource {
+    inner class ItemFetcherUiReceiver : BaseUiReceiverForSource() {
 
         private val refreshEventHandler = object : RefreshEventHandler<Unit>(Unit) {
 
@@ -42,11 +39,15 @@ class ItemFetcher<Param : Any, Item : Any>(
         }
 
         override fun destroy() {
+            super.destroy()
             refreshEventHandler.onDestroy()
         }
+
     }
 
-    val flow: Flow<SourceData> = simpleChannelFlow<SourceData> {
+    override val uiReceiver: ItemFetcherUiReceiver = ItemFetcherUiReceiver()
+
+    override suspend fun SendChannel<SourceData>.initChannelFlow() {
         uiReceiver
             .flow
             .flowOn(Dispatchers.Main)
@@ -71,10 +72,6 @@ class ItemFetcher<Param : Any, Item : Any>(
             .collect {
                 send(it)
             }
-    }
-
-    fun refresh(important: Boolean) {
-        uiReceiver.refresh(important)
     }
 
     private fun getRefreshStrategy(): RefreshStrategy {
@@ -114,8 +111,9 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
     private val items: List<Item>,
     private val resultExtra: Any?,
     private val dispatcher: CoroutineDispatcher?,
-    private val delegate: ItemSource.Delegate<Param, Item>
+    private val delegate: BaseItemSource.Delegate<Param, Item>
 ) {
+
 
     val processor: SourceResultProcessor = {
         if (shouldUseDispatcher()) {
@@ -178,7 +176,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val fetchDispatcherProvider: DispatcherProvider<Param, Item>,
     private val processDataDispatcherProvider: DispatcherProvider<Param, Item>,
     private val onRefreshComplete: Invoke,
-    private val delegate: ItemSource.Delegate<Param, Item>
+    private val delegate: BaseItemSource.Delegate<Param, Item>
 ) {
 
     companion object {

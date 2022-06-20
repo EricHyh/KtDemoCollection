@@ -3,7 +3,6 @@ package com.hyh.list.internal
 import com.hyh.Invoke
 import com.hyh.OnEventReceived
 import com.hyh.list.FlatListItem
-import com.hyh.list.ItemSource
 import kotlinx.coroutines.flow.Flow
 
 data class RepoData<Param : Any>(
@@ -53,7 +52,7 @@ class RepoDisplayedData(
     var lazySources: List<LazySourceData>? = null,
 
     @Volatile
-    var sources: List<ItemSource<out Any, out Any>>? = null,
+    var sources: List<BaseItemSource<out Any, out Any>>? = null,
 
     @Volatile
     var resultExtra: Any? = null
@@ -91,12 +90,7 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
-    class ItemRemoved(
-        val processor: SourceResultProcessor,
-        onReceived: (suspend () -> Unit) = {}
-    ) : SourceEvent(onReceived)
-
-    class ItemUpdate(
+    class ItemOperate(
         val processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
