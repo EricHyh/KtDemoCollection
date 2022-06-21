@@ -79,16 +79,33 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
-    class AppendSuccess(
+    // region Paging
+
+    class PagingRefreshSuccess(
         val processor: SourceResultProcessor,
+        val noMore: Boolean,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
-    class AppendError(
+    class PagingRefreshError(
+        val error: Throwable,
+        onReceived: (suspend () -> Unit) = {}
+    ) : SourceEvent(onReceived)
+
+    class PagingAppendSuccess(
+        val processor: SourceResultProcessor,
+        val pageIndex: Int,
+        val noMore: Boolean,
+        onReceived: (suspend () -> Unit) = {}
+    ) : SourceEvent(onReceived)
+
+    class PagingAppendError(
         val error: Throwable,
         val pageIndex: Int,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
+
+    // endregion
 
     class ItemOperate(
         val processor: SourceResultProcessor,
@@ -112,7 +129,7 @@ data class SourceProcessedResult(
  * @property flatListItems
  * @property resultExtra
  */
-class SourceDisplayedData<Item : Any>(
+open class SourceDisplayedData<Item : Any>(
 
     /**
      * 原始数据
@@ -131,4 +148,54 @@ class SourceDisplayedData<Item : Any>(
      */
     @Volatile
     var resultExtra: Any? = null
+)
+
+
+class PagingSourceDisplayedData<Param : Any, Item : Any> : SourceDisplayedData<Item>() {
+
+    @Volatile
+    var pagingList: List<Paging<Param, Item>> = emptyList()
+
+    val noMore
+        get() = lastPaging?.noMore ?: false
+
+    val appendParam: Param?
+        get() = lastPaging?.nextParam
+
+    val pagingSize: Int
+        get() = pagingList.size
+
+    val lastPaging: Paging<Param, Item>?
+        get() = pagingList.lastOrNull()
+}
+
+
+class Paging<Param : Any, Item : Any> constructor(
+    /**
+     * 原始数据
+     */
+    @Volatile
+    var originalItems: List<Item>? = null,
+
+    /**
+     * 将原始数据转换成[FlatListItem]之后的数据
+     */
+    @Volatile
+    var flatListItems: List<FlatListItem>? = null,
+
+    /**
+     * 当前页参数
+     */
+    val param: Param? = null,
+
+    /**
+     * 下一页参数
+     */
+    val nextParam: Param?,
+
+    /**
+     * 是否没有更多
+     */
+    val noMore: Boolean
+
 )

@@ -133,7 +133,7 @@ class RepoResultProcessorGenerator(
             indexMap[itemSource.sourceToken] = index
             val lazyFlow: Lazy<Flow<SourceData>> = lazy {
                 itemSource.delegate.sourcePosition = index
-                val itemFetcher = ItemFetcher(null as ItemSource<*,*>)
+                val itemFetcher = createItemFetcher(itemSource)
                 itemSource.delegate.bindParentLifecycle(repoLifecycle)
                 itemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                 itemFetcher.flow
@@ -187,6 +187,14 @@ class RepoResultProcessorGenerator(
             }
         }
     }
+
+    private fun createItemFetcher(itemSource: BaseItemSource<out Any, out Any>): BaseItemFetcher<*, *> {
+        return when (itemSource) {
+            is ItemPagingSource<*, *> -> PagingSourceItemFetcher(itemSource)
+            else -> ItemFetcher(itemSource as ItemSource<*, *>)
+        }
+    }
+
 
     private fun RepoDisplayedData.getItemSourceWrappers(): List<ItemSourceWrapper> {
         val lazySources = this.lazySources

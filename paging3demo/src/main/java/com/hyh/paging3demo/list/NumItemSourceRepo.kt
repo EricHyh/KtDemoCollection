@@ -26,7 +26,7 @@ class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
     override suspend fun load(param: Unit): LoadResult {
         //delay(1000)
         //SystemClock.sleep(1000)
-        val sources = listOf(NumItemSource("${num}"))
+        val sources = listOf(NumItemSource("${num}"), TestNumItemPagingSource())
 
 
         /*val sources = ListConfig.randomTypes()

@@ -1,14 +1,11 @@
 package com.hyh.paging3demo.list
 
-import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
-import android.view.ViewGroup
 import android.view.Window
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -16,21 +13,11 @@ import com.gyf.immersionbar.ImmersionBar
 import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
-import com.hyh.paging3demo.dialog.RightSlideInDialog
 import android.os.Build
-import com.gyf.immersionbar.OSUtils
 import android.view.WindowManager
 import java.lang.Exception
-import androidx.core.graphics.ColorUtils
 
 import androidx.annotation.RequiresApi
-import android.view.WindowInsetsController
-
-import android.view.WindowInsets
-import android.view.Gravity
-
-import android.widget.FrameLayout
-import com.hyh.paging3demo.utils.OSUtils
 
 
 class ListTestActivity : AppCompatActivity() {
@@ -42,7 +29,7 @@ class ListTestActivity : AppCompatActivity() {
         override fun run() {
             //testAdapter.refresh()
             multiSourceAdapter.refreshRepo(Unit)
-            handler.postDelayed(this,200)
+            handler.postDelayed(this, 200)
         }
     }
 
@@ -90,8 +77,8 @@ class ListTestActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        multiSourceAdapter.refreshRepo(Unit)
-
+        //multiSourceAdapter.refreshRepo(Unit)
+        multiSourceAdapter.moveGlobalItem(1, 10)
     }
 
     fun startRefresh(v: View) {
@@ -110,7 +97,7 @@ class ListTestActivity : AppCompatActivity() {
     fun setBar(window: Window) {
         //防止系统栏隐藏时内容区域大小发生变化
         var uiFlags = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !OSUtils.isEMUI3_x()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !com.hyh.paging3demo.utils.OSUtils.isEMUI3_x()) {
             //适配刘海屏
             //fitsNotchScreen(window)
             //初始化5.0以上，包含5.0

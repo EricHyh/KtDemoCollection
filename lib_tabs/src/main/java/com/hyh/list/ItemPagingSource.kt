@@ -2,12 +2,18 @@ package com.hyh.list
 
 import com.hyh.list.internal.BaseItemSource
 
-abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param?) : BaseItemSource<Param, Item>() {
+/**
+ * 支持加载更多的ItemSource
+ *
+ * @param Param
+ * @param Item
+ * @property initialParam
+ */
+abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param?) : BaseItemSource<ItemPagingSource.LoadParams<Param>, Item>() {
 
     abstract suspend fun load(params: LoadParams<Param>): LoadResult<Param, Item>
 
-    abstract fun getRefreshKey(): Param?
-
+    abstract suspend fun getRefreshKey(): Param?
 
     sealed class LoadParams<Param : Any> {
 
@@ -26,7 +32,8 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param
 
         data class Success<Param : Any, Item : Any>(
             val items: List<Item>,
-            val nextParam: Param?
+            val nextParam: Param?,
+            val noMore: Boolean = false
         ) : LoadResult<Param, Item>()
     }
 }

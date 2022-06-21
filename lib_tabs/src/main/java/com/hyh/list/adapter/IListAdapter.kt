@@ -5,10 +5,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.list.FlatListItem
 import com.hyh.list.RepoLoadState
-import com.hyh.list.SourceLoadState
 import com.hyh.list.SourceLoadStates
 import com.hyh.list.internal.RepoData
 import kotlinx.coroutines.flow.Flow
+import kotlin.math.abs
 
 interface IListAdapter<Param : Any> {
 
@@ -40,6 +40,24 @@ interface IListAdapter<Param : Any> {
     fun refreshSources(sourceIndexStart: Int, count: Int, important: Boolean = false)
     fun refreshSources(vararg sourceTokens: Any, important: Boolean = false)
     fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean = false)
+
+    fun moveGlobalItem(from: Int, to: Int): Boolean {
+        if (from < 0 || to < 0) return false
+        val itemLocalInfo = findItemLocalInfo(from) ?: return false
+        if (from == to) return true
+        if (abs(to - from) >= itemLocalInfo.sourceItemCount) return false
+        val localFrom = itemLocalInfo.localPosition
+        val localTo = localFrom + (to - from)
+        return moveSourceItem(itemLocalInfo.sourceToken, localFrom, localTo)
+    }
+
+    fun moveSourceItem(sourceIndex: Int, from: Int, to: Int): Boolean
+
+    fun moveSourceItem(sourceToken: Any, from: Int, to: Int): Boolean
+
+    fun removeItem(sourceToken: Any, position: Int)
+
+    fun removeItem(sourceToken: Any, item: FlatListItem)
 
 }
 

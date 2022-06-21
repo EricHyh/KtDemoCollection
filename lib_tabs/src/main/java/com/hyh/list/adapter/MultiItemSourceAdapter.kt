@@ -166,6 +166,36 @@ class MultiItemSourceAdapter<Param : Any>(
         }
     }
 
+    override fun moveSourceItem(sourceIndex: Int, from: Int, to: Int): Boolean {
+        if (wrapperMap.size <= sourceIndex) return false
+        val sourceAdapterWrapper = kotlin.run {
+            wrapperMap.values.forEachIndexed { index, sourceAdapterWrapper ->
+                if (sourceIndex == index) return@run sourceAdapterWrapper
+            }
+            return@run null
+        } ?: return false
+        val cachedItemCount = sourceAdapterWrapper.cachedItemCount
+        if (from >= cachedItemCount || to >= cachedItemCount) return false
+        return sourceAdapterWrapper.moveItem(from, to)
+    }
+
+    override fun moveSourceItem(sourceToken: Any, from: Int, to: Int): Boolean {
+        val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return false
+        val cachedItemCount = sourceAdapterWrapper.cachedItemCount
+        if (from >= cachedItemCount || to >= cachedItemCount) return false
+        return sourceAdapterWrapper.moveItem(from, to)
+    }
+
+    override fun removeItem(sourceToken: Any, position: Int) {
+        val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return
+        sourceAdapterWrapper.removeItem(position)
+    }
+
+    override fun removeItem(sourceToken: Any, item: FlatListItem) {
+        val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return
+        sourceAdapterWrapper.removeItem(item)
+    }
+
     private fun findWrappers(sourceIndexStart: Int, count: Int): List<SourceAdapterWrapper> {
         val wrappers = mutableListOf<SourceAdapterWrapper>()
         var index = 0
@@ -639,6 +669,18 @@ class SourceAdapterWrapper(
 
     fun refresh() {
         flatListItemAdapter.refresh(false)
+    }
+
+    fun moveItem(from: Int, to: Int): Boolean {
+        return flatListItemAdapter.moveItem(from, to)
+    }
+
+    fun removeItem(position: Int) {
+        flatListItemAdapter.removeItem(position)
+    }
+
+    fun removeItem(item: FlatListItem) {
+        flatListItemAdapter.removeItem(item)
     }
 
     override fun destroy() {

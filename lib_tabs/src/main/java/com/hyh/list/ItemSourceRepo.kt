@@ -4,6 +4,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.hyh.list.internal.ItemSourceFetcher
 import com.hyh.base.RefreshStrategy
+import com.hyh.list.internal.BaseItemSource
 import com.hyh.list.internal.RepoData
 import com.hyh.list.internal.RepoDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
@@ -47,7 +48,7 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwne
         object Unused : CacheResult()
 
         class Success(
-            val sources: List<ItemSource<out Any, out Any>>,
+            val sources: List<BaseItemSource<out Any, out Any>>,
             val resultExtra: Any? = null
         ) : CacheResult()
     }
@@ -57,7 +58,7 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwne
         class Error(val error: Throwable) : LoadResult()
 
         class Success(
-            val sources: List<ItemSource<out Any, out Any>>,
+            val sources: List<BaseItemSource<out Any, out Any>>,
             val resultExtra: Any? = null
 
         ) : LoadResult()

@@ -41,6 +41,9 @@ class FlatListItemAdapter(
 
     private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> = SimpleMutableStateFlow<Pair<Long, SourceEvent?>>(Pair(0, null))
 
+    private var recyclerView: RecyclerView? = null
+
+
     init {
         pageContext.lifecycleScope.launch {
             resultFlow
@@ -79,17 +82,26 @@ class FlatListItemAdapter(
                         is SourceEvent.RefreshSuccess -> {
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
-                        is SourceEvent.AppendSuccess -> {
-                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
-                        }
                         is SourceEvent.RefreshError -> {
                             _loadStateFlow.value = SourceLoadState.RefreshError(event.error, event.preShowing)
                             onStateChanged(SourceLoadState.RefreshError(event.error, event.preShowing))
                             event.onReceived()
                         }
-                        is SourceEvent.AppendError -> {
-                            _loadStateFlow.value = SourceLoadState.AppendError(event.error, event.pageIndex)
-                            onStateChanged(SourceLoadState.AppendError(event.error, event.pageIndex))
+
+                        is SourceEvent.PagingRefreshSuccess -> {
+                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        }
+                        is SourceEvent.PagingAppendSuccess -> {
+                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        }
+                        is SourceEvent.PagingRefreshError -> {
+                            _loadStateFlow.value = SourceLoadState.PagingRefreshError(event.error)
+                            onStateChanged(SourceLoadState.PagingRefreshError(event.error))
+                            event.onReceived()
+                        }
+                        is SourceEvent.PagingAppendError -> {
+                            _loadStateFlow.value = SourceLoadState.PagingAppendError(event.error, event.pageIndex)
+                            onStateChanged(SourceLoadState.PagingAppendError(event.error, event.pageIndex))
                             event.onReceived()
                         }
                         is SourceEvent.ItemOperate -> {
@@ -105,13 +117,34 @@ class FlatListItemAdapter(
         }
     }
 
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        this.recyclerView = recyclerView
+    }
+
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         super.onBindViewHolder(holder, position, payloads)
-        receiver?.accessItem(position)
+        recyclerView?.post {
+            receiver?.accessItem(position)
+        }
     }
 
     fun refresh(important: Boolean) {
         receiver?.refresh(important)
+    }
+
+    fun moveItem(from: Int, to: Int): Boolean {
+        receiver ?: return false
+        receiver?.move(from, to)
+        return true
+    }
+
+    fun removeItem(position: Int) {
+        receiver?.removeItem(position)
+    }
+
+    fun removeItem(item: FlatListItem) {
+        receiver?.removeItem(item)
     }
 
     fun destroy() {
@@ -145,13 +178,23 @@ class FlatListItemAdapter(
                         onStateChanged(SourceLoadState.Success(processedResult.resultItems.size))
                         sourceEvent.onReceived()
                     }
-                    is SourceEvent.AppendSuccess-> {
+
+                    is SourceEvent.PagingRefreshSuccess -> {
                         val processedResult = sourceEvent.processor.invoke()
                         _items = processedResult.resultItems
                         processedResult.onResultUsed()
                         ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                        _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
-                        onStateChanged(SourceLoadState.Success(processedResult.resultItems.size))
+                        _loadStateFlow.value = SourceLoadState.PagingRefreshSuccess(sourceEvent.noMore)
+                        onStateChanged(SourceLoadState.PagingRefreshSuccess(sourceEvent.noMore))
+                        sourceEvent.onReceived()
+                    }
+                    is SourceEvent.PagingAppendSuccess -> {
+                        val processedResult = sourceEvent.processor.invoke()
+                        _items = processedResult.resultItems
+                        processedResult.onResultUsed()
+                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
+                        _loadStateFlow.value = SourceLoadState.PagingAppendSuccess(sourceEvent.pageIndex, sourceEvent.noMore)
+                        onStateChanged(SourceLoadState.PagingAppendSuccess(sourceEvent.pageIndex, sourceEvent.noMore))
                         sourceEvent.onReceived()
                     }
                     else -> {

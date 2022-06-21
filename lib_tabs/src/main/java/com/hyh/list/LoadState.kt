@@ -39,7 +39,17 @@ sealed class SourceLoadState {
 
     data class RefreshError(val error: Throwable, val preShowing: Boolean) : SourceLoadState()
 
-    data class AppendError(val error: Throwable, val pageIndex: Int) : SourceLoadState()
+    // region paging
+
+    data class PagingRefreshSuccess(val noMore: Boolean) : SourceLoadState()
+
+    data class PagingRefreshError(val error: Throwable) : SourceLoadState()
+
+    data class PagingAppendError(val error: Throwable, val pageIndex: Int) : SourceLoadState()
+
+    data class PagingAppendSuccess(val pageIndex: Int, val noMore: Boolean) : SourceLoadState()
+
+    // endregion
 
 }
 

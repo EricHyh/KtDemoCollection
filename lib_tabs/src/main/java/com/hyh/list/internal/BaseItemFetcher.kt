@@ -1,5 +1,7 @@
 package com.hyh.list.internal
 
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.CallSuper
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.simpleChannelFlow
@@ -10,29 +12,33 @@ import kotlinx.coroutines.flow.*
 
 
 abstract class BaseItemFetcher<Param : Any, Item : Any>(
-    private val itemSource: BaseItemSource<Param, Item>
+    open val itemSource: BaseItemSource<Param, Item>
 ) {
 
-    protected val sourceDisplayedData = SourceDisplayedData<Item>()
+    protected open val sourceDisplayedData = SourceDisplayedData<Item>()
 
     protected abstract val uiReceiver: BaseUiReceiverForSource
 
     val flow: Flow<SourceData> = simpleChannelFlow {
-        this.initChannelFlow()
-        uiReceiver
-            .eventFlow
-            .flowOn(Dispatchers.Main)
-            .map {
-                val processor = createSourceResultProcessor(it) ?: return@map null
-                val sourceDataFlow = flow {
-                    emit(SourceEvent.ItemOperate(processor))
+        launch {
+            this@simpleChannelFlow.initChannelFlow()
+        }
+        launch {
+            uiReceiver
+                .eventFlow
+                .flowOn(Dispatchers.Main)
+                .map {
+                    val processor = createSourceResultProcessor(it) ?: return@map null
+                    val sourceDataFlow = flow {
+                        emit(SourceEvent.ItemOperate(processor))
+                    }
+                    SourceData(sourceDataFlow, uiReceiver)
                 }
-                SourceData(sourceDataFlow, uiReceiver)
-            }
-            .filterNotNull()
-            .collect {
-                send(it)
-            }
+                .filterNotNull()
+                .collect {
+                    send(it)
+                }
+        }
     }
 
     protected abstract suspend fun SendChannel<SourceData>.initChannelFlow()
@@ -54,6 +60,8 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
         uiReceiver.move(from, to)
     }
 
+    protected fun getFetchDispatcherProvider(): DispatcherProvider<Param, Item> = ::getFetchDispatcher
+    protected fun getProcessDataDispatcherProvider(): DispatcherProvider<Param, Item> = ::getProcessDataDispatcher
     private fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
         return itemSource.getFetchDispatcher(param, displayedData)
     }
@@ -175,7 +183,7 @@ abstract class BaseUiReceiverForSource : UiReceiverForSource {
 
     private val eventState = SimpleMutableStateFlow<OperateItemEvent>(OperateItemEvent.Initial)
 
-    val eventFlow = eventState.asStateFlow().map { it }
+    val eventFlow = eventState.asStateFlow()
 
     override fun removeItem(item: FlatListItem) {
         eventState.value = OperateItemEvent.RemoveItemByData(item)
@@ -207,3 +215,5 @@ sealed class OperateItemEvent {
     class MoveItem(val from: Int, val to: Int) : OperateItemEvent()
 
 }
+
+internal typealias DispatcherProvider<Param, Item> = ((Param, SourceDisplayedData<Item>) -> CoroutineDispatcher?)

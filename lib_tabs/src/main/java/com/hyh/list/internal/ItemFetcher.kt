@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.*
 
 
 class ItemFetcher<Param : Any, Item : Any>(
-    private val itemSource: ItemSource<Param, Item>
+    override val itemSource: ItemSource<Param, Item>
 ) : BaseItemFetcher<Param, Item>(itemSource) {
 
     inner class ItemFetcherUiReceiver : BaseUiReceiverForSource() {
@@ -79,21 +79,11 @@ class ItemFetcher<Param : Any, Item : Any>(
     }
 
     private fun getParamProvider(): ParamProvider<Param> = ::getParam
-    private fun getFetchDispatcherProvider(): DispatcherProvider<Param, Item> = ::getFetchDispatcher
-    private fun getProcessDataDispatcherProvider(): DispatcherProvider<Param, Item> = ::getProcessDataDispatcher
     private fun getPreShowLoader(): PreShowLoader<Param, Item> = ::getPreShow
     private fun getLoader(): ItemLoader<Param, Item> = ::load
 
     private suspend fun getParam(): Param {
         return itemSource.getParam()
-    }
-
-    private fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
-        return itemSource.getFetchDispatcher(param, displayedData)
-    }
-
-    private fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
-        return itemSource.getProcessDataDispatcher(param, displayedData)
     }
 
     private suspend fun getPreShow(params: ItemSource.PreShowParams<Param, Item>): ItemSource.PreShowResult<Item> {
@@ -113,7 +103,6 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
     private val dispatcher: CoroutineDispatcher?,
     private val delegate: BaseItemSource.Delegate<Param, Item>
 ) {
-
 
     val processor: SourceResultProcessor = {
         if (shouldUseDispatcher()) {
@@ -240,8 +229,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
             param,
             displayedData
         )
-        val loadResult: ItemSource.LoadResult<Item>
-        loadResult = if (fetchDispatcher == null) {
+        val loadResult: ItemSource.LoadResult<Item> = if (fetchDispatcher == null) {
             loader.invoke(loadParams)
         } else {
             withContext(fetchDispatcher) {
@@ -283,4 +271,3 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
 internal typealias ParamProvider<Param> = (suspend () -> Param)
 internal typealias PreShowLoader<Param, Item> = (suspend (params: ItemSource.PreShowParams<Param, Item>) -> ItemSource.PreShowResult<Item>)
 internal typealias ItemLoader<Param, Item> = (suspend (param: ItemSource.LoadParams<Param, Item>) -> ItemSource.LoadResult<Item>)
-internal typealias DispatcherProvider<Param, Item> = ((Param, SourceDisplayedData<Item>) -> CoroutineDispatcher?)
