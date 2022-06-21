@@ -18,7 +18,8 @@ class PagingSourceItemFetcher<Param : Any, Item : Any>(
     private val pagingSource: ItemPagingSource<Param, Item>
 ) : BaseItemFetcher<ItemPagingSource.LoadParams<Param>, Item>(pagingSource) {
 
-    override val sourceDisplayedData: PagingSourceDisplayedData<Param, Item> = PagingSourceDisplayedData()
+    override val sourceDisplayedData: PagingSourceDisplayedData<Param, Item> =
+        PagingSourceDisplayedData()
 
     inner class ItemFetcherUiReceiver : BaseUiReceiverForSource() {
 
@@ -59,7 +60,10 @@ class PagingSourceItemFetcher<Param : Any, Item : Any>(
             .flow
             .flowOn(Dispatchers.Main)
             .simpleScan(null) { previousSnapshot: PagingSourceItemFetcherSnapshot<Param, Item>?, loadEvent: LoadEvent ->
-                if (sourceDisplayedData.noMore) return@simpleScan null
+                if (sourceDisplayedData.noMore && loadEvent != LoadEvent.Refresh) {
+                    uiReceiver.onAppendComplete()
+                    return@simpleScan null
+                }
                 previousSnapshot?.close()
                 PagingSourceItemFetcherSnapshot(
                     displayedData = sourceDisplayedData,
@@ -128,7 +132,11 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
 
 
     val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
-        if (displayedData.noMore) return@cancelableChannelFlow
+        val isRefresh = displayedData.lastPaging == null || forceRefresh
+        if (displayedData.noMore && !isRefresh) {
+            onAppendComplete()
+            return@cancelableChannelFlow
+        }
 
         launch {
             sourceEventCh.consumeAsFlow().collect {
@@ -140,7 +148,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
             }
         }
 
-        val isRefresh = displayedData.lastPaging == null || forceRefresh
+
         val param = if (isRefresh) {
             ItemPagingSource.LoadParams.Refresh(refreshKeyProvider.invoke())
         } else {
@@ -173,11 +181,18 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
             }
             is ItemPagingSource.LoadResult.Success -> {
                 if (isRefresh) {
-                    SourceEvent.PagingRefreshSuccess(refreshProcessor(param, loadResult), loadResult.noMore) {
+                    SourceEvent.PagingRefreshSuccess(
+                        refreshProcessor(param, loadResult),
+                        loadResult.noMore
+                    ) {
                         onRefreshComplete()
                     }
                 } else {
-                    SourceEvent.PagingAppendSuccess(appendProcessor(param, loadResult), displayedData.pagingSize, loadResult.noMore) {
+                    SourceEvent.PagingAppendSuccess(
+                        appendProcessor(param, loadResult),
+                        displayedData.pagingSize,
+                        loadResult.noMore
+                    ) {
                         onAppendComplete()
                     }
                 }.apply {
@@ -282,7 +297,10 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
                 displayedData
             )
 
-            return SourceProcessedResult(resultFlatListItems, listOf(ListOperate.OnInserted(oldItems.size, items.size))) {
+            return SourceProcessedResult(
+                resultFlatListItems,
+                listOf(ListOperate.OnInserted(oldItems.size, items.size))
+            ) {
                 displayedData.originalItems = resultItems
                 displayedData.flatListItems = resultFlatListItems
                 displayedData.resultExtra = resultExtra

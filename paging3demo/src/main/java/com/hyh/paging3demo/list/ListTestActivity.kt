@@ -77,8 +77,8 @@ class ListTestActivity : AppCompatActivity() {
     }
 
     fun refresh(v: View) {
-        //multiSourceAdapter.refreshRepo(Unit)
-        multiSourceAdapter.moveGlobalItem(1, 10)
+        multiSourceAdapter.refreshRepo(Unit)
+        //multiSourceAdapter.moveGlobalItem(1, 10)
     }
 
     fun startRefresh(v: View) {
