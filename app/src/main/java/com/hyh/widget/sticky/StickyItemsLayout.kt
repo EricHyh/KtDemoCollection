@@ -355,7 +355,9 @@ class StickyItemsLayout : ViewGroup {
     }
 
     private fun isHeaderPosition(position: Int): Boolean {
-        return (stickyItemsAdapter?.isStickyHeader(position) ?: false) || isFixedHeaderPosition(position)
+        return (stickyItemsAdapter?.isStickyHeader(position) ?: false) || isFixedHeaderPosition(
+            position
+        )
     }
 
     private fun isFixedFooterPosition(position: Int): Boolean {
@@ -363,7 +365,9 @@ class StickyItemsLayout : ViewGroup {
     }
 
     private fun isFooterPosition(position: Int): Boolean {
-        return (stickyItemsAdapter?.isStickyFooter(position) ?: false) || isFixedFooterPosition(position)
+        return (stickyItemsAdapter?.isStickyFooter(position) ?: false) || isFixedFooterPosition(
+            position
+        )
     }
 
     private fun findItemViewBounds(position: Int): Rect? {
@@ -467,7 +471,10 @@ class StickyItemsLayout : ViewGroup {
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
             super.onItemRangeRemoved(positionStart, itemCount)
             recyclerView?.postIdleTask {
-                updateStickyItems(this, changedRange = IntRange(positionStart, adapter?.itemCount ?: 0))
+                updateStickyItems(
+                    this,
+                    changedRange = IntRange(positionStart, adapter?.itemCount ?: 0)
+                )
             }
         }
 
@@ -488,21 +495,30 @@ class StickyItemsLayout : ViewGroup {
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
             super.onItemRangeInserted(positionStart, itemCount)
             recyclerView?.postIdleTask {
-                updateStickyItems(this, changedRange = IntRange(positionStart, adapter?.itemCount ?: 0))
+                updateStickyItems(
+                    this,
+                    changedRange = IntRange(positionStart, adapter?.itemCount ?: 0)
+                )
             }
         }
 
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int) {
             super.onItemRangeChanged(positionStart, itemCount)
             recyclerView?.postIdleTask {
-                updateStickyItems(this, changedRange = IntRange(positionStart, positionStart + itemCount - 1))
+                updateStickyItems(
+                    this,
+                    changedRange = IntRange(positionStart, positionStart + itemCount - 1)
+                )
             }
         }
 
         override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
             super.onItemRangeChanged(positionStart, itemCount, payload)
             recyclerView?.postIdleTask {
-                updateStickyItems(this, changedRange = IntRange(positionStart, positionStart + itemCount - 1))
+                updateStickyItems(
+                    this,
+                    changedRange = IntRange(positionStart, positionStart + itemCount - 1)
+                )
             }
         }
     }
@@ -514,7 +530,8 @@ class StickyItemsLayout : ViewGroup {
         protected var lastAttachedItem: StickyItem? = null
 
         protected val attachedItemMap: MutableMap<Int, StickyItem> = TreeMap()
-        protected val attachedItemMapBackup: MutableMap<Int, StickyItem?> = TreeMap()
+        protected val attachedItemMapBackup: MutableMap<Int, StickyItem?> = LinkedHashMap()
+        protected val stickyItemsBackup: MutableList<StickyItem> = mutableListOf()
 
         protected val attachedItemTypeMap: MutableMap<Int, MutableList<StickyItem>> = mutableMapOf()
 
@@ -596,7 +613,7 @@ class StickyItemsLayout : ViewGroup {
                 return
             }
 
-            if (this.firstAttachedItem == null || changedRange != null) {
+            if (/*this.firstAttachedItem == null || changedRange != null*/ false) {
 
                 var firstAttachedItem: StickyItem? = null
                 var lastAttachedItem: StickyItem? = null
@@ -647,45 +664,71 @@ class StickyItemsLayout : ViewGroup {
                 var firstAttachedItem: StickyItem? = null
                 var lastAttachedItem: StickyItem? = null
 
-
                 attachedItemMapBackup.clear()
-                positions.associateWithTo(attachedItemMapBackup) {
-                    attachedItemMap.remove(it)
+                if (changedRange == null) {
+                    positions.associateWithTo(attachedItemMapBackup) {
+                        attachedItemMap.remove(it)
+                    }
+                } else {
+                    positions.associateWithTo(attachedItemMapBackup) {
+                        null
+                    }
                 }
 
-                val values = attachedItemMap.values.toMutableList()
+                stickyItemsBackup.addAll(attachedItemMap.values)
+                attachedItemMap.clear()
+
                 fun getStickyItem(itemViewType: Int): StickyItem? {
-                    val stickyItem = values.find {
-                        it.itemViewType == itemViewType
+                    var stickyItem: StickyItem? = null
+                    val iterator = stickyItemsBackup.iterator()
+                    while (iterator.hasNext()) {
+                        val next = iterator.next()
+                        if (itemViewType == next.itemViewType) {
+                            iterator.remove()
+                            stickyItem = next
+                            break
+                        }
                     }
-                    values.remove(stickyItem)
                     return stickyItem
                 }
 
-
-                /*attachedItemMapBackup.forEach {
-                    val stickyItem = it.value ?: getStickyItem(it.key).let { item ->
+                attachedItemMapBackup.forEach {
+                    val itemViewType = adapter.getItemViewType(it.key)
+                    val stickyItem = it.value ?: getStickyItem(itemViewType).let { item ->
                         if (item == null) return@let null
-                        createStickyItem(recyclerView, adapter, it.key, item)
+                        createStickyItem(recyclerView, adapter, it.key, item).apply {
+                            bindStickyItemViewHolder(true)
+                        }
                     } ?: createStickyItem(recyclerView, adapter, it.key).apply {
                         attach()
                         bindStickyItemViewHolder(true)
                     }
+                    stickyItem.prev = null
+                    stickyItem.next = null
 
                     if (firstAttachedItem == null) {
                         firstAttachedItem = stickyItem
                         lastAttachedItem = stickyItem
-                        removePrev(stickyItem)
                     } else {
                         lastAttachedItem?.next = stickyItem
                         stickyItem.prev = lastAttachedItem
                         lastAttachedItem = stickyItem
                     }
-                }*/
+                }
 
+                val iterator = stickyItemsBackup.iterator()
+                while (iterator.hasNext()) {
+                    val next = iterator.next()
+                    next.detach()
+                    iterator.remove()
+                }
 
-                positions.forEach {
-                    val stickyItem = attachedItemMap.remove(it) ?: createStickyItem(recyclerView, adapter, it).apply {
+                /*positions.forEach {
+                    val stickyItem = attachedItemMap.remove(it) ?: createStickyItem(
+                        recyclerView,
+                        adapter,
+                        it
+                    ).apply {
                         attach()
                         bindStickyItemViewHolder(true)
                     }
@@ -700,6 +743,7 @@ class StickyItemsLayout : ViewGroup {
                         lastAttachedItem = stickyItem
                     }
                 }
+
 
                 removeNext(lastAttachedItem)
 
@@ -708,7 +752,8 @@ class StickyItemsLayout : ViewGroup {
                     val next = iterator.next()
                     next.value.detach()
                     iterator.remove()
-                }
+                }*/
+
 
                 this.firstAttachedItem = firstAttachedItem
                 this.lastAttachedItem = lastAttachedItem
@@ -728,8 +773,9 @@ class StickyItemsLayout : ViewGroup {
 
         fun afterUpdate() {
             drawingOrderItems.clear()
-            attachedItemTypeMap.clear()
-
+            attachedItemTypeMap.forEach {
+                it.value.clear()
+            }
             attachedItemMap.values.forEach {
                 it.attachIndexInParent = indexOfChild(it.itemView)
                 drawingOrderItems.add(it)
@@ -809,7 +855,10 @@ class StickyItemsLayout : ViewGroup {
 
 
             cacheFirstCompletelyVisibleItemPosition = currentItemsPositionHelper
-                .adjustCacheFirstCompletelyVisibleItemPosition(cacheFirstCompletelyVisibleItemPosition, changedRange)
+                .adjustCacheFirstCompletelyVisibleItemPosition(
+                    cacheFirstCompletelyVisibleItemPosition,
+                    changedRange
+                )
 
             currentItemsPositionHelper.adjustCacheFixedPositions(cacheFixedPositions, changedRange)
             currentItemsPositionHelper.adjustCachePositions(cachePositions, changedRange)
@@ -852,7 +901,8 @@ class StickyItemsLayout : ViewGroup {
                 cacheFixedPositions.clear()
             }
 
-            val maxStickyHeaders = currentItemsPositionHelper.maxStickyItems - cacheFixedPositions.size
+            val maxStickyHeaders =
+                currentItemsPositionHelper.maxStickyItems - cacheFixedPositions.size
 
             if (maxStickyHeaders > 0) {
                 if (cachePositions.isNotEmpty()) {
@@ -918,7 +968,11 @@ class StickyItemsLayout : ViewGroup {
             for (position in firstCompletelyVisibleItemPosition..lastCompletelyVisibleItemPosition) {
                 if (currentItemsPositionHelper.isStickyItemPosition(position)) {
                     val bounds = currentItemsPositionHelper.findItemViewBounds(position) ?: continue
-                    val headersHeight = currentItemsPositionHelper.calculateHeight(cacheFixedPositions, cachePositions, dataChanged)
+                    val headersHeight = currentItemsPositionHelper.calculateHeight(
+                        cacheFixedPositions,
+                        cachePositions,
+                        dataChanged
+                    )
                     if (headersHeight == 0) {
                         isHeadersHeightNotPrepare = true
                     }
@@ -948,7 +1002,11 @@ class StickyItemsLayout : ViewGroup {
             }
 
             tempPositions.clear()
-            currentItemsPositionHelper.fillPositions(tempPositions, cacheFixedPositions, cachePositions)
+            currentItemsPositionHelper.fillPositions(
+                tempPositions,
+                cacheFixedPositions,
+                cachePositions
+            )
 
             if (isHeadersHeightNotPrepare) {
                 recyclerView.postIdleTask {
@@ -1063,129 +1121,144 @@ class StickyItemsLayout : ViewGroup {
         override val cachePositions = TreeSet<Int>()
         override val tempPositions = TreeSet<Int>()
 
-        override val currentItemsPositionHelper: CurrentItemsPositionHelper = object : CurrentItemsPositionHelper() {
+        override val currentItemsPositionHelper: CurrentItemsPositionHelper =
+            object : CurrentItemsPositionHelper() {
 
-            override val maxStickyItems: Int
-                get() = maxStickyHeaders
+                override val maxStickyItems: Int
+                    get() = maxStickyHeaders
 
-            override val maxFixedStickyItems: Int
-                get() = maxFixedStickyHeaders
+                override val maxFixedStickyItems: Int
+                    get() = maxFixedStickyHeaders
 
-            override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
-                return visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView?.layoutManager)
-            }
+                override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    return visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView?.layoutManager)
+                }
 
-            override fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
-                return visibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView?.layoutManager)
-            }
+                override fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    return visibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView?.layoutManager)
+                }
 
-            override fun isFixedStickyItemPosition(position: Int): Boolean {
-                return isFixedHeaderPosition(position)
-            }
+                override fun isFixedStickyItemPosition(position: Int): Boolean {
+                    return isFixedHeaderPosition(position)
+                }
 
-            override fun isStickyItemPosition(position: Int): Boolean {
-                return isHeaderPosition(position)
-            }
+                override fun isStickyItemPosition(position: Int): Boolean {
+                    return isHeaderPosition(position)
+                }
 
-            override fun calculateHeight(fixedPositions: Collection<Int>, positions: Collection<Int>, dataChanged: Boolean): Int {
-                var height = 0
-                if (!dataChanged) {
-                    fixedPositions.forEach {
-                        val stickyItem = attachedItemMap[it]
-                        if (stickyItem != null) {
-                            height += stickyItem.heightWithDecor
-                        } else {
-                            val bounds = findItemViewBounds(it)
-                            if (bounds != null) {
-                                height += (bounds.bottom - bounds.top)
-                                rectPool.recycle(bounds)
+                override fun calculateHeight(
+                    fixedPositions: Collection<Int>,
+                    positions: Collection<Int>,
+                    dataChanged: Boolean
+                ): Int {
+                    var height = 0
+                    if (!dataChanged) {
+                        fixedPositions.forEach {
+                            val stickyItem = attachedItemMap[it]
+                            if (stickyItem != null) {
+                                height += stickyItem.heightWithDecor
                             } else {
-                                height += forceCalculateHeight(it)
+                                val bounds = findItemViewBounds(it)
+                                if (bounds != null) {
+                                    height += (bounds.bottom - bounds.top)
+                                    rectPool.recycle(bounds)
+                                } else {
+                                    height += forceCalculateHeight(it)
+                                }
                             }
                         }
-                    }
-                    positions.forEach {
-                        val stickyItem = attachedItemMap[it]
-                        if (stickyItem != null) {
-                            height += stickyItem.heightWithDecor
-                        } else {
-                            val bounds = findItemViewBounds(it)
-                            if (bounds != null) {
-                                height += (bounds.bottom - bounds.top)
-                                rectPool.recycle(bounds)
+                        positions.forEach {
+                            val stickyItem = attachedItemMap[it]
+                            if (stickyItem != null) {
+                                height += stickyItem.heightWithDecor
                             } else {
-                                height += forceCalculateHeight(it)
+                                val bounds = findItemViewBounds(it)
+                                if (bounds != null) {
+                                    height += (bounds.bottom - bounds.top)
+                                    rectPool.recycle(bounds)
+                                } else {
+                                    height += forceCalculateHeight(it)
+                                }
                             }
                         }
+                    } else {
+                        fixedPositions.forEach {
+                            height += calculateHeight(it, dataChanged)
+                        }
+                        positions.forEach {
+                            height += calculateHeight(it, dataChanged)
+                        }
                     }
-                } else {
-                    fixedPositions.forEach {
-                        height += calculateHeight(it, dataChanged)
+                    return height
+                }
+
+                override fun calculateHeight(position: Int?, dataChanged: Boolean): Int {
+                    position ?: return 0
+                    if (dataChanged) {
+                        val recyclerView = recyclerView ?: return 0
+                        val adapter = recyclerView.adapter ?: return 0
+                        val itemViewType = adapter.getItemViewType(position)
+                        val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
+                        if (attachedItem != null) {
+                            return attachedItem.heightWithDecor
+                        }
+                        return forceCalculateHeight(position)
                     }
-                    positions.forEach {
-                        height += calculateHeight(it, dataChanged)
+                    val stickyItem = attachedItemMap[position]
+                    if (stickyItem != null) {
+                        return stickyItem.heightWithDecor
+                    }
+                    val bounds =
+                        findItemViewBounds(position) ?: return forceCalculateHeight(position)
+                    val height = bounds.bottom - bounds.top
+                    rectPool.recycle(bounds)
+                    return height
+                }
+
+                override fun findItemViewBounds(position: Int): Rect? {
+                    return this@StickyItemsLayout.findItemViewBounds(position)
+                }
+
+                override fun fillPositions(
+                    acc: MutableCollection<Int>,
+                    fixedPositions: Collection<Int>,
+                    positions: Collection<Int>
+                ) {
+                    acc.apply {
+                        addAll(cacheFixedPositions)
+                        addAll(cachePositions)
                     }
                 }
-                return height
-            }
 
-            override fun calculateHeight(position: Int?, dataChanged: Boolean): Int {
-                position ?: return 0
-                if (dataChanged) {
-                    val recyclerView = recyclerView ?: return 0
-                    val adapter = recyclerView.adapter ?: return 0
-                    val itemViewType = adapter.getItemViewType(position)
-                    val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
-                    if (attachedItem != null) {
-                        return attachedItem.heightWithDecor
+                override fun adjustCacheFirstCompletelyVisibleItemPosition(
+                    position: Int?,
+                    changedRange: IntRange?
+                ): Int? {
+                    changedRange ?: return position
+                    position ?: return position
+                    return min(position, changedRange.first)
+                }
+
+                override fun adjustCacheFixedPositions(
+                    cacheFixedPositions: TreeSet<Int>,
+                    changedRange: IntRange?
+                ) {
+                    changedRange ?: return
+                    while (cacheFixedPositions.size > 0 && cacheFixedPositions.last() >= changedRange.first) {
+                        cacheFixedPositions.pollLast()
                     }
-                    return forceCalculateHeight(position)
                 }
-                val stickyItem = attachedItemMap[position]
-                if (stickyItem != null) {
-                    return stickyItem.heightWithDecor
-                }
-                val bounds = findItemViewBounds(position) ?: return forceCalculateHeight(position)
-                val height = bounds.bottom - bounds.top
-                rectPool.recycle(bounds)
-                return height
-            }
 
-            override fun findItemViewBounds(position: Int): Rect? {
-                return this@StickyItemsLayout.findItemViewBounds(position)
-            }
-
-            override fun fillPositions(
-                acc: MutableCollection<Int>,
-                fixedPositions: Collection<Int>,
-                positions: Collection<Int>
-            ) {
-                acc.apply {
-                    addAll(cacheFixedPositions)
-                    addAll(cachePositions)
+                override fun adjustCachePositions(
+                    cachePositions: TreeSet<Int>,
+                    changedRange: IntRange?
+                ) {
+                    changedRange ?: return
+                    while (cachePositions.size > 0 && cachePositions.last() >= changedRange.first) {
+                        cachePositions.pollLast()
+                    }
                 }
             }
-
-            override fun adjustCacheFirstCompletelyVisibleItemPosition(position: Int?, changedRange: IntRange?): Int? {
-                changedRange ?: return position
-                position ?: return position
-                return min(position, changedRange.first)
-            }
-
-            override fun adjustCacheFixedPositions(cacheFixedPositions: TreeSet<Int>, changedRange: IntRange?) {
-                changedRange ?: return
-                while (cacheFixedPositions.size > 0 && cacheFixedPositions.last() >= changedRange.first) {
-                    cacheFixedPositions.pollLast()
-                }
-            }
-
-            override fun adjustCachePositions(cachePositions: TreeSet<Int>, changedRange: IntRange?) {
-                changedRange ?: return
-                while (cachePositions.size > 0 && cachePositions.last() >= changedRange.first) {
-                    cachePositions.pollLast()
-                }
-            }
-        }
 
         override fun onLayout() {
             firstAttachedItem?.iterator()?.forEach {
@@ -1315,10 +1388,16 @@ class StickyItemsLayout : ViewGroup {
                     )
                 }
                 firstVisibleItemPosition > lastHeaderPosition -> {
-                    findFirstHeaderPosition(firstVisibleItemPosition, lastCompletelyVisibleItemPosition)
+                    findFirstHeaderPosition(
+                        firstVisibleItemPosition,
+                        lastCompletelyVisibleItemPosition
+                    )
                 }
                 else -> {
-                    findFirstHeaderPosition(lastHeaderPosition + 1, lastCompletelyVisibleItemPosition)
+                    findFirstHeaderPosition(
+                        lastHeaderPosition + 1,
+                        lastCompletelyVisibleItemPosition
+                    )
                 }
             }
         }
@@ -1346,150 +1425,169 @@ class StickyItemsLayout : ViewGroup {
             return@Comparator o2 - o1
         })
 
-        override val currentItemsPositionHelper: CurrentItemsPositionHelper = object : CurrentItemsPositionHelper() {
+        override val currentItemsPositionHelper: CurrentItemsPositionHelper =
+            object : CurrentItemsPositionHelper() {
 
-            override val maxStickyItems: Int
-                get() = maxStickyFooters
+                override val maxStickyItems: Int
+                    get() = maxStickyFooters
 
-            override val maxFixedStickyItems: Int
-                get() = maxFixedStickyFooters
+                override val maxFixedStickyItems: Int
+                    get() = maxFixedStickyFooters
 
-            override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
-                val position = visibleItemFinder.findLastCompletelyVisibleItemPosition(layoutManager)
-                if (position == RecyclerView.NO_POSITION) return position
-                return getRealPosition(position)
-            }
+                override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    val position =
+                        visibleItemFinder.findLastCompletelyVisibleItemPosition(layoutManager)
+                    if (position == RecyclerView.NO_POSITION) return position
+                    return getRealPosition(position)
+                }
 
-            override fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
-                val position = visibleItemFinder.findFirstCompletelyVisibleItemPosition(layoutManager)
-                if (position == RecyclerView.NO_POSITION) return position
-                return getRealPosition(position)
-            }
+                override fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    val position =
+                        visibleItemFinder.findFirstCompletelyVisibleItemPosition(layoutManager)
+                    if (position == RecyclerView.NO_POSITION) return position
+                    return getRealPosition(position)
+                }
 
-            override fun isFixedStickyItemPosition(position: Int): Boolean {
-                return isFixedFooterPosition(getRealPosition(position))
-            }
+                override fun isFixedStickyItemPosition(position: Int): Boolean {
+                    return isFixedFooterPosition(getRealPosition(position))
+                }
 
-            override fun isStickyItemPosition(position: Int): Boolean {
-                return isFooterPosition(getRealPosition(position))
-            }
+                override fun isStickyItemPosition(position: Int): Boolean {
+                    return isFooterPosition(getRealPosition(position))
+                }
 
-            override fun calculateHeight(fixedPositions: Collection<Int>, positions: Collection<Int>, dataChanged: Boolean): Int {
-                var height = 0
-                if (!dataChanged) {
-                    fixedPositions.forEach {
-                        val stickyItem = attachedItemMap[getRealPosition(it)]
-                        if (stickyItem != null) {
-                            height += stickyItem.heightWithDecor
-                        } else {
-                            val bounds = findItemViewBounds(getRealPosition(it))
-                            if (bounds != null) {
-                                height += (bounds.bottom - bounds.top)
-                                rectPool.recycle(bounds)
+                override fun calculateHeight(
+                    fixedPositions: Collection<Int>,
+                    positions: Collection<Int>,
+                    dataChanged: Boolean
+                ): Int {
+                    var height = 0
+                    if (!dataChanged) {
+                        fixedPositions.forEach {
+                            val stickyItem = attachedItemMap[getRealPosition(it)]
+                            if (stickyItem != null) {
+                                height += stickyItem.heightWithDecor
                             } else {
-                                height += forceCalculateHeight(getRealPosition(it))
+                                val bounds = findItemViewBounds(getRealPosition(it))
+                                if (bounds != null) {
+                                    height += (bounds.bottom - bounds.top)
+                                    rectPool.recycle(bounds)
+                                } else {
+                                    height += forceCalculateHeight(getRealPosition(it))
+                                }
                             }
                         }
-                    }
-                    positions.forEach {
-                        val stickyItem = attachedItemMap[getRealPosition(it)]
-                        if (stickyItem != null) {
-                            height += stickyItem.heightWithDecor
-                        } else {
-                            val bounds = findItemViewBounds(getRealPosition(it))
-                            if (bounds != null) {
-                                height += (bounds.bottom - bounds.top)
-                                rectPool.recycle(bounds)
+                        positions.forEach {
+                            val stickyItem = attachedItemMap[getRealPosition(it)]
+                            if (stickyItem != null) {
+                                height += stickyItem.heightWithDecor
                             } else {
-                                height += forceCalculateHeight(getRealPosition(it))
+                                val bounds = findItemViewBounds(getRealPosition(it))
+                                if (bounds != null) {
+                                    height += (bounds.bottom - bounds.top)
+                                    rectPool.recycle(bounds)
+                                } else {
+                                    height += forceCalculateHeight(getRealPosition(it))
+                                }
                             }
                         }
+                    } else {
+                        fixedPositions.forEach {
+                            height += calculateHeight(it, dataChanged)
+                        }
+                        positions.forEach {
+                            height += calculateHeight(it, dataChanged)
+                        }
                     }
-                } else {
+                    return height
+                }
+
+                override fun calculateHeight(position: Int?, dataChanged: Boolean): Int {
+                    position ?: return 0
+                    if (dataChanged) {
+                        val recyclerView = recyclerView ?: return 0
+                        val adapter = recyclerView.adapter ?: return 0
+                        val itemViewType = adapter.getItemViewType(getRealPosition(position))
+                        val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
+                        if (attachedItem != null) {
+                            return attachedItem.heightWithDecor
+                        }
+                        return forceCalculateHeight(getRealPosition(position))
+                    }
+                    val stickyItem = attachedItemMap[getRealPosition(position)]
+                    if (stickyItem != null) {
+                        return stickyItem.heightWithDecor
+                    }
+                    val bounds = findItemViewBounds(getRealPosition(position))
+                        ?: return forceCalculateHeight(getRealPosition(position))
+                    val height = bounds.bottom - bounds.top
+                    rectPool.recycle(bounds)
+                    return height
+                }
+
+                override fun findItemViewBounds(position: Int): Rect? {
+                    val bounds =
+                        this@StickyItemsLayout.findItemViewBounds(getRealPosition(position))
+                            ?: return null
+                    val height = this@StickyItemsLayout.height
+                    val top = height - bounds.bottom
+                    val bottom = height - bounds.top
+                    return bounds.apply {
+                        this.top = top
+                        this.bottom = bottom
+                    }
+                }
+
+                override fun fillPositions(
+                    acc: MutableCollection<Int>,
+                    fixedPositions: Collection<Int>,
+                    positions: Collection<Int>
+                ) {
                     fixedPositions.forEach {
-                        height += calculateHeight(it, dataChanged)
+                        acc.add(getRealPosition(it))
                     }
                     positions.forEach {
-                        height += calculateHeight(it, dataChanged)
+                        acc.add(getRealPosition(it))
                     }
                 }
-                return height
-            }
 
-            override fun calculateHeight(position: Int?, dataChanged: Boolean): Int {
-                position ?: return 0
-                if (dataChanged) {
-                    val recyclerView = recyclerView ?: return 0
-                    val adapter = recyclerView.adapter ?: return 0
-                    val itemViewType = adapter.getItemViewType(getRealPosition(position))
-                    val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
-                    if (attachedItem != null) {
-                        return attachedItem.heightWithDecor
+
+                override fun adjustCacheFirstCompletelyVisibleItemPosition(
+                    position: Int?,
+                    changedRange: IntRange?
+                ): Int? {
+                    changedRange ?: return position
+                    position ?: return position
+                    return min(position, getRealPosition(changedRange.last))
+                }
+
+                override fun adjustCacheFixedPositions(
+                    cacheFixedPositions: TreeSet<Int>,
+                    changedRange: IntRange?
+                ) {
+                    changedRange ?: return
+                    val rangeFirst = getRealPosition(changedRange.last)
+                    while (cacheFixedPositions.size > 0 && cacheFixedPositions.last() >= rangeFirst) {
+                        cacheFixedPositions.pollLast()
                     }
-                    return forceCalculateHeight(getRealPosition(position))
                 }
-                val stickyItem = attachedItemMap[getRealPosition(position)]
-                if (stickyItem != null) {
-                    return stickyItem.heightWithDecor
-                }
-                val bounds = findItemViewBounds(getRealPosition(position)) ?: return forceCalculateHeight(getRealPosition(position))
-                val height = bounds.bottom - bounds.top
-                rectPool.recycle(bounds)
-                return height
-            }
 
-            override fun findItemViewBounds(position: Int): Rect? {
-                val bounds = this@StickyItemsLayout.findItemViewBounds(getRealPosition(position)) ?: return null
-                val height = this@StickyItemsLayout.height
-                val top = height - bounds.bottom
-                val bottom = height - bounds.top
-                return bounds.apply {
-                    this.top = top
-                    this.bottom = bottom
+                override fun adjustCachePositions(
+                    cachePositions: TreeSet<Int>,
+                    changedRange: IntRange?
+                ) {
+                    changedRange ?: return
+                    val rangeFirst = getRealPosition(changedRange.last)
+                    while (cachePositions.size > 0 && cachePositions.last() >= rangeFirst) {
+                        cachePositions.pollLast()
+                    }
+                }
+
+
+                private fun getRealPosition(position: Int): Int {
+                    return getItemCount() - position - 1
                 }
             }
-
-            override fun fillPositions(
-                acc: MutableCollection<Int>,
-                fixedPositions: Collection<Int>,
-                positions: Collection<Int>
-            ) {
-                fixedPositions.forEach {
-                    acc.add(getRealPosition(it))
-                }
-                positions.forEach {
-                    acc.add(getRealPosition(it))
-                }
-            }
-
-
-            override fun adjustCacheFirstCompletelyVisibleItemPosition(position: Int?, changedRange: IntRange?): Int? {
-                changedRange ?: return position
-                position ?: return position
-                return min(position, getRealPosition(changedRange.last))
-            }
-
-            override fun adjustCacheFixedPositions(cacheFixedPositions: TreeSet<Int>, changedRange: IntRange?) {
-                changedRange ?: return
-                val rangeFirst = getRealPosition(changedRange.last)
-                while (cacheFixedPositions.size > 0 && cacheFixedPositions.last() >= rangeFirst) {
-                    cacheFixedPositions.pollLast()
-                }
-            }
-
-            override fun adjustCachePositions(cachePositions: TreeSet<Int>, changedRange: IntRange?) {
-                changedRange ?: return
-                val rangeFirst = getRealPosition(changedRange.last)
-                while (cachePositions.size > 0 && cachePositions.last() >= rangeFirst) {
-                    cachePositions.pollLast()
-                }
-            }
-
-
-            private fun getRealPosition(position: Int): Int {
-                return getItemCount() - position - 1
-            }
-        }
 
 
         override fun onLayout() {
@@ -1825,7 +1923,8 @@ class StickyItemsLayout : ViewGroup {
             if (prev != null) {
                 if (prev?.isFixedStickyItem == true) {
                     if (isFixedStickyItem) {
-                        itemView.translationY = (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor?.toFloat() ?: 0.0F)
+                        itemView.translationY =
+                            (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor?.toFloat() ?: 0.0F)
                     } else {
                         val offsetY =
                             (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor ?: 0) + itemsOffsetY
@@ -1864,9 +1963,11 @@ class StickyItemsLayout : ViewGroup {
             if (prev != null) {
                 if (prev?.isFixedStickyItem == true) {
                     if (isFixedStickyItem) {
-                        itemView.translationY = (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor?.toFloat() ?: 0.0F)
+                        itemView.translationY =
+                            (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor?.toFloat() ?: 0.0F)
                     } else {
-                        val offsetY = (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor ?: 0) + itemsOffsetY
+                        val offsetY =
+                            (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor ?: 0) + itemsOffsetY
                         itemView.translationY = offsetY
                         consumed = itemsOffsetY
                     }
