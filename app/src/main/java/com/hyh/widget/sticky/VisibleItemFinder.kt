@@ -5,7 +5,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 
 /**
- * TODO: Add Description
+ * 列表可见Item查找器
  *
  * @author eriche
  * @data 2020/11/30

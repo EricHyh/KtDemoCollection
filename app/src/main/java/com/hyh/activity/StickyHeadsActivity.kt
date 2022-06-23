@@ -246,7 +246,7 @@ class ListAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>(),
 
     override fun onBindStickyViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         onBindViewHolder(holder, position)
-        //viewHolder.itemView.background = ColorDrawable(Color.BLUE)
+        //holder.itemView.background = ColorDrawable(Color.BLUE)
     }
 
     override fun isStickyFooter(position: Int): Boolean {

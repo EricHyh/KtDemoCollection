@@ -613,158 +613,82 @@ class StickyItemsLayout : ViewGroup {
                 return
             }
 
-            if (/*this.firstAttachedItem == null || changedRange != null*/ false) {
 
-                var firstAttachedItem: StickyItem? = null
-                var lastAttachedItem: StickyItem? = null
+            var firstAttachedItem: StickyItem? = null
+            var lastAttachedItem: StickyItem? = null
 
-                var oldAttachedItem: StickyItem? = this.firstAttachedItem
-
-                this.attachedItemMap.clear()
-                positions.forEach {
-                    val itemViewType = adapter.getItemViewType(it)
-                    val stickyItem: StickyItem
-                    val tempOldAttachedItem = oldAttachedItem
-                    if (tempOldAttachedItem != null) {
-                        if (tempOldAttachedItem.itemViewType == itemViewType) {
-                            stickyItem =
-                                createStickyItem(recyclerView, adapter, it, tempOldAttachedItem)
-                        } else {
-                            stickyItem = createStickyItem(recyclerView, adapter, it)
-                            stickyItem.attach()
-                            tempOldAttachedItem.detach()
-                        }
-                    } else {
-                        stickyItem = createStickyItem(recyclerView, adapter, it)
-                        stickyItem.attach()
-                    }
-                    oldAttachedItem = tempOldAttachedItem?.next
-
-                    if (firstAttachedItem == null) {
-                        firstAttachedItem = stickyItem
-                        lastAttachedItem = stickyItem
-                    } else {
-                        lastAttachedItem?.next = stickyItem
-                        stickyItem.prev = lastAttachedItem
-                        lastAttachedItem = stickyItem
-                    }
-                    this.attachedItemMap[it] = stickyItem
-                }
-
-                removeNext(oldAttachedItem)
-                oldAttachedItem?.detach()
-
-                this.firstAttachedItem = firstAttachedItem
-                this.lastAttachedItem = lastAttachedItem
-
-                this.firstAttachedItem?.iterator()?.forEach {
-                    it.bindStickyItemViewHolder(true)
+            attachedItemMapBackup.clear()
+            if (changedRange == null) {
+                positions.associateWithTo(attachedItemMapBackup) {
+                    attachedItemMap.remove(it)
                 }
             } else {
-                var firstAttachedItem: StickyItem? = null
-                var lastAttachedItem: StickyItem? = null
+                positions.associateWithTo(attachedItemMapBackup) {
+                    null
+                }
+            }
 
-                attachedItemMapBackup.clear()
-                if (changedRange == null) {
-                    positions.associateWithTo(attachedItemMapBackup) {
-                        attachedItemMap.remove(it)
-                    }
-                } else {
-                    positions.associateWithTo(attachedItemMapBackup) {
-                        null
+            stickyItemsBackup.addAll(attachedItemMap.values)
+            attachedItemMap.clear()
+
+            fun getStickyItem(itemViewType: Int): StickyItem? {
+                var stickyItem: StickyItem? = null
+                val iterator = stickyItemsBackup.iterator()
+                while (iterator.hasNext()) {
+                    val next = iterator.next()
+                    if (itemViewType == next.itemViewType) {
+                        iterator.remove()
+                        stickyItem = next
+                        break
                     }
                 }
+                return stickyItem
+            }
 
-                stickyItemsBackup.addAll(attachedItemMap.values)
-                attachedItemMap.clear()
-
-                fun getStickyItem(itemViewType: Int): StickyItem? {
-                    var stickyItem: StickyItem? = null
-                    val iterator = stickyItemsBackup.iterator()
-                    while (iterator.hasNext()) {
-                        val next = iterator.next()
-                        if (itemViewType == next.itemViewType) {
-                            iterator.remove()
-                            stickyItem = next
-                            break
-                        }
-                    }
-                    return stickyItem
-                }
-
-                attachedItemMapBackup.forEach {
-                    val itemViewType = adapter.getItemViewType(it.key)
-                    val stickyItem = it.value ?: getStickyItem(itemViewType).let { item ->
+            attachedItemMapBackup.forEach {
+                val itemViewType = adapter.getItemViewType(it.key)
+                val stickyItem: StickyItem = it.value
+                    ?: getStickyItem(itemViewType).let { item ->
                         if (item == null) return@let null
                         createStickyItem(recyclerView, adapter, it.key, item).apply {
                             bindStickyItemViewHolder(true)
                         }
-                    } ?: createStickyItem(recyclerView, adapter, it.key).apply {
-                        attach()
-                        bindStickyItemViewHolder(true)
                     }
-                    stickyItem.prev = null
-                    stickyItem.next = null
-
-                    if (firstAttachedItem == null) {
-                        firstAttachedItem = stickyItem
-                        lastAttachedItem = stickyItem
-                    } else {
-                        lastAttachedItem?.next = stickyItem
-                        stickyItem.prev = lastAttachedItem
-                        lastAttachedItem = stickyItem
-                    }
-                }
-
-                val iterator = stickyItemsBackup.iterator()
-                while (iterator.hasNext()) {
-                    val next = iterator.next()
-                    next.detach()
-                    iterator.remove()
-                }
-
-                /*positions.forEach {
-                    val stickyItem = attachedItemMap.remove(it) ?: createStickyItem(
-                        recyclerView,
-                        adapter,
-                        it
-                    ).apply {
+                    ?: createStickyItem(recyclerView, adapter, it.key).apply {
                         attach()
                         bindStickyItemViewHolder(true)
                     }
 
-                    if (firstAttachedItem == null) {
-                        firstAttachedItem = stickyItem
-                        lastAttachedItem = stickyItem
-                        removePrev(stickyItem)
-                    } else {
-                        lastAttachedItem?.next = stickyItem
-                        stickyItem.prev = lastAttachedItem
-                        lastAttachedItem = stickyItem
-                    }
+                stickyItem.prev = null
+                stickyItem.next = null
+
+                if (firstAttachedItem == null) {
+                    firstAttachedItem = stickyItem
+                    lastAttachedItem = stickyItem
+                } else {
+                    lastAttachedItem?.next = stickyItem
+                    stickyItem.prev = lastAttachedItem
+                    lastAttachedItem = stickyItem
                 }
+            }
 
+            val iterator = stickyItemsBackup.iterator()
+            while (iterator.hasNext()) {
+                val next = iterator.next()
+                next.bindItemViewHolder()
+                next.detach()
+                iterator.remove()
+            }
 
-                removeNext(lastAttachedItem)
+            this.firstAttachedItem = firstAttachedItem
+            this.lastAttachedItem = lastAttachedItem
 
-                val iterator = attachedItemMap.entries.iterator()
-                while (iterator.hasNext()) {
-                    val next = iterator.next()
-                    next.value.detach()
-                    iterator.remove()
-                }*/
-
-
-                this.firstAttachedItem = firstAttachedItem
-                this.lastAttachedItem = lastAttachedItem
-
-                this.firstAttachedItem?.iterator()?.forEach {
-                    attachedItemMap[it.position] = it
-                    if (scrollState == RecyclerView.SCROLL_STATE_IDLE) {
-                        it.bindStickyItemViewHolder()
-                    } else {
-                        it.bindItemViewHolder()
-                    }
+            this.firstAttachedItem?.iterator()?.forEach {
+                attachedItemMap[it.position] = it
+                if (scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                    it.bindStickyItemViewHolder()
+                } else {
+                    it.bindItemViewHolder()
                 }
             }
 
@@ -1047,20 +971,6 @@ class StickyItemsLayout : ViewGroup {
         ): Boolean {
             return localX >= -slop && localY >= -slop && localX < view.right - view.left + slop &&
                     localY < view.bottom - view.top + slop
-        }
-
-        private fun removePrev(stickyItem: StickyItem?) {
-            val prev = stickyItem?.prev ?: return
-            stickyItem.prev = null
-            prev.detach()
-            removePrev(prev)
-        }
-
-        private fun removeNext(stickyItem: StickyItem?) {
-            val next = stickyItem?.next ?: return
-            stickyItem.next = null
-            next.detach()
-            removeNext(next)
         }
 
 
@@ -1819,7 +1729,6 @@ class StickyItemsLayout : ViewGroup {
         fun bindItemViewHolder() {
             val recyclerView = this@StickyItemsLayout.recyclerView ?: return
             if (!stickyItemBound) return
-            if (!isVisibleItem(position)) return
             val adapter = recyclerView.adapter ?: return
             if (adapter.getItemViewType(position) != itemViewType) return
             val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) ?: return
