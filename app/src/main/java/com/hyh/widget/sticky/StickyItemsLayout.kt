@@ -531,7 +531,7 @@ class StickyItemsLayout : ViewGroup {
 
         protected val attachedItemMap: MutableMap<Int, StickyItem> = TreeMap()
         protected val attachedItemMapBackup: MutableMap<Int, StickyItem?> = LinkedHashMap()
-        protected val stickyItemsBackup: MutableList<StickyItem> = mutableListOf()
+        protected val tempAttachedStickyItems: MutableList<StickyItem> = mutableListOf()
 
         protected val attachedItemTypeMap: MutableMap<Int, MutableList<StickyItem>> = mutableMapOf()
 
@@ -628,19 +628,40 @@ class StickyItemsLayout : ViewGroup {
                 }
             }
 
-            stickyItemsBackup.addAll(attachedItemMap.values)
+            tempAttachedStickyItems.addAll(attachedItemMap.values)
             attachedItemMap.clear()
 
-            fun getStickyItem(itemViewType: Int): StickyItem? {
+            fun getStickyItem(
+                position: Int,
+                itemViewType: Int,
+                changedRange: IntRange?
+            ): StickyItem? {
                 var stickyItem: StickyItem? = null
-                val iterator = stickyItemsBackup.iterator()
+                var stickyItemBackup: StickyItem? = null
+                val iterator = tempAttachedStickyItems.iterator()
+
+                val positionInvalid = changedRange?.contains(position) == true
+
                 while (iterator.hasNext()) {
                     val next = iterator.next()
                     if (itemViewType == next.itemViewType) {
-                        iterator.remove()
-                        stickyItem = next
-                        break
+                        if (positionInvalid || position == next.position) {
+                            iterator.remove()
+                            stickyItem = next
+                            break
+                        } else {
+                            if (stickyItemBackup == null) {
+                                iterator.remove()
+                                stickyItemBackup = next
+                            }
+                        }
                     }
+                }
+                if (stickyItem == null) {
+                    return stickyItemBackup
+                }
+                if (stickyItemBackup != null) {
+                    tempAttachedStickyItems.add(stickyItemBackup)
                 }
                 return stickyItem
             }
@@ -648,10 +669,14 @@ class StickyItemsLayout : ViewGroup {
             attachedItemMapBackup.forEach {
                 val itemViewType = adapter.getItemViewType(it.key)
                 val stickyItem: StickyItem = it.value
-                    ?: getStickyItem(itemViewType).let { item ->
+                    ?: getStickyItem(it.key, itemViewType, changedRange).let { item ->
                         if (item == null) return@let null
-                        createStickyItem(recyclerView, adapter, it.key, item).apply {
-                            bindStickyItemViewHolder(true)
+                        if (it.key == item.position && changedRange?.contains(it.key) != true) {
+                            item
+                        } else {
+                            createStickyItem(recyclerView, adapter, it.key, item).apply {
+                                bindStickyItemViewHolder(true)
+                            }
                         }
                     }
                     ?: createStickyItem(recyclerView, adapter, it.key).apply {
@@ -672,7 +697,7 @@ class StickyItemsLayout : ViewGroup {
                 }
             }
 
-            val iterator = stickyItemsBackup.iterator()
+            val iterator = tempAttachedStickyItems.iterator()
             while (iterator.hasNext()) {
                 val next = iterator.next()
                 next.bindItemViewHolder()
