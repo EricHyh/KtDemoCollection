@@ -1,7 +1,5 @@
 package com.hyh.list.internal
 
-import android.os.Handler
-import android.os.Looper
 import androidx.annotation.CallSuper
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.simpleChannelFlow
