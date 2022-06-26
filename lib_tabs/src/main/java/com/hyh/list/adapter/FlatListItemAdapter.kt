@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.*
  * @data 2021/6/7
  */
 @Suppress("UNCHECKED_CAST")
-class FlatListItemAdapter(
+class FlatListItemAdapter constructor(
     pageContext: PageContext,
     private val onStateChanged: InvokeWithParam<SourceLoadState>
 ) : BaseFlatListItemAdapter() {
@@ -35,9 +35,16 @@ class FlatListItemAdapter(
     val items: List<FlatListItem>?
         get() = _items
 
-    private val _loadStateFlow: SimpleMutableStateFlow<SourceLoadState> = SimpleMutableStateFlow(SourceLoadState.Initial)
-    val loadStateFlow: SimpleStateFlow<SourceLoadState>
+    private val _loadStateFlow: SimpleMutableStateFlow<ItemSourceLoadState> =
+        SimpleMutableStateFlow(ItemSourceLoadState.Initial)
+    val loadStateFlow: SimpleStateFlow<ItemSourceLoadState>
         get() = _loadStateFlow.asStateFlow()
+
+    private val _pagingLoadStateFlow: SimpleMutableStateFlow<PagingSourceLoadState> =
+        SimpleMutableStateFlow(PagingSourceLoadState.Initial)
+    val pagingLoadStateFlow: SimpleStateFlow<PagingSourceLoadState>
+        get() = _pagingLoadStateFlow.asStateFlow()
+
 
     private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> = SimpleMutableStateFlow<Pair<Long, SourceEvent?>>(Pair(0, null))
 
@@ -72,8 +79,8 @@ class FlatListItemAdapter(
                 withContext(mainDispatcher) {
                     when (event) {
                         is SourceEvent.Loading -> {
-                            _loadStateFlow.value = SourceLoadState.Loading
-                            onStateChanged(SourceLoadState.Loading)
+                            _loadStateFlow.value = ItemSourceLoadState.Loading
+                            onStateChanged(ItemSourceLoadState.Loading)
                             event.onReceived()
                         }
                         is SourceEvent.PreShowing -> {
@@ -83,34 +90,49 @@ class FlatListItemAdapter(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.RefreshError -> {
-                            _loadStateFlow.value = SourceLoadState.RefreshError(event.error, event.preShowing)
-                            onStateChanged(SourceLoadState.RefreshError(event.error, event.preShowing))
+                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, event.preShowing)
+                            onStateChanged(ItemSourceLoadState.Error(event.error, event.preShowing))
                             event.onReceived()
                         }
 
+
+                        is SourceEvent.PagingRefreshing -> {
+                            _pagingLoadStateFlow.value = PagingSourceLoadState.Refreshing
+                            _loadStateFlow.value = ItemSourceLoadState.Loading
+                            onStateChanged(PagingSourceLoadState.Refreshing)
+                            event.onReceived()
+                        }
                         is SourceEvent.PagingRefreshSuccess -> {
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
+                        }
+                        is SourceEvent.PagingRefreshError -> {
+                            val refreshError = PagingSourceLoadState.RefreshError(event.error)
+                            _pagingLoadStateFlow.value = refreshError
+                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, false)
+                            onStateChanged(refreshError)
+                            event.onReceived()
+                        }
+
+                        is SourceEvent.PagingAppending -> {
+                            _pagingLoadStateFlow.value = PagingSourceLoadState.Appending
+                            onStateChanged(PagingSourceLoadState.Appending)
+                            event.onReceived()
                         }
                         is SourceEvent.PagingAppendSuccess -> {
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
-                        is SourceEvent.PagingRefreshError -> {
-                            _loadStateFlow.value = SourceLoadState.PagingRefreshError(event.error)
-                            onStateChanged(SourceLoadState.PagingRefreshError(event.error))
-                            event.onReceived()
-                        }
                         is SourceEvent.PagingAppendError -> {
-                            _loadStateFlow.value = SourceLoadState.PagingAppendError(event.error, event.pageIndex)
-                            onStateChanged(SourceLoadState.PagingAppendError(event.error, event.pageIndex))
+                            val appendError = PagingSourceLoadState.AppendError(event.error)
+                            _pagingLoadStateFlow.value = appendError
+                            onStateChanged(appendError)
                             event.onReceived()
                         }
+
                         is SourceEvent.ItemOperate -> {
-                            val processedResult = event.processor.invoke()
-                            _items = processedResult.resultItems
-                            processedResult.onResultUsed()
-                            ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                            event.onReceived()
+                            processResult(event) {}
                         }
+
+                        else -> {}
                     }
                 }
             }
@@ -153,49 +175,71 @@ class FlatListItemAdapter(
         receiver?.destroy()
     }
 
+    private suspend fun processResult(
+        sourceEvent: SourceEvent.ProcessorSourceEvent,
+        onStateChanged: InvokeWithParam<SourceLoadState>
+    ) {
+        val processedResult = sourceEvent.processor.invoke()
+        _items = processedResult.resultItems
+        processedResult.onResultUsed()
+        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
+        createSourceLoadState(sourceEvent, processedResult.resultItems)?.apply {
+            onStateChanged(this)
+        }
+        sourceEvent.onReceived()
+    }
+
+    private fun createSourceLoadState(
+        sourceEvent: SourceEvent.ProcessorSourceEvent,
+        resultItems: List<FlatListItem>,
+    ): SourceLoadState? {
+        return when (sourceEvent) {
+            is SourceEvent.PreShowing -> {
+                ItemSourceLoadState.PreShow(resultItems.size)
+            }
+            is SourceEvent.RefreshSuccess -> {
+                ItemSourceLoadState.Success(resultItems.size)
+            }
+            is SourceEvent.PagingRefreshSuccess -> {
+                PagingSourceLoadState.RefreshSuccess(sourceEvent.endOfPaginationReached)
+            }
+            is SourceEvent.PagingAppendSuccess -> {
+                PagingSourceLoadState.AppendSuccess(sourceEvent.endOfPaginationReached)
+            }
+            is SourceEvent.ItemOperate -> {
+                null
+            }
+            else -> {
+                null
+            }
+        }
+    }
+
     inner class ResultProcessorSnapshot(private val sourceEvent: SourceEvent) {
 
-        private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        private val coroutineScope =
+            CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
         fun handleSourceEvent() {
             coroutineScope.launch {
                 when (sourceEvent) {
-                    is SourceEvent.PreShowing -> {
-                        val processedResult = sourceEvent.processor.invoke()
-                        _items = processedResult.resultItems
-                        processedResult.onResultUsed()
-                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                        _loadStateFlow.value = SourceLoadState.PreShow(processedResult.resultItems.size)
-                        onStateChanged(SourceLoadState.PreShow(processedResult.resultItems.size))
-                        sourceEvent.onReceived()
-                    }
-                    is SourceEvent.RefreshSuccess -> {
-                        val processedResult = sourceEvent.processor.invoke()
-                        _items = processedResult.resultItems
-                        processedResult.onResultUsed()
-                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                        _loadStateFlow.value = SourceLoadState.Success(processedResult.resultItems.size)
-                        onStateChanged(SourceLoadState.Success(processedResult.resultItems.size))
-                        sourceEvent.onReceived()
-                    }
-
-                    is SourceEvent.PagingRefreshSuccess -> {
-                        val processedResult = sourceEvent.processor.invoke()
-                        _items = processedResult.resultItems
-                        processedResult.onResultUsed()
-                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                        _loadStateFlow.value = SourceLoadState.PagingRefreshSuccess(sourceEvent.noMore)
-                        onStateChanged(SourceLoadState.PagingRefreshSuccess(sourceEvent.noMore))
-                        sourceEvent.onReceived()
-                    }
-                    is SourceEvent.PagingAppendSuccess -> {
-                        val processedResult = sourceEvent.processor.invoke()
-                        _items = processedResult.resultItems
-                        processedResult.onResultUsed()
-                        ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
-                        _loadStateFlow.value = SourceLoadState.PagingAppendSuccess(sourceEvent.pageIndex, sourceEvent.noMore)
-                        onStateChanged(SourceLoadState.PagingAppendSuccess(sourceEvent.pageIndex, sourceEvent.noMore))
-                        sourceEvent.onReceived()
+                    is SourceEvent.ProcessorSourceEvent -> {
+                        processResult(sourceEvent) {
+                            when(this){
+                                is ItemSourceLoadState -> {
+                                    _loadStateFlow.value = this
+                                }
+                                is PagingSourceLoadState -> {
+                                    _pagingLoadStateFlow.value = this
+                                    if (sourceEvent is SourceEvent.PagingRefreshSuccess) {
+                                        _loadStateFlow.value = ItemSourceLoadState.Success(
+                                            _items?.size ?: 0
+                                        )
+                                    }
+                                }
+                            }
+                            onStateChanged(this)
+                        }
                     }
                     else -> {
                     }

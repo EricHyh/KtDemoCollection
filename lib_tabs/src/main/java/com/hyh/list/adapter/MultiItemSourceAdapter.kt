@@ -9,10 +9,7 @@ import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.coroutine.SingleRunner
-import com.hyh.list.FlatListItem
-import com.hyh.list.RepoLoadState
-import com.hyh.list.SourceLoadState
-import com.hyh.list.SourceLoadStates
+import com.hyh.list.*
 import com.hyh.list.internal.*
 import com.hyh.page.PageContext
 import kotlinx.coroutines.*
@@ -417,11 +414,16 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
     private fun createSourceLoadStates(): SourceLoadStates {
-        val sourceStateMap = mutableMapOf<Any, SourceLoadState>()
+        val sourceStateMap = mutableMapOf<Any, ItemSourceLoadState>()
+        var pagingSourceLoadState: PagingSourceLoadState = PagingSourceLoadState.Initial
         wrapperMap.forEach {
             sourceStateMap[it.key] = it.value.flatListItemAdapter.loadStateFlow.value
+            val value = it.value.flatListItemAdapter.pagingLoadStateFlow.value
+            if (value != PagingSourceLoadState.Initial) {
+                pagingSourceLoadState = value
+            }
         }
-        return SourceLoadStates(sourceStateMap)
+        return SourceLoadStates(sourceStateMap, pagingSourceLoadState)
     }
 
     // region inner class

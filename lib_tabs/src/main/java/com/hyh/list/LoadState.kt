@@ -21,61 +21,63 @@ sealed class RepoLoadState {
 }
 
 
+interface SourceLoadState
+
+
 /**
  * [ItemSource]的加载状态
  *
  * @author eriche
  * @data 2021/1/29
  */
-sealed class SourceLoadState {
+sealed class ItemSourceLoadState : SourceLoadState {
 
-    object Initial : SourceLoadState()
+    object Initial : ItemSourceLoadState()
 
-    object Loading : SourceLoadState()
+    object Loading : ItemSourceLoadState()
 
-    data class PreShow(val itemCount: Int) : SourceLoadState()
+    data class PreShow(val itemCount: Int) : ItemSourceLoadState()
 
-    data class Success(val itemCount: Int) : SourceLoadState()
+    data class Success(val itemCount: Int) : ItemSourceLoadState()
 
-    data class RefreshError(val error: Throwable, val preShowing: Boolean) : SourceLoadState()
-
-    // region paging
-
-    data class PagingRefreshSuccess(val noMore: Boolean) : SourceLoadState()
-
-    data class PagingRefreshError(val error: Throwable) : SourceLoadState()
-
-    data class PagingAppendError(val error: Throwable, val pageIndex: Int) : SourceLoadState()
-
-    data class PagingAppendSuccess(val pageIndex: Int, val noMore: Boolean) : SourceLoadState()
-
-    // endregion
+    data class Error(val error: Throwable, val preShowing: Boolean) : ItemSourceLoadState()
 
 }
 
 
-class SourceLoadStates(
-    val sourceStateMap: Map<Any, SourceLoadState>
+sealed class PagingSourceLoadState : SourceLoadState {
+
+    object Initial : PagingSourceLoadState()
+
+    object Refreshing : PagingSourceLoadState()
+
+    data class RefreshSuccess(val endOfPaginationReached: Boolean) : PagingSourceLoadState()
+
+    data class RefreshError(val error: Throwable) : PagingSourceLoadState()
+
+    object Appending : PagingSourceLoadState()
+
+    data class AppendError(val error: Throwable) : PagingSourceLoadState()
+
+    data class AppendSuccess(val endOfPaginationReached: Boolean) : PagingSourceLoadState()
+}
+
+
+class SourceLoadStates internal constructor(
+    val itemSourceStateMap: Map<Any, ItemSourceLoadState>,
+    val pagingSourceLoadState: PagingSourceLoadState = PagingSourceLoadState.Initial
 ) {
 
     companion object {
-        val Initial = SourceLoadStates(emptyMap())
+        internal val Initial = SourceLoadStates(emptyMap())
     }
 
-    override fun hashCode(): Int {
-        return sourceStateMap.hashCode()
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (other == null || other !is SourceLoadStates) return false
-        if (this.sourceStateMap.size != other.sourceStateMap.size) return false
-        if (this.sourceStateMap.isEmpty() && other.sourceStateMap.isEmpty()) return true
-        this.sourceStateMap.forEach {
-            if (it.value != other.sourceStateMap[it.key]) {
-                return false
-            }
-        }
-        return true
+    fun isPagingAppendComplete(): Boolean {
+        return (pagingSourceLoadState is PagingSourceLoadState.RefreshSuccess
+                && pagingSourceLoadState.endOfPaginationReached)
+                ||
+                (pagingSourceLoadState is PagingSourceLoadState.AppendSuccess
+                        && pagingSourceLoadState.endOfPaginationReached)
     }
 }
 

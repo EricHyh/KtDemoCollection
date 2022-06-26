@@ -150,8 +150,10 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
 
 
         val param = if (isRefresh) {
+
             ItemPagingSource.LoadParams.Refresh(refreshKeyProvider.invoke())
         } else {
+
             ItemPagingSource.LoadParams.Append(appendKeyProvider.invoke())
         }
 

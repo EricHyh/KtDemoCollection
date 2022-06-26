@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -97,7 +96,7 @@ class TradeTabPageFragment : Fragment() {
         lifecycleScope.launch {
             multiItemSourceAdapter.sourceLoadStatesFlow.collect {
                 Log.d(TAG, "onViewCreated sourceLoadStatesFlow start: $it")
-                it.sourceStateMap.forEach { entry ->
+                it.itemSourceStateMap.forEach { entry ->
                     Log.d(TAG, "onViewCreated sourceLoadStatesFlow: key = ${entry.key}, value = ${entry.value}")
                 }
                 Log.d(TAG, "onViewCreated sourceLoadStatesFlow end: $it")

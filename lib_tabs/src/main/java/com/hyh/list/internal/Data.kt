@@ -61,17 +61,22 @@ class RepoDisplayedData(
 
 sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
+    abstract class ProcessorSourceEvent(
+        val processor: SourceResultProcessor,
+        onReceived: (suspend () -> Unit)
+    ) : SourceEvent(onReceived)
+
     class Loading(onReceived: (suspend () -> Unit) = {}) : SourceEvent(onReceived)
 
     class PreShowing(
-        val processor: SourceResultProcessor,
+        processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
-    ) : SourceEvent(onReceived)
+    ) : ProcessorSourceEvent(processor, onReceived)
 
     class RefreshSuccess(
-        val processor: SourceResultProcessor,
+        processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
-    ) : SourceEvent(onReceived)
+    ) : ProcessorSourceEvent(processor, onReceived)
 
     class RefreshError(
         val error: Throwable,
@@ -81,23 +86,27 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
     // region Paging
 
+    class PagingRefreshing(onReceived: (suspend () -> Unit) = {}) : SourceEvent(onReceived)
+
     class PagingRefreshSuccess(
-        val processor: SourceResultProcessor,
-        val noMore: Boolean,
+        processor: SourceResultProcessor,
+        val endOfPaginationReached: Boolean,
         onReceived: (suspend () -> Unit) = {}
-    ) : SourceEvent(onReceived)
+    ) : ProcessorSourceEvent(processor, onReceived)
 
     class PagingRefreshError(
         val error: Throwable,
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
+    class PagingAppending(onReceived: (suspend () -> Unit) = {}) : SourceEvent(onReceived)
+
     class PagingAppendSuccess(
-        val processor: SourceResultProcessor,
+        processor: SourceResultProcessor,
         val pageIndex: Int,
-        val noMore: Boolean,
+        val endOfPaginationReached: Boolean,
         onReceived: (suspend () -> Unit) = {}
-    ) : SourceEvent(onReceived)
+    ) : ProcessorSourceEvent(processor, onReceived)
 
     class PagingAppendError(
         val error: Throwable,
@@ -108,9 +117,9 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
     // endregion
 
     class ItemOperate(
-        val processor: SourceResultProcessor,
+        processor: SourceResultProcessor,
         onReceived: (suspend () -> Unit) = {}
-    ) : SourceEvent(onReceived)
+    ) : ProcessorSourceEvent(processor, onReceived)
 }
 
 typealias SourceResultProcessor = suspend () -> SourceProcessedResult
