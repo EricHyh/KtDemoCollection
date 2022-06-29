@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hyh.lifecycle.ChildLifecycleOwner
 import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.tabs.BuildConfig
+import com.hyh.tabs.R
 
 /**
  * [RecyclerView]中的一个 Item 对象，负责数据及 UI 渲染
@@ -252,7 +253,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
         }
 
         fun onBindViewHolder(viewHolder: VH) {
-
+            viewHolder.itemView.setTag(R.id.flat_list_bound_item_tag_id, this@IFlatListItem)
         }
 
         fun onViewDetachedFromWindow(viewHolder: VH) {
@@ -317,3 +318,9 @@ typealias TypedViewHolderFactory<VH> = (parent: ViewGroup) -> VH
  * 进一步缩短[TypedViewHolderFactory]
  */
 typealias ViewHolderFactory = TypedViewHolderFactory<out RecyclerView.ViewHolder>
+
+
+inline fun <reified T : FlatListItem> RecyclerView.ViewHolder.runWithModel(crossinline block: (T) -> Unit) {
+    val item = this.itemView.getTag(R.id.flat_list_bound_item_tag_id) as? T
+    item?.let { block.invoke(it) }
+}

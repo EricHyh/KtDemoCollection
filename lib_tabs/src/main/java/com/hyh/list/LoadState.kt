@@ -1,5 +1,8 @@
 package com.hyh.list
 
+import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.CoroutineScope
+
 /**
  * [ItemSourceRepo]的加载状态
  *
@@ -64,12 +67,16 @@ sealed class PagingSourceLoadState : SourceLoadState {
 
 
 class SourceLoadStates internal constructor(
-    val itemSourceStateMap: Map<Any, ItemSourceLoadState>,
+    val sourceStateMap: Map<Any, ItemSourceLoadState>,
     val pagingSourceLoadState: PagingSourceLoadState = PagingSourceLoadState.Initial
 ) {
 
     companion object {
         internal val Initial = SourceLoadStates(emptyMap())
+    }
+
+    fun hasSuccessState(): Boolean {
+        return sourceStateMap.values.find { it is ItemSourceLoadState.Success } != null
     }
 
     fun isPagingAppendComplete(): Boolean {

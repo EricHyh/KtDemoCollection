@@ -1,5 +1,7 @@
 package com.hyh.list.adapter
 
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.InvokeWithParam
 import com.hyh.coroutine.*
@@ -19,7 +21,7 @@ import kotlinx.coroutines.flow.*
  */
 @Suppress("UNCHECKED_CAST")
 class FlatListItemAdapter constructor(
-    pageContext: PageContext,
+    lifecycleOwner: LifecycleOwner,
     private val onStateChanged: InvokeWithParam<SourceLoadState>
 ) : BaseFlatListItemAdapter() {
 
@@ -52,7 +54,7 @@ class FlatListItemAdapter constructor(
 
 
     init {
-        pageContext.lifecycleScope.launch {
+        lifecycleOwner.lifecycleScope.launch {
             resultFlow
                 .asStateFlow()
                 .map { it.second }

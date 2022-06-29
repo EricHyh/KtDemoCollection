@@ -3,6 +3,10 @@ package com.hyh.list.adapter
 import android.annotation.SuppressLint
 import android.util.Log
 import android.view.View
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.coroutine.CloseableCoroutineScope
@@ -24,12 +28,14 @@ import kotlin.collections.LinkedHashMap
  * @data 2021/6/7
  */
 class MultiItemSourceAdapter<Param : Any>(
-    private val pageContext: PageContext
+    private val lifecycleOwner: LifecycleOwner
 ) : MultiSourceAdapter(), IListAdapter<Param> {
 
     companion object {
         private const val TAG = "MultiItemSourceAdapter"
     }
+
+    constructor(pageContext: PageContext) : this(pageContext.lifecycleOwner)
 
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
@@ -80,16 +86,26 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
     init {
-        pageContext.invokeOnDestroy {
-            wrapperMap.forEach {
-                it.value.destroy()
+        if (lifecycleOwner.lifecycle.currentState > Lifecycle.State.DESTROYED) {
+            lifecycleOwner.lifecycle.addObserver(ListLifecycleEventObserver())
+        }
+    }
+
+    inner class ListLifecycleEventObserver : LifecycleEventObserver {
+
+        override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+            if (event == Lifecycle.Event.ON_DESTROY) {
+                source.lifecycle.removeObserver(this)
+                wrapperMap.forEach {
+                    it.value.destroy()
+                }
+                receiver?.destroy()
             }
-            receiver?.destroy()
         }
     }
 
     override fun submitData(flow: Flow<RepoData<Param>>) {
-        pageContext
+        lifecycleOwner
             .lifecycleScope
             .launch {
                 flow.collectLatest {
@@ -243,7 +259,7 @@ class MultiItemSourceAdapter<Param : Any>(
             val newReceiver = data.receiver
             if (oldReceiver != newReceiver) {
                 Log.i(TAG, "submitData: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver")
-                newReceiver.injectParentLifecycle(pageContext.lifecycleOwner.lifecycle)
+                newReceiver.injectParentLifecycle(lifecycleOwner.lifecycle)
                 oldReceiver?.destroy()
                 receiver = newReceiver
             }
@@ -405,7 +421,7 @@ class MultiItemSourceAdapter<Param : Any>(
     private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
-            FlatListItemAdapter(pageContext) {
+            FlatListItemAdapter(lifecycleOwner) {
                 onStateChanged(sourceData.sourceToken, this)
             },
             viewTypeStorage,

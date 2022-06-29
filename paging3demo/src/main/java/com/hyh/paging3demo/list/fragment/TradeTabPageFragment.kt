@@ -96,7 +96,7 @@ class TradeTabPageFragment : Fragment() {
         lifecycleScope.launch {
             multiItemSourceAdapter.sourceLoadStatesFlow.collect {
                 Log.d(TAG, "onViewCreated sourceLoadStatesFlow start: $it")
-                it.itemSourceStateMap.forEach { entry ->
+                it.sourceStateMap.forEach { entry ->
                     Log.d(TAG, "onViewCreated sourceLoadStatesFlow: key = ${entry.key}, value = ${entry.value}")
                 }
                 Log.d(TAG, "onViewCreated sourceLoadStatesFlow end: $it")
