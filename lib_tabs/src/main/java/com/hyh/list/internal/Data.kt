@@ -124,7 +124,7 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
 
 typealias SourceResultProcessor = suspend () -> SourceProcessedResult
 
-data class SourceProcessedResult(
+data class SourceProcessedResult constructor(
     val resultItems: List<FlatListItem>,
     val listOperates: List<ListOperate>,
     val onResultUsed: Invoke
@@ -133,18 +133,10 @@ data class SourceProcessedResult(
 /**
  * 展示在界面上的列表数据
  *
- * @param Item
- * @property originalItems
  * @property flatListItems
  * @property resultExtra
  */
-open class SourceDisplayedData<Item : Any>(
-
-    /**
-     * 原始数据
-     */
-    @Volatile
-    var originalItems: List<Item>? = null,
+open class SourceDisplayedData(
 
     /**
      * 将原始数据转换成[FlatListItem]之后的数据
@@ -160,10 +152,10 @@ open class SourceDisplayedData<Item : Any>(
 )
 
 
-class PagingSourceDisplayedData<Param : Any, Item : Any> : SourceDisplayedData<Item>() {
+class PagingSourceDisplayedData<Param : Any> : SourceDisplayedData() {
 
     @Volatile
-    var pagingList: List<Paging<Param, Item>> = emptyList()
+    var pagingList: List<Paging<Param>> = emptyList()
 
     val noMore
         get() = lastPaging?.noMore ?: false
@@ -174,17 +166,12 @@ class PagingSourceDisplayedData<Param : Any, Item : Any> : SourceDisplayedData<I
     val pagingSize: Int
         get() = pagingList.size
 
-    val lastPaging: Paging<Param, Item>?
+    val lastPaging: Paging<Param>?
         get() = pagingList.lastOrNull()
 }
 
 
-class Paging<Param : Any, Item : Any> constructor(
-    /**
-     * 原始数据
-     */
-    @Volatile
-    var originalItems: List<Item>? = null,
+class Paging<Param : Any> constructor(
 
     /**
      * 将原始数据转换成[FlatListItem]之后的数据

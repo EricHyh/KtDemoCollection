@@ -18,7 +18,7 @@ class PagingSourceItemFetcher<Param : Any, Item : Any>(
     private val pagingSource: ItemPagingSource<Param, Item>
 ) : BaseItemFetcher<ItemPagingSource.LoadParams<Param>, Item>(pagingSource) {
 
-    override val sourceDisplayedData: PagingSourceDisplayedData<Param, Item> =
+    override val sourceDisplayedData: PagingSourceDisplayedData<Param> =
         PagingSourceDisplayedData()
 
     inner class ItemFetcherUiReceiver : BaseUiReceiverForSource() {
@@ -108,15 +108,15 @@ class PagingSourceItemFetcher<Param : Any, Item : Any>(
 
 
 class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
-    private val displayedData: PagingSourceDisplayedData<Param, Item>,
+    private val displayedData: PagingSourceDisplayedData<Param>,
     private val refreshKeyProvider: RefreshKeyProvider<Param>,
     private val appendKeyProvider: AppendKeyProvider<Param>,
     private val loader: PagingSourceLoader<Param, Item>,
     private val onRefreshComplete: Invoke,
     private val onAppendComplete: Invoke,
     private val delegate: BaseItemSource.Delegate<ItemPagingSource.LoadParams<Param>, Item>,
-    private val fetchDispatcherProvider: DispatcherProvider<ItemPagingSource.LoadParams<Param>, Item>,
-    private val processDataDispatcherProvider: DispatcherProvider<ItemPagingSource.LoadParams<Param>, Item>,
+    private val fetchDispatcherProvider: DispatcherProvider<ItemPagingSource.LoadParams<Param>>,
+    private val processDataDispatcherProvider: DispatcherProvider<ItemPagingSource.LoadParams<Param>>,
     private val forceRefresh: Boolean = false
 ) {
 
@@ -224,19 +224,17 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
             val noMore = success.noMore
 
             delegate.onProcessResult(
-                items,
+                flatListItems,
                 resultExtra,
                 displayedData
             )
 
             return SourceProcessedResult(flatListItems, listOf(ListOperate.OnAllChanged)) {
-                val originalItems = displayedData.originalItems
-                displayedData.originalItems = items
+                val oldItems = displayedData.flatListItems
                 displayedData.flatListItems = flatListItems
                 displayedData.resultExtra = resultExtra
                 displayedData.pagingList = listOf(
                     Paging(
-                        originalItems = items,
                         flatListItems = flatListItems,
                         param = param.param,
                         nextParam = nextParam,
@@ -249,10 +247,10 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
                 }
 
                 delegate.run {
-                    if (originalItems?.isNotEmpty() == true) {
-                        onItemsRecycled(originalItems)
+                    if (oldItems?.isNotEmpty() == true) {
+                        onItemsRecycled(oldItems)
                     }
-                    onItemsDisplayed(items)
+                    onItemsDisplayed(flatListItems)
                 }
 
                 delegate.onResultDisplayed(displayedData)
@@ -286,15 +284,14 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
             val noMore = success.noMore
 
 
-            val oldItems = displayedData.originalItems ?: emptyList()
+            val oldItems = displayedData.flatListItems ?: emptyList()
             val oldFlatListItems = displayedData.flatListItems ?: emptyList()
 
-            val resultItems = oldItems + items
             val resultFlatListItems = oldFlatListItems + flatListItems
 
 
             delegate.onProcessResult(
-                resultItems,
+                resultFlatListItems,
                 resultExtra,
                 displayedData
             )
@@ -303,14 +300,12 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
                 resultFlatListItems,
                 listOf(ListOperate.OnInserted(oldItems.size, items.size))
             ) {
-                displayedData.originalItems = resultItems
                 displayedData.flatListItems = resultFlatListItems
                 displayedData.resultExtra = resultExtra
 
                 val pagingList = displayedData.pagingList
 
                 displayedData.pagingList = pagingList + Paging(
-                    originalItems = items,
                     flatListItems = flatListItems,
                     param = param.param,
                     nextParam = nextParam,
@@ -323,12 +318,11 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
                 }
 
                 delegate.run {
-                    onItemsDisplayed(items)
+                    onItemsDisplayed(flatListItems)
                 }
 
                 delegate.onResultDisplayed(displayedData)
             }
-
         }
 
         return run@{
@@ -347,7 +341,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
     private fun shouldUseDispatcher(
         items: List<Item>
     ): Boolean {
-        return !displayedData.originalItems.isNullOrEmpty() && items.isNotEmpty()
+        return !displayedData.flatListItems.isNullOrEmpty() && items.isNotEmpty()
     }
 }
 

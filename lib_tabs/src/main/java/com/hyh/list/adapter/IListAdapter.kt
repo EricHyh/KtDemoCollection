@@ -2,6 +2,7 @@ package com.hyh.list.adapter
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.InvokeWithParam
 import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.list.FlatListItem
 import com.hyh.list.RepoLoadState
@@ -55,13 +56,16 @@ interface IListAdapter<Param : Any> {
 
     fun moveSourceItem(sourceToken: Any, from: Int, to: Int): Boolean
 
-    fun removeItem(sourceToken: Any, position: Int)
+    fun removeItem(sourceToken: Any, position: Int, count: Int = 1)
 
     fun removeItem(sourceToken: Any, item: FlatListItem)
 
+    fun invokeOnItemDisplayed(predicate: (FlatListItem) -> Boolean, invoke: InvokeWithParam<ItemLocalInfo>)
+
 }
 
-data class ItemLocalInfo(
+data class ItemLocalInfo constructor(
+    val globalPosition: Int,
     val sourceToken: Any,
     val localPosition: Int,
     val sourceItemCount: Int,

@@ -23,8 +23,8 @@ abstract class ItemSource<Param : Any, Item : Any> : BaseItemSource<Param, Item>
 
     open fun getRefreshStrategy(): RefreshStrategy = RefreshStrategy.CancelLast
     abstract suspend fun getParam(): Param
-    abstract suspend fun getPreShow(params: PreShowParams<Param, Item>): PreShowResult<Item>
-    abstract suspend fun load(params: LoadParams<Param, Item>): LoadResult<Item>
+    abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult<Item>
+    abstract suspend fun load(params: LoadParams<Param>): LoadResult<Item>
 
     sealed class PreShowResult<Item : Any> {
 
@@ -71,13 +71,13 @@ abstract class ItemSource<Param : Any, Item : Any> : BaseItemSource<Param, Item>
         }
     }
 
-    class PreShowParams<Param : Any, Item : Any>(
+    class PreShowParams<Param : Any>(
         val param: Param,
-        val displayedData: SourceDisplayedData<Item>
+        val displayedData: SourceDisplayedData
     )
 
-    class LoadParams<Param : Any, Item : Any>(
+    class LoadParams<Param : Any>(
         val param: Param,
-        val displayedData: SourceDisplayedData<Item>
+        val displayedData: SourceDisplayedData
     )
 }

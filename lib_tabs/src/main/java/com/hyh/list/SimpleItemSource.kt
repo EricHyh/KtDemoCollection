@@ -48,15 +48,15 @@ abstract class SimpleItemSource<Param : Any> : ItemSource<Param, FlatListItem>()
         }
     }
 
-    override suspend fun getPreShow(params: PreShowParams<Param, FlatListItem>): PreShowResult<FlatListItem> {
-        return if (params.displayedData.originalItems == null) {
+    override suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult<FlatListItem> {
+        return if (params.displayedData.flatListItems == null) {
             getPreShow(params.param)
         } else {
             PreShowResult.Unused()
         }
     }
 
-    override suspend fun load(params: LoadParams<Param, FlatListItem>): LoadResult<FlatListItem> {
+    override suspend fun load(params: LoadParams<Param>): LoadResult<FlatListItem> {
         return load(params.param)
     }
 

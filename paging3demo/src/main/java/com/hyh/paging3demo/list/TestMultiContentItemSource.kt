@@ -84,7 +84,7 @@ class TestMultiContentItemSource(override val sourceToken: Any) : MultiContentIt
         return selectedTab
     }
 
-    override fun getFetchDispatcher(param: Int, displayedData: SourceDisplayedData<ListItemWrapper>): CoroutineDispatcher {
+    override fun getFetchDispatcher(param: Int, displayedData: SourceDisplayedData): CoroutineDispatcher {
         return Dispatchers.IO
     }
 

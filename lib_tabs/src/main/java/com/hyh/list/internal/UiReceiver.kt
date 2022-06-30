@@ -27,7 +27,7 @@ interface UiReceiverForSource {
 
     fun removeItem(item: FlatListItem)
 
-    fun removeItem(position: Int)
+    fun removeItem(position: Int, count: Int)
 
     fun move(from: Int, to: Int)
 

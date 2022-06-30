@@ -181,6 +181,16 @@ object ListUpdate {
         return true
     }
 
+    fun <E> remove(list: MutableList<E>, fromIndex: Int, count: Int): List<E> {
+        if (fromIndex !in list.indices) return emptyList()
+        if ((fromIndex + count - 1) !in list.indices) return emptyList()
+        val removed = mutableListOf<E>()
+        while (removed.size < count) {
+            removed.add(list.removeAt(fromIndex))
+        }
+        return removed
+    }
+
     fun handleListOperates(listOperates: List<ListOperate>, adapter: RecyclerView.Adapter<*>) {
         listOperates.forEach {
             when (it) {

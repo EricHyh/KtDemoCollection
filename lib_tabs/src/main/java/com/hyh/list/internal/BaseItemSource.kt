@@ -6,6 +6,7 @@ import com.hyh.RefreshActuator
 import com.hyh.lifecycle.ChildLifecycleOwner
 import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.FlatListItem
+import com.hyh.list.IFlatListItem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -21,10 +22,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
         override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
-        private var displayedData: SourceDisplayedData<Item>? = null
-
-        override val displayedOriginalItemsSnapshot: List<Item>?
-            get() = displayedData?.originalItems
+        private var displayedData: SourceDisplayedData? = null
 
         override val displayedFlatListItemsSnapshot: List<FlatListItem>?
             get() = displayedData?.flatListItems
@@ -47,7 +45,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
             _refreshActuator = refreshActuator
         }
 
-        override fun getElementDiff(): IElementDiff<Item> {
+        override fun getElementDiff(): IElementDiff<FlatListItem> {
             return this@BaseItemSource.getElementDiff()
         }
 
@@ -63,27 +61,27 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
             onUpdateItemSource(newItemSource)
         }
 
-        override fun onItemsDisplayed(items: List<Item>) {
+        override fun onItemsDisplayed(items: List<FlatListItem>) {
             return this@BaseItemSource.onItemsDisplayed(items)
         }
 
-        override fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>) {
+        override fun onItemsChanged(changes: List<Triple<FlatListItem, FlatListItem, Any?>>) {
             return this@BaseItemSource.onItemsChanged(changes)
         }
 
-        override fun onItemsRecycled(items: List<Item>) {
+        override fun onItemsRecycled(items: List<FlatListItem>) {
             return this@BaseItemSource.onItemsRecycled(items)
         }
 
         override fun onProcessResult(
-            resultItems: List<Item>,
+            resultItems: List<FlatListItem>,
             resultExtra: Any?,
-            displayedData: SourceDisplayedData<Item>
+            displayedData: SourceDisplayedData
         ) {
             return this@BaseItemSource.onProcessResult(resultItems, resultExtra, displayedData)
         }
 
-        override fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {
+        override fun onResultDisplayed(displayedData: SourceDisplayedData) {
             this.displayedData = displayedData
             return this@BaseItemSource.onResultDisplayed(displayedData)
         }
@@ -100,9 +98,6 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
             this@BaseItemSource.onDetached()
         }
     }
-
-    protected val displayedOriginalItemsSnapshot: List<Item>?
-        get() = delegate.displayedOriginalItemsSnapshot
 
     protected val displayedFlatListItemsSnapshot: List<FlatListItem>?
         get() = delegate.displayedFlatListItemsSnapshot
@@ -131,39 +126,37 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
     protected open fun onUpdateItemSource(newItemSource: BaseItemSource<Param, Item>) {}
 
 
-    protected abstract fun getElementDiff(): IElementDiff<Item>
+    protected abstract fun getElementDiff(): IElementDiff<FlatListItem>
     protected abstract fun mapItems(items: List<Item>): List<FlatListItem>
-    protected abstract fun onItemsDisplayed(items: List<Item>)
-    protected abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)
-    protected abstract fun onItemsRecycled(items: List<Item>)
+    protected abstract fun onItemsDisplayed(items: List<FlatListItem>)
+    protected abstract fun onItemsChanged(changes: List<Triple<FlatListItem, FlatListItem, Any?>>)
+    protected abstract fun onItemsRecycled(items: List<FlatListItem>)
 
 
     protected open fun onProcessResult(
-        resultItems: List<Item>,
+        resultItems: List<FlatListItem>,
         resultExtra: Any?,
-        displayedData: SourceDisplayedData<Item>
+        displayedData: SourceDisplayedData
     ) {
     }
 
-    protected open fun onResultDisplayed(displayedData: SourceDisplayedData<Item>) {}
+    protected open fun onResultDisplayed(displayedData: SourceDisplayedData) {}
 
     open fun getFetchDispatcher(
         param: Param,
-        displayedData: SourceDisplayedData<Item>
+        displayedData: SourceDisplayedData
     ): CoroutineDispatcher =
         Dispatchers.Unconfined
 
     open fun getProcessDataDispatcher(
         param: Param,
-        displayedData: SourceDisplayedData<Item>
+        displayedData: SourceDisplayedData
     ): CoroutineDispatcher =
         getFetchDispatcher(param, displayedData)
 
     protected open fun onDetached() {}
 
     abstract class Delegate<Param : Any, Item : Any> : IChildLifecycleOwner {
-
-        abstract val displayedOriginalItemsSnapshot: List<Item>?
 
         abstract val displayedFlatListItemsSnapshot: List<FlatListItem>?
 
@@ -173,23 +166,23 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
 
-        abstract fun getElementDiff(): IElementDiff<Item>
+        abstract fun getElementDiff(): IElementDiff<FlatListItem>
         abstract fun mapItems(items: List<Item>): List<FlatListItem>
 
         abstract fun areSourceTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean
         abstract fun updateItemSource(newItemSource: BaseItemSource<Param, Item>)
 
-        abstract fun onItemsDisplayed(items: List<Item>)
-        abstract fun onItemsChanged(changes: List<Triple<Item, Item, Any?>>)
-        abstract fun onItemsRecycled(items: List<Item>)
+        abstract fun onItemsDisplayed(items: List<FlatListItem>)
+        abstract fun onItemsChanged(changes: List<Triple<FlatListItem, FlatListItem, Any?>>)
+        abstract fun onItemsRecycled(items: List<FlatListItem>)
 
         abstract fun onProcessResult(
-            resultItems: List<Item>,
+            resultItems: List<FlatListItem>,
             resultExtra: Any?,
-            displayedData: SourceDisplayedData<Item>
+            displayedData: SourceDisplayedData
         )
 
-        abstract fun onResultDisplayed(displayedData: SourceDisplayedData<Item>)
+        abstract fun onResultDisplayed(displayedData: SourceDisplayedData)
 
         abstract fun detach()
 

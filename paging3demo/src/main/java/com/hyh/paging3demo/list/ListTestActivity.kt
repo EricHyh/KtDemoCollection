@@ -48,6 +48,9 @@ class ListTestActivity : AppCompatActivity() {
         recyclerView.adapter = multiSourceAdapter
         recyclerView.itemAnimator = null
 
+
+
+
         Handler().postDelayed({
             multiSourceAdapter.submitData(NumItemSourceRepo().flow)
         }, 2000)

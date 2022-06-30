@@ -86,18 +86,18 @@ class ItemFetcher<Param : Any, Item : Any>(
         return itemSource.getParam()
     }
 
-    private suspend fun getPreShow(params: ItemSource.PreShowParams<Param, Item>): ItemSource.PreShowResult<Item> {
+    private suspend fun getPreShow(params: ItemSource.PreShowParams<Param>): ItemSource.PreShowResult<Item> {
         return itemSource.getPreShow(params)
     }
 
-    private suspend fun load(params: ItemSource.LoadParams<Param, Item>): ItemSource.LoadResult<Item> {
+    private suspend fun load(params: ItemSource.LoadParams<Param>): ItemSource.LoadResult<Item> {
         return itemSource.load(params)
     }
 }
 
 
 class SourceResultProcessorGenerator<Param : Any, Item : Any>(
-    private val sourceDisplayedData: SourceDisplayedData<Item>,
+    private val sourceDisplayedData: SourceDisplayedData,
     private val items: List<Item>,
     private val resultExtra: Any?,
     private val dispatcher: CoroutineDispatcher?,
@@ -116,18 +116,21 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
 
     private fun shouldUseDispatcher(): Boolean {
         return (dispatcher != null
-                && !sourceDisplayedData.originalItems.isNullOrEmpty()
+                && !sourceDisplayedData.flatListItems.isNullOrEmpty()
                 && items.isNotEmpty())
     }
 
     private fun processResult(): SourceProcessedResult {
+
+        val newItems = delegate.mapItems(items)
+
         val updateResult = ListUpdate.calculateDiff(
-            sourceDisplayedData.originalItems,
-            items,
+            sourceDisplayedData.flatListItems,
+            newItems,
             delegate.getElementDiff()
         )
 
-        val flatListItems = delegate.mapItems(updateResult.resultList)
+        val flatListItems = updateResult.resultList
 
         delegate.onProcessResult(
             updateResult.resultList,
@@ -136,7 +139,6 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
         )
 
         return SourceProcessedResult(flatListItems, updateResult.listOperates) {
-            sourceDisplayedData.originalItems = updateResult.resultList
             sourceDisplayedData.flatListItems = flatListItems
             sourceDisplayedData.resultExtra = resultExtra
 
@@ -158,12 +160,12 @@ class SourceResultProcessorGenerator<Param : Any, Item : Any>(
 
 
 class ItemFetcherSnapshot<Param : Any, Item : Any>(
-    private val displayedData: SourceDisplayedData<Item>,
+    private val displayedData: SourceDisplayedData,
     private val paramProvider: ParamProvider<Param>,
     private val preShowLoader: PreShowLoader<Param, Item>,
     private val loader: ItemLoader<Param, Item>,
-    private val fetchDispatcherProvider: DispatcherProvider<Param, Item>,
-    private val processDataDispatcherProvider: DispatcherProvider<Param, Item>,
+    private val fetchDispatcherProvider: DispatcherProvider<Param>,
+    private val processDataDispatcherProvider: DispatcherProvider<Param>,
     private val onRefreshComplete: Invoke,
     private val delegate: BaseItemSource.Delegate<Param, Item>
 ) {
@@ -269,5 +271,5 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
 }
 
 internal typealias ParamProvider<Param> = (suspend () -> Param)
-internal typealias PreShowLoader<Param, Item> = (suspend (params: ItemSource.PreShowParams<Param, Item>) -> ItemSource.PreShowResult<Item>)
-internal typealias ItemLoader<Param, Item> = (suspend (param: ItemSource.LoadParams<Param, Item>) -> ItemSource.LoadResult<Item>)
+internal typealias PreShowLoader<Param, Item> = (suspend (params: ItemSource.PreShowParams<Param>) -> ItemSource.PreShowResult<Item>)
+internal typealias ItemLoader<Param, Item> = (suspend (param: ItemSource.LoadParams<Param>) -> ItemSource.LoadResult<Item>)

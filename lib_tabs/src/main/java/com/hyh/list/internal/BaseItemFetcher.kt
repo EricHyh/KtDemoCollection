@@ -13,7 +13,7 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
     open val itemSource: BaseItemSource<Param, Item>
 ) {
 
-    protected open val sourceDisplayedData = SourceDisplayedData<Item>()
+    protected open val sourceDisplayedData = SourceDisplayedData()
 
     protected abstract val uiReceiver: BaseUiReceiverForSource
 
@@ -41,7 +41,6 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
 
     protected abstract suspend fun SendChannel<SourceData>.initChannelFlow()
 
-
     fun refresh(important: Boolean) {
         uiReceiver.refresh(important)
     }
@@ -50,31 +49,31 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
         uiReceiver.removeItem(item)
     }
 
-    fun removeItem(position: Int) {
-        uiReceiver.removeItem(position)
+    fun removeItem(position: Int, count: Int = 1) {
+        uiReceiver.removeItem(position, count)
     }
 
     fun move(from: Int, to: Int) {
         uiReceiver.move(from, to)
     }
 
-    protected fun getFetchDispatcherProvider(): DispatcherProvider<Param, Item> = ::getFetchDispatcher
-    protected fun getProcessDataDispatcherProvider(): DispatcherProvider<Param, Item> = ::getProcessDataDispatcher
-    private fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
+    protected fun getFetchDispatcherProvider(): DispatcherProvider<Param> = ::getFetchDispatcher
+    protected fun getProcessDataDispatcherProvider(): DispatcherProvider<Param> = ::getProcessDataDispatcher
+    private fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData): CoroutineDispatcher {
         return itemSource.getFetchDispatcher(param, displayedData)
     }
 
-    private fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData<Item>): CoroutineDispatcher {
+    private fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData): CoroutineDispatcher {
         return itemSource.getProcessDataDispatcher(param, displayedData)
     }
 
     private fun createSourceResultProcessor(event: OperateItemEvent): SourceResultProcessor? {
         return when (event) {
-            is OperateItemEvent.RemoveItemByData -> {
-                removeItemByDataProcessor(event)
+            is OperateItemEvent.RemoveItem -> {
+                removeItemProcessor(event)
             }
-            is OperateItemEvent.RemoveItemByPosition -> {
-                removeItemByPositionProcessor(event)
+            is OperateItemEvent.RemoveItems -> {
+                removeItemsProcessor(event)
             }
             is OperateItemEvent.MoveItem -> {
                 moveItemProcessor(event)
@@ -83,49 +82,79 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
         }
     }
 
-    private fun removeItemByDataProcessor(event: OperateItemEvent.RemoveItemByData): SourceResultProcessor {
+    private fun removeItemProcessor(event: OperateItemEvent.RemoveItem): SourceResultProcessor {
         val item = event.item
         val flatListItems = sourceDisplayedData.flatListItems
         val index = flatListItems?.indexOf(item) ?: -1
-        return removeItemByPositionProcessor(OperateItemEvent.RemoveItemByPosition(index))
+        return removeItemsProcessor(OperateItemEvent.RemoveItems(index, 1))
     }
 
-    private fun removeItemByPositionProcessor(event: OperateItemEvent.RemoveItemByPosition): SourceResultProcessor {
+    private fun removeItemsProcessor(event: OperateItemEvent.RemoveItems): SourceResultProcessor {
         return run@{
             val position = event.position
+            val count = event.count
             val flatListItems = sourceDisplayedData.flatListItems ?: emptyList()
             val index = if (position in flatListItems.indices) position else -1
+
             if (index < 0) {
                 return@run SourceProcessedResult(flatListItems, emptyList()) {}
             } else {
-                val newOriginalItems = sourceDisplayedData.originalItems?.toMutableList()
                 val newFlatListItems = sourceDisplayedData.flatListItems?.toMutableList()
-                if (newOriginalItems == null || newFlatListItems == null) {
+                    ?: return@run SourceProcessedResult(flatListItems, emptyList()) {}
+                if (index !in newFlatListItems.indices) {
                     return@run SourceProcessedResult(flatListItems, emptyList()) {}
                 }
-                if (index !in newOriginalItems.indices) {
+
+                val removedItems = ListUpdate.remove(newFlatListItems, position, count)
+                if (removedItems.isEmpty()) {
                     return@run SourceProcessedResult(flatListItems, emptyList()) {}
                 }
-                val originalItem = newOriginalItems.removeAt(index)
-                newFlatListItems.removeAt(index)
 
                 itemSource.delegate.onProcessResult(
-                    newOriginalItems,
+                    newFlatListItems,
                     sourceDisplayedData.resultExtra,
                     sourceDisplayedData
                 )
 
                 return@run SourceProcessedResult(
                     newFlatListItems,
-                    listOf(ListOperate.OnRemoved(index, 1))
+                    listOf(ListOperate.OnRemoved(index, count))
                 ) {
-                    sourceDisplayedData.originalItems = newOriginalItems
                     sourceDisplayedData.flatListItems = newFlatListItems
 
                     itemSource.delegate.run {
-                        onItemsRecycled(listOf(originalItem))
+                        onItemsRecycled(removedItems)
                         onResultDisplayed(sourceDisplayedData)
                     }
+                }
+            }
+        }
+    }
+
+    private fun insertItemsProcessor(event: OperateItemEvent.InsertItems): SourceResultProcessor {
+        return run@{
+            val position = event.position
+            val flatListItems = sourceDisplayedData.flatListItems ?: emptyList()
+            if (position != 0 && position !in flatListItems.indices) {
+                return@run SourceProcessedResult(flatListItems, emptyList()) {}
+            }
+            val newFlatListItems = flatListItems + event.items
+
+            itemSource.delegate.onProcessResult(
+                newFlatListItems,
+                sourceDisplayedData.resultExtra,
+                sourceDisplayedData
+            )
+
+            return@run SourceProcessedResult(
+                newFlatListItems,
+                listOf(ListOperate.OnInserted(position, event.items.size))
+            ) {
+                sourceDisplayedData.flatListItems = newFlatListItems
+
+                itemSource.delegate.run {
+                    onItemsDisplayed(event.items)
+                    onResultDisplayed(sourceDisplayedData)
                 }
             }
         }
@@ -141,18 +170,11 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
                 && from in flatListItems.indices
                 && to in flatListItems.indices
             ) {
-                val newOriginalItems = sourceDisplayedData.originalItems?.toMutableList()
                 val newFlatListItems = sourceDisplayedData.flatListItems?.toMutableList()
-                if (newOriginalItems != null
-                    && newFlatListItems != null
-                    && newOriginalItems.size == newFlatListItems.size
-                ) {
-                    if (ListUpdate.move(newOriginalItems, from, to)
-                        && ListUpdate.move(newFlatListItems, from, to)
-                    ) {
-
+                if (newFlatListItems != null) {
+                    if (ListUpdate.move(newFlatListItems, from, to)) {
                         itemSource.delegate.onProcessResult(
-                            newOriginalItems,
+                            newFlatListItems,
                             sourceDisplayedData.resultExtra,
                             sourceDisplayedData
                         )
@@ -161,7 +183,6 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
                             newFlatListItems,
                             listOf(ListOperate.OnMoved(from, to))
                         ) {
-                            sourceDisplayedData.originalItems = newOriginalItems
                             sourceDisplayedData.flatListItems = newFlatListItems
                             itemSource.delegate.run {
                                 onResultDisplayed(sourceDisplayedData)
@@ -184,11 +205,11 @@ abstract class BaseUiReceiverForSource : UiReceiverForSource {
     val eventFlow = eventState.asStateFlow()
 
     override fun removeItem(item: FlatListItem) {
-        eventState.value = OperateItemEvent.RemoveItemByData(item)
+        eventState.value = OperateItemEvent.RemoveItem(item)
     }
 
-    override fun removeItem(position: Int) {
-        eventState.value = OperateItemEvent.RemoveItemByPosition(position)
+    override fun removeItem(position: Int, count: Int) {
+        eventState.value = OperateItemEvent.RemoveItems(position, count)
     }
 
     override fun move(from: Int, to: Int) {
@@ -206,12 +227,14 @@ sealed class OperateItemEvent {
 
     object Initial : OperateItemEvent()
 
-    class RemoveItemByData(val item: FlatListItem) : OperateItemEvent()
+    class RemoveItem(val item: FlatListItem) : OperateItemEvent()
 
-    class RemoveItemByPosition(val position: Int) : OperateItemEvent()
+    class RemoveItems(val position: Int, val count: Int) : OperateItemEvent()
+
+    class InsertItems(val position: Int, val items: List<FlatListItem>) : OperateItemEvent()
 
     class MoveItem(val from: Int, val to: Int) : OperateItemEvent()
 
 }
 
-internal typealias DispatcherProvider<Param, Item> = ((Param, SourceDisplayedData<Item>) -> CoroutineDispatcher?)
+internal typealias DispatcherProvider<Param> = ((Param, SourceDisplayedData) -> CoroutineDispatcher?)

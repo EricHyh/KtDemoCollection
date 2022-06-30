@@ -359,7 +359,7 @@ abstract class MultiSourceAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder
     // endregion
 }
 
-open class AdapterWrapper(
+open class AdapterWrapper constructor(
     val adapter: RecyclerView.Adapter<RecyclerView.ViewHolder>,
     viewTypeStorage: ViewTypeStorage,
     val callback: Callback

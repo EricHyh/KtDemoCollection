@@ -22,39 +22,39 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         this._itemsBucketIds = itemsBucketIds
     }
 
-    override fun getElementDiff(): IElementDiff<ListItemWrapper> {
-        return IElementDiff.ItemDataWrapperDiff()
+    override fun getElementDiff(): IElementDiff<FlatListItem> {
+        return IElementDiff.ItemDataDiff()
     }
 
     override fun mapItems(items: List<ListItemWrapper>): List<FlatListItem> {
         return items.map { it.item }
     }
 
-    override fun onItemsDisplayed(items: List<ListItemWrapper>) {
+    override fun onItemsDisplayed(items: List<FlatListItem>) {
         items.forEach {
-            if (!it.attached) {
-                it.item.delegate.onItemAttached()
+            if (!it.delegate.attached) {
+                it.delegate.onItemAttached()
             }
-            it.item.delegate.onItemActivated()
+            it.delegate.onItemActivated()
         }
     }
 
-    override fun onItemsChanged(changes: List<Triple<ListItemWrapper, ListItemWrapper, Any?>>) {
+    override fun onItemsChanged(changes: List<Triple<FlatListItem, FlatListItem, Any?>>) {
         changes.forEach {
-            it.first.item.delegate.updateItem(it.second.item, it.third)
+            it.first.delegate.updateItem(it.second, it.third)
         }
     }
 
-    override fun onItemsRecycled(items: List<ListItemWrapper>) {
+    override fun onItemsRecycled(items: List<FlatListItem>) {
         items.forEach {
-            it.item.delegate.onItemInactivated()
-            if (!it.cached) {
-                it.item.delegate.onItemDetached()
+            it.delegate.onItemInactivated()
+            if (!it.delegate.cached) {
+                it.delegate.onItemDetached()
             }
         }
     }
 
-    override suspend fun getPreShow(params: PreShowParams<Param, ListItemWrapper>): PreShowResult<ListItemWrapper> {
+    override suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult<ListItemWrapper> {
         val resultExtra = params.displayedData.resultExtra as? ResultExtra
         val result = getPreShow(params.param, resultExtra?.resultItemsBucketMap)
         return if (result is BucketPreShowResult.Success) {
@@ -67,7 +67,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         }
     }
 
-    override suspend fun load(params: LoadParams<Param, ListItemWrapper>): LoadResult<ListItemWrapper> {
+    override suspend fun load(params: LoadParams<Param>): LoadResult<ListItemWrapper> {
         val resultExtra = params.displayedData.resultExtra as? ResultExtra
         val result = load(params.param, resultExtra?.resultItemsBucketMap)
         return if (result is BucketLoadResult.Success) {
@@ -84,15 +84,19 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
     protected abstract suspend fun load(param: Param, displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?): BucketLoadResult
 
     override fun onProcessResult(
-        resultItems: List<ListItemWrapper>,
+        resultItems: List<FlatListItem>,
         resultExtra: Any?,
-        displayedData: SourceDisplayedData<ListItemWrapper>
+        displayedData: SourceDisplayedData
     ) {
         val displayedExtra = displayedData.resultExtra as? ResultExtra
         val newExtra = resultExtra as? ResultExtra
         check(newExtra != null) {
             "$this onProcessResult: resultExtra must not be null!"
         }
+
+        val resultWrappers = newExtra.resultWrappers ?: emptyList()
+
+
         val resultItemsBucketMap: LinkedHashMap<Int, ItemsBucket> = LinkedHashMap()
         itemsBucketIds.forEach {
             val items = mutableListOf<FlatListItem>()
@@ -101,7 +105,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
 
         val invokes: MutableList<Invoke> = mutableListOf()
 
-        resultItems.forEach { wrapper ->
+        resultWrappers.forEach { wrapper ->
             var itemsBucket = resultItemsBucketMap[wrapper.itemsBucketId]
             if (itemsBucket == null || itemsBucket.itemsToken != wrapper.itemsToken) {
                 val items = mutableListOf<FlatListItem>()
@@ -181,7 +185,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         newExtra.invokeOnDisplayed = invokes
     }
 
-    override fun onResultDisplayed(displayedData: SourceDisplayedData<ListItemWrapper>) {
+    override fun onResultDisplayed(displayedData: SourceDisplayedData) {
         super.onResultDisplayed(displayedData)
         (displayedData.resultExtra as? ResultExtra)?.onDisplayed()
     }
@@ -297,6 +301,9 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
     class ResultExtra {
 
         var resultItemsBucketMap: LinkedHashMap<Int, ItemsBucket>? = null
+
+        var resultWrappers: List<ListItemWrapper>? = null
+
         var invokeOnDisplayed: MutableList<Invoke>? = null
 
         fun onDisplayed() {

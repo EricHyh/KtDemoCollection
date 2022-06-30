@@ -157,6 +157,8 @@ class ProjectFragment : CommonBaseFragment() {
             })
         }
 
+
+
         val concatAdapter: ConcatAdapter = mProjectAdapter.withLoadStateHeaderAndFooter(
             header = ProjectLoadStateAdapter(mProjectAdapter),
             footer = ProjectLoadStateAdapter(mProjectAdapter)

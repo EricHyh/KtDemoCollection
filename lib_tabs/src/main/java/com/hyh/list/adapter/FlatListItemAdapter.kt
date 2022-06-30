@@ -134,7 +134,8 @@ class FlatListItemAdapter constructor(
                             processResult(event) {}
                         }
 
-                        else -> {}
+                        else -> {
+                        }
                     }
                 }
             }
@@ -163,8 +164,8 @@ class FlatListItemAdapter constructor(
         return true
     }
 
-    fun removeItem(position: Int) {
-        receiver?.removeItem(position)
+    fun removeItem(position: Int, count: Int) {
+        receiver?.removeItem(position, count)
     }
 
     fun removeItem(item: FlatListItem) {
@@ -185,6 +186,7 @@ class FlatListItemAdapter constructor(
         _items = processedResult.resultItems
         processedResult.onResultUsed()
         ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
+
         createSourceLoadState(sourceEvent, processedResult.resultItems)?.apply {
             onStateChanged(this)
         }
@@ -227,7 +229,7 @@ class FlatListItemAdapter constructor(
                 when (sourceEvent) {
                     is SourceEvent.ProcessorSourceEvent -> {
                         processResult(sourceEvent) {
-                            when(this){
+                            when (this) {
                                 is ItemSourceLoadState -> {
                                     _loadStateFlow.value = this
                                 }

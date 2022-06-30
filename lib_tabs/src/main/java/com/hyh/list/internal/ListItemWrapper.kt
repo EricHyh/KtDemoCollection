@@ -8,16 +8,11 @@ import com.hyh.list.FlatListItem
  * @author eriche
  * @data 2021/6/24
  */
-class ListItemWrapper(
+class ListItemWrapper constructor(
     val itemsBucketId: Int,
     val itemsToken: Any,
     val item: FlatListItem
 ) {
-
-    val attached: Boolean
-        get() = item.delegate.attached
-    val cached: Boolean
-        get() = item.delegate.cached
 
     fun isSupportUpdateItemData(wrapperList: ListItemWrapper): Boolean {
         if (itemsBucketId != wrapperList.itemsBucketId) return false

@@ -79,7 +79,7 @@ class NumItemSource(private var type: String) : SimpleItemSource<Unit>() {
 
     override fun getFetchDispatcher(
         param: Unit,
-        displayedData: SourceDisplayedData<FlatListItem>
+        displayedData: SourceDisplayedData
     ): CoroutineDispatcher {
         return Dispatchers.IO
     }

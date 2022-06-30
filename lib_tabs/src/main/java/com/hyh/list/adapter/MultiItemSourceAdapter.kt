@@ -9,6 +9,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
+import com.hyh.InvokeWithParam
 import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SimpleStateFlow
@@ -199,14 +200,18 @@ class MultiItemSourceAdapter<Param : Any>(
         return sourceAdapterWrapper.moveItem(from, to)
     }
 
-    override fun removeItem(sourceToken: Any, position: Int) {
+    override fun removeItem(sourceToken: Any, position: Int, count: Int) {
         val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return
-        sourceAdapterWrapper.removeItem(position)
+        sourceAdapterWrapper.removeItem(position, count)
     }
 
     override fun removeItem(sourceToken: Any, item: FlatListItem) {
         val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return
         sourceAdapterWrapper.removeItem(item)
+    }
+
+    override fun invokeOnItemDisplayed(predicate: (FlatListItem) -> Boolean, invoke: InvokeWithParam<ItemLocalInfo>) {
+
     }
 
     private fun findWrappers(sourceIndexStart: Int, count: Int): List<SourceAdapterWrapper> {
@@ -396,7 +401,7 @@ class MultiItemSourceAdapter<Param : Any>(
             return null
         }
         val item = resultWrapper.flatListItemAdapter.findItem(localPosition) ?: return null
-        return ItemLocalInfo(resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount, item)
+        return ItemLocalInfo(globalPosition, resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount, item)
     }
 
     override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
@@ -664,7 +669,7 @@ object SimpleDispatchUpdatesHelper {
     )
 }
 
-class SourceAdapterWrapper(
+class SourceAdapterWrapper constructor(
     val sourceToken: Any,
     val flatListItemAdapter: FlatListItemAdapter,
     viewTypeStorage: ViewTypeStorage,
@@ -693,8 +698,8 @@ class SourceAdapterWrapper(
         return flatListItemAdapter.moveItem(from, to)
     }
 
-    fun removeItem(position: Int) {
-        flatListItemAdapter.removeItem(position)
+    fun removeItem(position: Int, count: Int) {
+        flatListItemAdapter.removeItem(position, count)
     }
 
     fun removeItem(item: FlatListItem) {

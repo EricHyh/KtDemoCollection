@@ -1,7 +1,6 @@
 package com.hyh.paging3demo.list.fragment
 
 import android.graphics.Color
-import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -171,7 +170,7 @@ class AccountItemSource(private val testEmpty: Boolean) : MultiContentItemSource
 
     override fun getFetchDispatcher(
         param: Int,
-        displayedData: SourceDisplayedData<ListItemWrapper>
+        displayedData: SourceDisplayedData
     ): CoroutineDispatcher {
         return Dispatchers.IO
     }
