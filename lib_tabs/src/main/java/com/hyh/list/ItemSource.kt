@@ -2,7 +2,7 @@ package com.hyh.list
 
 import androidx.lifecycle.LifecycleOwner
 import com.hyh.base.RefreshStrategy
-import com.hyh.list.internal.BaseItemSource
+import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.SourceDisplayedData
 
 /**

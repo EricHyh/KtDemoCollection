@@ -1,5 +1,6 @@
 package com.hyh.list.adapter
 
+import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -9,7 +10,7 @@ import com.hyh.coroutine.SingleRunner
 import com.hyh.coroutine.simpleScan
 import com.hyh.list.*
 import com.hyh.list.internal.*
-import com.hyh.page.PageContext
+import com.hyh.list.internal.utils.ListUpdate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.*
 @Suppress("UNCHECKED_CAST")
 class FlatListItemAdapter constructor(
     lifecycleOwner: LifecycleOwner,
+    private val flatListManager: IFlatListManager,
     private val onStateChanged: InvokeWithParam<SourceLoadState>
 ) : BaseFlatListItemAdapter() {
 
@@ -48,7 +50,7 @@ class FlatListItemAdapter constructor(
         get() = _pagingLoadStateFlow.asStateFlow()
 
 
-    private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> = SimpleMutableStateFlow<Pair<Long, SourceEvent?>>(Pair(0, null))
+    private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> = SimpleMutableStateFlow(Pair(0, null))
 
     private var recyclerView: RecyclerView? = null
 
@@ -77,6 +79,13 @@ class FlatListItemAdapter constructor(
     suspend fun submitData(data: SourceData) {
         collectFromRunner.runInIsolation {
             receiver = data.receiver
+            receiver?.injectLoadState(object : StateFlowProvider {
+                override val loadStateFlow: SimpleStateFlow<ItemSourceLoadState>
+                    get() = this@FlatListItemAdapter.loadStateFlow
+
+                override val pagingLoadStateFlow: SimpleStateFlow<PagingSourceLoadState>
+                    get() = this@FlatListItemAdapter.pagingLoadStateFlow
+            })
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {
@@ -92,8 +101,8 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.RefreshError -> {
-                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, event.preShowing)
-                            onStateChanged(ItemSourceLoadState.Error(event.error, event.preShowing))
+                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, event.preShowing, itemCount)
+                            onStateChanged(ItemSourceLoadState.Error(event.error, event.preShowing, itemCount))
                             event.onReceived()
                         }
 
@@ -110,7 +119,7 @@ class FlatListItemAdapter constructor(
                         is SourceEvent.PagingRefreshError -> {
                             val refreshError = PagingSourceLoadState.RefreshError(event.error)
                             _pagingLoadStateFlow.value = refreshError
-                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, false)
+                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, false, itemCount)
                             onStateChanged(refreshError)
                             event.onReceived()
                         }
@@ -142,6 +151,12 @@ class FlatListItemAdapter constructor(
         }
     }
 
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return super.onCreateViewHolder(parent, viewType).apply {
+            setFlatListManager(flatListManager)
+        }
+    }
+
     override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
         super.onAttachedToRecyclerView(recyclerView)
         this.recyclerView = recyclerView
@@ -156,6 +171,14 @@ class FlatListItemAdapter constructor(
 
     fun refresh(important: Boolean) {
         receiver?.refresh(important)
+    }
+
+    fun append(important: Boolean) {
+        receiver?.append(important)
+    }
+
+    fun rearrange(important: Boolean) {
+        receiver?.rearrange(important)
     }
 
     fun moveItem(from: Int, to: Int): Boolean {

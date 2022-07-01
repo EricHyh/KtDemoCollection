@@ -58,3 +58,7 @@ typealias OnEventReceived = (suspend () -> Unit)
  * 注意：important是一个参考值，能不能生效取决于刷新器的实现，目前[cn.futu.trade.common.list.ItemSource]的刷新器实现了该功能
  */
 typealias RefreshActuator = ((important: Boolean) -> Unit)
+
+typealias AppendActuator = ((important: Boolean) -> Unit)
+
+typealias RearrangeActuator = ((important: Boolean) -> Unit)

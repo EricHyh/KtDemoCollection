@@ -1,4 +1,4 @@
-package com.hyh.list.internal
+package com.hyh.list.internal.utils
 
 import androidx.annotation.IntRange
 import androidx.recyclerview.widget.AdapterListUpdateCallback

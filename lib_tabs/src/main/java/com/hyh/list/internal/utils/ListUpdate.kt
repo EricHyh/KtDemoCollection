@@ -1,10 +1,11 @@
-package com.hyh.list.internal
+package com.hyh.list.internal.utils
 
 import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
 import com.hyh.list.FlatListItem
 import com.hyh.list.ItemsBucket
+import com.hyh.list.internal.ListItemWrapper
 import java.util.*
 import kotlin.collections.ArrayList
 

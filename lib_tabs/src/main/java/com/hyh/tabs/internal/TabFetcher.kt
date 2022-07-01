@@ -7,9 +7,8 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
-import com.hyh.list.internal.IElementDiff
-import com.hyh.list.internal.ListUpdate
-import com.hyh.list.internal.SimpleDiffUtil
+import com.hyh.list.internal.utils.IElementDiff
+import com.hyh.list.internal.utils.ListUpdate
 import com.hyh.tabs.ITab
 import com.hyh.tabs.TabInfo
 import com.hyh.tabs.TabSource

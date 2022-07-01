@@ -1,9 +1,7 @@
 package com.example.lib_tabs
 
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListUpdateCallback
-import com.hyh.list.internal.IElementDiff
-import com.hyh.list.internal.ListUpdate
+import com.hyh.list.internal.utils.IElementDiff
+import com.hyh.list.internal.utils.ListUpdate
 import org.junit.Test
 
 import org.junit.Assert.*

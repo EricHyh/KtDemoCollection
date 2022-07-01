@@ -1,14 +1,20 @@
-package com.hyh.list.internal
+package com.hyh.list.internal.base
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.hyh.RefreshActuator
+import com.hyh.coroutine.SimpleMutableStateFlow
+import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.lifecycle.ChildLifecycleOwner
 import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.FlatListItem
-import com.hyh.list.IFlatListItem
+import com.hyh.list.ItemSourceLoadState
+import com.hyh.list.internal.utils.IElementDiff
+import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * [com.hyh.list.IFlatListItem]列表的数据源
@@ -18,8 +24,8 @@ import kotlinx.coroutines.Dispatchers
  */
 abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
-    internal val delegate: Delegate<Param, Item> = object : Delegate<Param, Item>() {
 
+    open inner class DefaultDelegate : Delegate<Param, Item>() {
         override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
         private var displayedData: SourceDisplayedData? = null
@@ -39,6 +45,12 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
         override fun attach() {
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
             this@BaseItemSource.onAttached()
+        }
+
+        override fun updateItemSourceLoadState(
+            state: ItemSourceLoadState
+        ) {
+            _loadStateFlow.value = state
         }
 
         override fun injectRefreshActuator(refreshActuator: RefreshActuator) {
@@ -99,6 +111,9 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
         }
     }
 
+
+    internal open val delegate: Delegate<Param, Item> = DefaultDelegate()
+
     protected val displayedFlatListItemsSnapshot: List<FlatListItem>?
         get() = delegate.displayedFlatListItemsSnapshot
 
@@ -107,10 +122,16 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
     val sourcePosition: Int
         get() = delegate.sourcePosition
 
-    private lateinit var _refreshActuator: RefreshActuator
-    val refreshActuator: RefreshActuator
-        get() = _refreshActuator
 
+    private val _loadStateFlow: SimpleMutableStateFlow<ItemSourceLoadState> =
+        SimpleMutableStateFlow(ItemSourceLoadState.Initial)
+    val loadStateFlow: SimpleStateFlow<ItemSourceLoadState>
+        get() = _loadStateFlow.asStateFlow()
+
+    private var _refreshActuator: RefreshActuator? = null
+    val refreshActuator: RefreshActuator = {
+        _refreshActuator?.invoke(it)
+    }
 
     final override fun getLifecycle(): Lifecycle {
         return delegate.lifecycleOwner.lifecycle
@@ -163,6 +184,8 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
         abstract var sourcePosition: Int
 
         abstract fun attach()
+
+        abstract fun updateItemSourceLoadState(state: ItemSourceLoadState)
 
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
 

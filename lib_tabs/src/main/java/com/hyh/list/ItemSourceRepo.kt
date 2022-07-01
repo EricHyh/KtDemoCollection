@@ -4,7 +4,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.hyh.list.internal.ItemSourceFetcher
 import com.hyh.base.RefreshStrategy
-import com.hyh.list.internal.BaseItemSource
+import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.RepoData
 import com.hyh.list.internal.RepoDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher

@@ -2,6 +2,7 @@ package com.hyh.list.internal
 
 import android.util.Log
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
 import com.hyh.Invoke
 import com.hyh.base.RefreshEventHandler
 import com.hyh.base.RefreshStrategy
@@ -12,6 +13,11 @@ import com.hyh.coroutine.simpleScan
 import com.hyh.lifecycle.ChildLifecycleOwner
 import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.*
+import com.hyh.list.internal.base.BaseItemFetcher
+import com.hyh.list.internal.base.BaseItemSource
+import com.hyh.list.internal.paging.PagingSourceItemFetcher
+import com.hyh.list.internal.utils.IElementDiff
+import com.hyh.list.internal.utils.ListUpdate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -134,8 +140,6 @@ class RepoResultProcessorGenerator(
             val lazyFlow: Lazy<Flow<SourceData>> = lazy {
                 itemSource.delegate.sourcePosition = index
                 val itemFetcher = createItemFetcher(itemSource)
-                itemSource.delegate.bindParentLifecycle(repoLifecycle)
-                itemSource.delegate.injectRefreshActuator(itemFetcher::refresh)
                 itemFetcher.flow
             }
             ItemSourceWrapper(
@@ -181,6 +185,7 @@ class RepoResultProcessorGenerator(
                 val newWrapper = it.second
                 oldWrapper.itemSource.delegate.sourcePosition =
                     sourceIndexMap[oldWrapper.sourceToken] ?: -1
+
                 @Suppress("UNCHECKED_CAST")
                 (oldWrapper.itemSource.delegate as BaseItemSource.Delegate<Any, Any>)
                     .updateItemSource((newWrapper.itemSource as ItemSource<Any, Any>))
@@ -190,11 +195,18 @@ class RepoResultProcessorGenerator(
 
     private fun createItemFetcher(itemSource: BaseItemSource<out Any, out Any>): BaseItemFetcher<*, *> {
         return when (itemSource) {
-            is ItemPagingSource<*, *> -> PagingSourceItemFetcher(itemSource)
-            else -> ItemFetcher(itemSource as ItemSource<*, *>)
+            is ItemPagingSource<*, *> -> PagingSourceItemFetcher(itemSource).apply {
+                itemSource.delegate.bindParentLifecycle(repoLifecycle)
+                itemSource.delegate.injectRefreshActuator(::refresh)
+                itemSource.delegate.injectAppendActuator(::append)
+                itemSource.delegate.injectRearrangeActuator(::rearrange)
+            }
+            else -> ItemFetcher(itemSource as ItemSource<*, *>).apply {
+                itemSource.delegate.bindParentLifecycle(repoLifecycle)
+                itemSource.delegate.injectRefreshActuator(::refresh)
+            }
         }
     }
-
 
     private fun RepoDisplayedData.getItemSourceWrappers(): List<ItemSourceWrapper> {
         val lazySources = this.lazySources

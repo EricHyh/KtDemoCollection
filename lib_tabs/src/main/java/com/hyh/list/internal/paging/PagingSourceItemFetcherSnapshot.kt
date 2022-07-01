@@ -1,113 +1,23 @@
-package com.hyh.list.internal
+package com.hyh.list.internal.paging
 
 import android.util.Log
 import com.hyh.Invoke
-import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.cancelableChannelFlow
-import com.hyh.coroutine.simpleMapLatest
-import com.hyh.coroutine.simpleScan
 import com.hyh.list.ItemPagingSource
-import kotlinx.coroutines.*
+import com.hyh.list.internal.*
+import com.hyh.list.internal.base.BaseItemSource
+import com.hyh.list.internal.base.DispatcherProvider
+import com.hyh.list.internal.utils.ListOperate
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.flow.*
-import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.consumeAsFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class PagingSourceItemFetcher<Param : Any, Item : Any>(
-    private val pagingSource: ItemPagingSource<Param, Item>
-) : BaseItemFetcher<ItemPagingSource.LoadParams<Param>, Item>(pagingSource) {
-
-    override val sourceDisplayedData: PagingSourceDisplayedData<Param> =
-        PagingSourceDisplayedData()
-
-    inner class ItemFetcherUiReceiver : BaseUiReceiverForSource() {
-
-        private val loadEventHandler = LoadEventHandler()
-
-        val flow = loadEventHandler.flow
-
-        override fun refresh(important: Boolean) {
-            loadEventHandler.onReceiveLoadEvent(LoadEvent.Refresh)
-        }
-
-        override fun accessItem(position: Int) {
-            if (sourceDisplayedData.noMore) return
-            if (sourceDisplayedData.lastPaging == null) return
-            val size = sourceDisplayedData.flatListItems?.size ?: 0
-            if (position >= size - 4) {
-                append()
-            }
-        }
-
-        fun append() {
-            loadEventHandler.onReceiveLoadEvent(LoadEvent.Append)
-        }
-
-        fun onRefreshComplete() {
-            loadEventHandler.onLoadEventComplete(LoadEvent.Refresh)
-        }
-
-        fun onAppendComplete() {
-            loadEventHandler.onLoadEventComplete(LoadEvent.Append)
-        }
-    }
-
-    override val uiReceiver: ItemFetcherUiReceiver = ItemFetcherUiReceiver()
-
-    override suspend fun SendChannel<SourceData>.initChannelFlow() {
-        uiReceiver
-            .flow
-            .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: PagingSourceItemFetcherSnapshot<Param, Item>?, loadEvent: LoadEvent ->
-                if (sourceDisplayedData.noMore && loadEvent != LoadEvent.Refresh) {
-                    uiReceiver.onAppendComplete()
-                    return@simpleScan null
-                }
-                previousSnapshot?.close()
-                PagingSourceItemFetcherSnapshot(
-                    displayedData = sourceDisplayedData,
-                    refreshKeyProvider = getRefreshKeyProvider(),
-                    appendKeyProvider = getAppendKeyProvider(),
-                    loader = getPagingSourceLoader(),
-                    onRefreshComplete = uiReceiver::onRefreshComplete,
-                    onAppendComplete = uiReceiver::onAppendComplete,
-                    delegate = itemSource.delegate,
-                    fetchDispatcherProvider = getFetchDispatcherProvider(),
-                    processDataDispatcherProvider = getProcessDataDispatcherProvider(),
-                    forceRefresh = loadEvent == LoadEvent.Refresh
-                )
-            }
-            .filterNotNull()
-            .simpleMapLatest { snapshot: PagingSourceItemFetcherSnapshot<Param, Item> ->
-                val downstreamFlow = snapshot.sourceEventFlow
-                SourceData(downstreamFlow, uiReceiver)
-            }
-            .collect {
-                send(it)
-            }
-    }
-
-    private fun getPagingSourceLoader(): PagingSourceLoader<Param, Item> = ::load
-    private fun getRefreshKeyProvider(): RefreshKeyProvider<Param> = ::getRefreshKey
-    private fun getAppendKeyProvider(): AppendKeyProvider<Param> = ::getAppendKey
-
-
-    private suspend fun load(param: ItemPagingSource.LoadParams<Param>): ItemPagingSource.LoadResult<Param, Item> {
-        return pagingSource.load(param)
-    }
-
-    private suspend fun getRefreshKey(): Param? {
-        return pagingSource.getRefreshKey() ?: pagingSource.initialParam
-    }
-
-    private suspend fun getAppendKey(): Param? {
-        return sourceDisplayedData.appendParam
-    }
-}
-
-
-class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
+class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
     private val displayedData: PagingSourceDisplayedData<Param>,
     private val refreshKeyProvider: RefreshKeyProvider<Param>,
     private val appendKeyProvider: AppendKeyProvider<Param>,
@@ -117,8 +27,8 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
     private val delegate: BaseItemSource.Delegate<ItemPagingSource.LoadParams<Param>, Item>,
     private val fetchDispatcherProvider: DispatcherProvider<ItemPagingSource.LoadParams<Param>>,
     private val processDataDispatcherProvider: DispatcherProvider<ItemPagingSource.LoadParams<Param>>,
-    private val forceRefresh: Boolean = false
-) {
+    private val forceRefresh: Boolean
+) : IItemFetcherSnapshot {
 
 
     companion object {
@@ -131,7 +41,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
 
 
-    val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
+    override val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
         val isRefresh = displayedData.lastPaging == null || forceRefresh
         if (displayedData.noMore && !isRefresh) {
             onAppendComplete()
@@ -150,10 +60,10 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
 
 
         val param = if (isRefresh) {
-
+            sourceEventCh.send(SourceEvent.PagingRefreshing())
             ItemPagingSource.LoadParams.Refresh(refreshKeyProvider.invoke())
         } else {
-
+            sourceEventCh.send(SourceEvent.PagingAppending())
             ItemPagingSource.LoadParams.Append(appendKeyProvider.invoke())
         }
 
@@ -201,10 +111,13 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
                     sourceEventCh.send(this)
                 }
             }
+            else -> {
+                throw IllegalArgumentException("loadResult shouldn't be $loadResult")
+            }
         }
     }
 
-    fun close() {
+    override fun close() {
         closed = true
         Log.d(TAG, "PagingSourceItemFetcher close: ")
         sourceEventChannelFlowJob.cancel()
@@ -218,7 +131,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
 
         fun process(): SourceProcessedResult {
             val items = success.items
-            val resultExtra = null
+            val resultExtra = success.resultExtra
             val flatListItems = delegate.mapItems(items)
             val nextParam = success.nextParam
             val noMore = success.noMore
@@ -283,12 +196,9 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
             val nextParam = success.nextParam
             val noMore = success.noMore
 
-
-            val oldItems = displayedData.flatListItems ?: emptyList()
             val oldFlatListItems = displayedData.flatListItems ?: emptyList()
 
             val resultFlatListItems = oldFlatListItems + flatListItems
-
 
             delegate.onProcessResult(
                 resultFlatListItems,
@@ -298,7 +208,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
 
             return SourceProcessedResult(
                 resultFlatListItems,
-                listOf(ListOperate.OnInserted(oldItems.size, items.size))
+                listOf(ListOperate.OnInserted(oldFlatListItems.size, flatListItems.size))
             ) {
                 displayedData.flatListItems = resultFlatListItems
                 displayedData.resultExtra = resultExtra
@@ -344,62 +254,3 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any>(
         return !displayedData.flatListItems.isNullOrEmpty() && items.isNotEmpty()
     }
 }
-
-
-internal class LoadEventHandler {
-
-    private val state = SimpleMutableStateFlow<Pair<Int, LoadEvent>>(0 to LoadEvent.Refresh)
-
-    val flow: Flow<LoadEvent> = state.asStateFlow().map { it.second }
-
-    private val refreshComplete: AtomicBoolean = AtomicBoolean(false)
-
-    private val appendComplete: AtomicBoolean = AtomicBoolean(true)
-
-    @Synchronized
-    fun onReceiveLoadEvent(event: LoadEvent) {
-        when (event) {
-            LoadEvent.Refresh -> {
-                if (refreshComplete.get() || state.value != event) {
-                    refreshComplete.set(false)
-                    state.value = Pair(state.value.first + 1, event)
-                }
-            }
-            LoadEvent.Append -> {
-                if (appendComplete.get() && refreshComplete.get()) {
-                    appendComplete.set(false)
-                    state.value = Pair(state.value.first + 1, event)
-                }
-            }
-        }
-    }
-
-    @Synchronized
-    fun onLoadEventComplete(event: LoadEvent) {
-        when (event) {
-            LoadEvent.Refresh -> {
-                refreshComplete.set(true)
-            }
-            LoadEvent.Append -> {
-                appendComplete.set(true)
-            }
-        }
-    }
-}
-
-
-sealed class LoadEvent {
-
-    object Refresh : LoadEvent()
-
-    object Append : LoadEvent()
-
-}
-
-
-
-internal typealias RefreshKeyProvider<Param> = (suspend () -> Param?)
-internal typealias AppendKeyProvider<Param> = (suspend () -> Param?)
-
-internal typealias PagingSourceLoader<Param, Item>
-        = (suspend (param: ItemPagingSource.LoadParams<Param>) -> ItemPagingSource.LoadResult<Param, Item>)

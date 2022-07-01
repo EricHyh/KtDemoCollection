@@ -16,6 +16,8 @@ import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.coroutine.SingleRunner
 import com.hyh.list.*
 import com.hyh.list.internal.*
+import com.hyh.list.internal.utils.ListOperate
+import com.hyh.list.internal.utils.ListUpdate
 import com.hyh.page.PageContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -37,6 +39,23 @@ class MultiItemSourceAdapter<Param : Any>(
     }
 
     constructor(pageContext: PageContext) : this(pageContext.lifecycleOwner)
+
+    private val flatListManager = object : IFlatListManager {
+
+        private val serviceMap: MutableMap<Class<*>, Any> = mutableMapOf()
+
+        override val listAdapter: IListAdapter<*>
+            get() = this@MultiItemSourceAdapter
+
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : Any> getService(clazz: Class<T>): T? {
+            return serviceMap[clazz] as? T
+        }
+
+        override fun <T : Any> setService(clazz: Class<T>, service: T) {
+            serviceMap[clazz] = service as Any
+        }
+    }
 
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main
     private val collectFromRunner = SingleRunner()
@@ -103,6 +122,15 @@ class MultiItemSourceAdapter<Param : Any>(
                 receiver?.destroy()
             }
         }
+    }
+
+
+    override fun getItemSourceLoadState(sourceToken: Any): SimpleStateFlow<ItemSourceLoadState>? {
+        return wrapperMap[sourceToken]?.flatListItemAdapter?.loadStateFlow
+    }
+
+    override fun getPagingSourceLoadState(sourceToken: Any): SimpleStateFlow<PagingSourceLoadState>? {
+        return wrapperMap[sourceToken]?.flatListItemAdapter?.pagingLoadStateFlow
     }
 
     override fun submitData(flow: Flow<RepoData<Param>>) {
@@ -180,6 +208,16 @@ class MultiItemSourceAdapter<Param : Any>(
         }
     }
 
+
+    override fun sourceAppend(sourceToken: Any, important: Boolean) {
+        wrapperMap[sourceToken]?.flatListItemAdapter?.append(important)
+    }
+
+    override fun sourceRearrange(sourceToken: Any, important: Boolean) {
+        wrapperMap[sourceToken]?.flatListItemAdapter?.rearrange(important)
+    }
+
+
     override fun moveSourceItem(sourceIndex: Int, from: Int, to: Int): Boolean {
         if (wrapperMap.size <= sourceIndex) return false
         val sourceAdapterWrapper = kotlin.run {
@@ -208,10 +246,6 @@ class MultiItemSourceAdapter<Param : Any>(
     override fun removeItem(sourceToken: Any, item: FlatListItem) {
         val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return
         sourceAdapterWrapper.removeItem(item)
-    }
-
-    override fun invokeOnItemDisplayed(predicate: (FlatListItem) -> Boolean, invoke: InvokeWithParam<ItemLocalInfo>) {
-
     }
 
     private fun findWrappers(sourceIndexStart: Int, count: Int): List<SourceAdapterWrapper> {
@@ -426,7 +460,7 @@ class MultiItemSourceAdapter<Param : Any>(
     private fun createWrapper(sourceData: LazySourceData): SourceAdapterWrapper {
         return SourceAdapterWrapper(
             sourceData.sourceToken,
-            FlatListItemAdapter(lifecycleOwner) {
+            FlatListItemAdapter(lifecycleOwner, flatListManager) {
                 onStateChanged(sourceData.sourceToken, this)
             },
             viewTypeStorage,

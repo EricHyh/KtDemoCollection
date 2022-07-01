@@ -2,11 +2,8 @@ package com.hyh.list.adapter
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.InvokeWithParam
 import com.hyh.coroutine.SimpleStateFlow
-import com.hyh.list.FlatListItem
-import com.hyh.list.RepoLoadState
-import com.hyh.list.SourceLoadStates
+import com.hyh.list.*
 import com.hyh.list.internal.RepoData
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.abs
@@ -18,6 +15,9 @@ interface IListAdapter<Param : Any> {
     val sourceLoadStatesFlow: SimpleStateFlow<SourceLoadStates>
 
     val sourceTokens: List<Any>
+
+    fun getItemSourceLoadState(sourceToken: Any): SimpleStateFlow<ItemSourceLoadState>?
+    fun getPagingSourceLoadState(sourceToken: Any): SimpleStateFlow<PagingSourceLoadState>?
 
     fun submitData(flow: Flow<RepoData<Param>>)
 
@@ -42,6 +42,9 @@ interface IListAdapter<Param : Any> {
     fun refreshSources(vararg sourceTokens: Any, important: Boolean = false)
     fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean = false)
 
+    fun sourceAppend(sourceToken: Any, important: Boolean = false)
+    fun sourceRearrange(sourceToken: Any, important: Boolean = false)
+
     fun moveGlobalItem(from: Int, to: Int): Boolean {
         if (from < 0 || to < 0) return false
         val itemLocalInfo = findItemLocalInfo(from) ?: return false
@@ -59,8 +62,6 @@ interface IListAdapter<Param : Any> {
     fun removeItem(sourceToken: Any, position: Int, count: Int = 1)
 
     fun removeItem(sourceToken: Any, item: FlatListItem)
-
-    fun invokeOnItemDisplayed(predicate: (FlatListItem) -> Boolean, invoke: InvokeWithParam<ItemLocalInfo>)
 
 }
 

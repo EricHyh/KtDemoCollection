@@ -31,6 +31,9 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                 }
                 return LoadResult.Success(items, param + 1, param == 20)
             }
+            is LoadParams.Rearrange -> {
+                return LoadResult.Rearranged()
+            }
         }
     }
 

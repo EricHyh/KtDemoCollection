@@ -8,6 +8,8 @@ import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
 import com.hyh.list.ItemSource
+import com.hyh.list.internal.base.*
+import com.hyh.list.internal.base.DispatcherProvider
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -34,6 +36,14 @@ class ItemFetcher<Param : Any, Item : Any>(
             refreshEventHandler.onReceiveRefreshEvent(important, Unit)
         }
 
+        override fun append(important: Boolean) {
+            refreshEventHandler.onReceiveRefreshEvent(important, Unit)
+        }
+
+        override fun rearrange(important: Boolean) {
+            refreshEventHandler.onReceiveRefreshEvent(important, Unit)
+        }
+
         fun onRefreshComplete() {
             refreshEventHandler.onRefreshComplete()
         }
@@ -51,7 +61,7 @@ class ItemFetcher<Param : Any, Item : Any>(
         uiReceiver
             .flow
             .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: ItemFetcherSnapshot<Param, Item>?, _: Unit? ->
+            .simpleScan(null) { previousSnapshot: IItemFetcherSnapshot?, _: Unit? ->
                 previousSnapshot?.close()
                 ItemFetcherSnapshot(
                     displayedData = sourceDisplayedData,
@@ -65,7 +75,7 @@ class ItemFetcher<Param : Any, Item : Any>(
                 )
             }
             .filterNotNull()
-            .simpleMapLatest { snapshot: ItemFetcherSnapshot<Param, Item> ->
+            .simpleMapLatest { snapshot: IItemFetcherSnapshot ->
                 val downstreamFlow = snapshot.sourceEventFlow
                 SourceData(downstreamFlow, uiReceiver)
             }
@@ -96,69 +106,6 @@ class ItemFetcher<Param : Any, Item : Any>(
 }
 
 
-class SourceResultProcessorGenerator<Param : Any, Item : Any>(
-    private val sourceDisplayedData: SourceDisplayedData,
-    private val items: List<Item>,
-    private val resultExtra: Any?,
-    private val dispatcher: CoroutineDispatcher?,
-    private val delegate: BaseItemSource.Delegate<Param, Item>
-) {
-
-    val processor: SourceResultProcessor = {
-        if (shouldUseDispatcher()) {
-            withContext(dispatcher!!) {
-                processResult()
-            }
-        } else {
-            processResult()
-        }
-    }
-
-    private fun shouldUseDispatcher(): Boolean {
-        return (dispatcher != null
-                && !sourceDisplayedData.flatListItems.isNullOrEmpty()
-                && items.isNotEmpty())
-    }
-
-    private fun processResult(): SourceProcessedResult {
-
-        val newItems = delegate.mapItems(items)
-
-        val updateResult = ListUpdate.calculateDiff(
-            sourceDisplayedData.flatListItems,
-            newItems,
-            delegate.getElementDiff()
-        )
-
-        val flatListItems = updateResult.resultList
-
-        delegate.onProcessResult(
-            updateResult.resultList,
-            resultExtra,
-            sourceDisplayedData
-        )
-
-        return SourceProcessedResult(flatListItems, updateResult.listOperates) {
-            sourceDisplayedData.flatListItems = flatListItems
-            sourceDisplayedData.resultExtra = resultExtra
-
-            flatListItems.forEach {
-                it.delegate.bindParentLifecycle(delegate.lifecycleOwner.lifecycle)
-                it.delegate.displayedItems = flatListItems
-            }
-
-            delegate.run {
-                onItemsRecycled(updateResult.elementOperates.removedElements)
-                onItemsChanged(updateResult.elementOperates.changedElements)
-                onItemsDisplayed(updateResult.elementOperates.addedElements)
-            }
-
-            delegate.onResultDisplayed(sourceDisplayedData)
-        }
-    }
-}
-
-
 class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val displayedData: SourceDisplayedData,
     private val paramProvider: ParamProvider<Param>,
@@ -168,7 +115,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val processDataDispatcherProvider: DispatcherProvider<Param>,
     private val onRefreshComplete: Invoke,
     private val delegate: BaseItemSource.Delegate<Param, Item>
-) {
+) : IItemFetcherSnapshot {
 
     companion object {
         private const val TAG = "ItemFetcherSnapshot"
@@ -180,7 +127,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
 
 
-    val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
+    override val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
         launch {
             sourceEventCh.consumeAsFlow().collect {
                 try {
@@ -263,7 +210,7 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
         }
     }
 
-    fun close() {
+    override fun close() {
         closed = true
         Log.d(TAG, "ItemFetcherSnapshot close: ")
         sourceEventChannelFlowJob.cancel()

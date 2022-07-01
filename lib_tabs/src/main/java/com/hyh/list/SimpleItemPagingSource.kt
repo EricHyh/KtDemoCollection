@@ -1,6 +1,6 @@
 package com.hyh.list
 
-import com.hyh.list.internal.IElementDiff
+import com.hyh.list.internal.utils.IElementDiff
 
 /**
  * 支持加载更多的ItemSource

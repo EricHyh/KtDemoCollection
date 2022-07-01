@@ -3,7 +3,7 @@ package com.hyh.list.adapter
 import android.util.SparseArray
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.list.internal.ListUpdate
+import com.hyh.list.internal.utils.ListUpdate
 import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList

@@ -1,7 +1,10 @@
 package com.hyh.list.internal
 
 import androidx.lifecycle.Lifecycle
+import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.list.FlatListItem
+import com.hyh.list.ItemSourceLoadState
+import com.hyh.list.PagingSourceLoadState
 
 /**
  * UI层传递事件给数据层的通道
@@ -21,7 +24,13 @@ interface UiReceiverForRepo<Param : Any> {
 
 interface UiReceiverForSource {
 
+    fun injectLoadState(provider: StateFlowProvider)
+
     fun refresh(important: Boolean)
+
+    fun append(important: Boolean)
+
+    fun rearrange(important: Boolean)
 
     fun accessItem(position: Int) {}
 
@@ -32,4 +41,16 @@ interface UiReceiverForSource {
     fun move(from: Int, to: Int)
 
     fun destroy()
+}
+
+
+
+
+
+interface StateFlowProvider {
+
+    val loadStateFlow: SimpleStateFlow<ItemSourceLoadState>
+
+    val pagingLoadStateFlow: SimpleStateFlow<PagingSourceLoadState>
+
 }

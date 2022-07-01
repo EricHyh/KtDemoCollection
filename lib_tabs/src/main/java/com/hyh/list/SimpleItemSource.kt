@@ -1,7 +1,7 @@
 package com.hyh.list
 
 import com.hyh.base.RefreshStrategy
-import com.hyh.list.internal.IElementDiff
+import com.hyh.list.internal.utils.IElementDiff
 
 /**
  * 实现了只在还未展示数据时，获取缓存的逻辑

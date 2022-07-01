@@ -1,7 +1,5 @@
 package com.hyh.list
 
-import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.CoroutineScope
 
 /**
  * [ItemSourceRepo]的加载状态
@@ -43,7 +41,7 @@ sealed class ItemSourceLoadState : SourceLoadState {
 
     data class Success(val itemCount: Int) : ItemSourceLoadState()
 
-    data class Error(val error: Throwable, val preShowing: Boolean) : ItemSourceLoadState()
+    data class Error(val error: Throwable, val preShowing: Boolean, val currentItemCount: Int) : ItemSourceLoadState()
 
 }
 

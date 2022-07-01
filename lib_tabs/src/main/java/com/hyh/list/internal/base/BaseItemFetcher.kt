@@ -1,9 +1,12 @@
-package com.hyh.list.internal
+package com.hyh.list.internal.base
 
 import androidx.annotation.CallSuper
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.list.FlatListItem
+import com.hyh.list.internal.*
+import com.hyh.list.internal.utils.ListOperate
+import com.hyh.list.internal.utils.ListUpdate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
@@ -16,6 +19,9 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
     protected open val sourceDisplayedData = SourceDisplayedData()
 
     protected abstract val uiReceiver: BaseUiReceiverForSource
+
+    private val stateFlowProvider: StateFlowProvider?
+        get() = uiReceiver.stateFlowProvider
 
     val flow: Flow<SourceData> = simpleChannelFlow {
         launch {
@@ -203,6 +209,12 @@ abstract class BaseUiReceiverForSource : UiReceiverForSource {
     private val eventState = SimpleMutableStateFlow<OperateItemEvent>(OperateItemEvent.Initial)
 
     val eventFlow = eventState.asStateFlow()
+
+    var stateFlowProvider: StateFlowProvider? = null
+
+    override fun injectLoadState(provider: StateFlowProvider) {
+        this.stateFlowProvider = provider
+    }
 
     override fun removeItem(item: FlatListItem) {
         eventState.value = OperateItemEvent.RemoveItem(item)
