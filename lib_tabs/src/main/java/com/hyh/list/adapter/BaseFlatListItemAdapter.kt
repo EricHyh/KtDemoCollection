@@ -224,6 +224,6 @@ abstract class BaseFlatListItemAdapter : RecyclerView.Adapter<RecyclerView.ViewH
         val globalPosition: Int,
         val localPosition: Int,
         val flatListItem: IFlatListItem<RecyclerView.ViewHolder>,
-        val holdType: Type,
+        val holdType: Type
     )
 }

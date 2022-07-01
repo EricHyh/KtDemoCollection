@@ -6,6 +6,7 @@ import com.hyh.list.ItemPagingSource
 import com.hyh.list.internal.*
 import com.hyh.list.internal.base.BaseItemFetcher
 import com.hyh.list.internal.base.BaseUiReceiverForSource
+import com.hyh.list.internal.base.IItemFetcherSnapshot
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*

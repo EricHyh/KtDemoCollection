@@ -210,12 +210,6 @@ abstract class BaseUiReceiverForSource : UiReceiverForSource {
 
     val eventFlow = eventState.asStateFlow()
 
-    var stateFlowProvider: StateFlowProvider? = null
-
-    override fun injectLoadState(provider: StateFlowProvider) {
-        this.stateFlowProvider = provider
-    }
-
     override fun removeItem(item: FlatListItem) {
         eventState.value = OperateItemEvent.RemoveItem(item)
     }

@@ -6,6 +6,7 @@ import com.hyh.list.ItemPagingSource
 import com.hyh.list.internal.*
 import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.base.DispatcherProvider
+import com.hyh.list.internal.base.IItemFetcherSnapshot
 import com.hyh.list.internal.base.SourceResultProcessorGenerator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel

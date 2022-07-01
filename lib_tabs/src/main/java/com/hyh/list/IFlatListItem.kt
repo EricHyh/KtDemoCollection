@@ -325,7 +325,7 @@ typealias TypedViewHolderFactory<VH> = (parent: ViewGroup) -> VH
 typealias ViewHolderFactory = TypedViewHolderFactory<out RecyclerView.ViewHolder>
 
 
-inline fun <reified T : FlatListItem> RecyclerView.ViewHolder.runWithModel(crossinline block: (T) -> Unit) {
+inline fun <reified T : FlatListItem> RecyclerView.ViewHolder.runWithListItem(crossinline block: (T) -> Unit) {
     val item = this.itemView.getTag(R.id.flat_list_bound_item_tag_id) as? T
     item?.let { block.invoke(it) }
 }

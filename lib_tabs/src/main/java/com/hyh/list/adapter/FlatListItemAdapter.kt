@@ -79,13 +79,6 @@ class FlatListItemAdapter constructor(
     suspend fun submitData(data: SourceData) {
         collectFromRunner.runInIsolation {
             receiver = data.receiver
-            receiver?.injectLoadState(object : StateFlowProvider {
-                override val loadStateFlow: SimpleStateFlow<ItemSourceLoadState>
-                    get() = this@FlatListItemAdapter.loadStateFlow
-
-                override val pagingLoadStateFlow: SimpleStateFlow<PagingSourceLoadState>
-                    get() = this@FlatListItemAdapter.pagingLoadStateFlow
-            })
             data.flow.collect { event ->
                 withContext(mainDispatcher) {
                     when (event) {

@@ -1,5 +1,6 @@
-package com.hyh.list.internal
+package com.hyh.list.internal.base
 
+import com.hyh.list.internal.SourceEvent
 import kotlinx.coroutines.flow.Flow
 
 /**
