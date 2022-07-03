@@ -31,7 +31,7 @@ abstract class ItemSourceStateItem<VH : RecyclerView.ViewHolder>(
     }
 
     override fun onBindViewHolder(viewHolder: VH) {
-        lifecycleScope.launch {
+        lifecycleScope.launchWhenCreated {
             singleRunner.runInIsolation {
                 getItemSourceLoadStateFlow(viewHolder)?.collectLatest {
                     val state = when (it) {

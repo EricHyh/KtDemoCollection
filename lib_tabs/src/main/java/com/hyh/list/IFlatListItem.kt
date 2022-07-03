@@ -15,6 +15,7 @@ import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.adapter.IFlatListManager
 import com.hyh.tabs.BuildConfig
 import com.hyh.tabs.R
+import java.lang.ref.WeakReference
 
 /**
  * [RecyclerView]中的一个 Item 对象，负责数据及 UI 渲染
@@ -211,6 +212,10 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
         var displayedItems: List<FlatListItem>? = null
 
+        var isBoundViewHolder: Boolean = false
+
+        private val boundViewHolderRefSet = mutableSetOf<VHReference<VH>>()
+
         @CallSuper
         override fun onItemAttached() {
             _attached = true
@@ -257,8 +262,37 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
         }
 
+        @Suppress("UNCHECKED_CAST")
         fun onBindViewHolder(viewHolder: VH) {
-            viewHolder.itemView.setTag(R.id.flat_list_bound_item_tag_id, this@IFlatListItem)
+            val boundItem = viewHolder.getBoundItem() as? IFlatListItem<VH>
+            if (boundItem === this@IFlatListItem) return
+            boundItem?.delegate?.onUnBindViewHolder(viewHolder)
+            val isAttached = viewHolder.itemView.isAttachedToWindow
+            if (isAttached) {
+                lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
+            }
+            boundViewHolderRefSet.add(VHReference(viewHolder))
+            viewHolder.setBoundItem(this@IFlatListItem)
+        }
+
+        private fun onUnBindViewHolder(viewHolder: VH) {
+            val vhReference = VHReference(viewHolder)
+            boundViewHolderRefSet.remove(vhReference)
+            val iterator = boundViewHolderRefSet.iterator()
+            var isAttached = false
+            while (iterator.hasNext()) {
+                val next = iterator.next()
+                val vh = next.get()
+                if (vh == null) {
+                    iterator.remove()
+                } else {
+                    isAttached = vh.itemView.isAttachedToWindow || isAttached
+                }
+            }
+            val currentSelfState = lifecycleOwner.lifecycle.selfState
+            if (currentSelfState == Lifecycle.State.RESUMED) {
+                lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
+            }
         }
 
         fun onViewDetachedFromWindow(viewHolder: VH) {
@@ -275,6 +309,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
                 TAG,
                 "onItemInactivated: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
             )
+            boundViewHolderRefSet.clear()
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
         }
 
@@ -296,6 +331,23 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             return "IFlatListItem.$methodName: lifecycle state error, " +
                     "current self state must be $targetState, " +
                     "but now is $currentSelfState."
+        }
+    }
+
+
+    private class VHReference<VH : RecyclerView.ViewHolder>(viewHolder: VH) :
+        WeakReference<VH>(viewHolder) {
+
+        private val hashCode = System.identityHashCode(viewHolder)
+
+        override fun hashCode(): Int {
+            return hashCode
+        }
+
+        override fun equals(other: Any?): Boolean {
+            if (other === this) return true
+            if (other !is VHReference<*>) return false
+            return get() == other.get()
         }
     }
 
@@ -323,6 +375,15 @@ typealias TypedViewHolderFactory<VH> = (parent: ViewGroup) -> VH
  * 进一步缩短[TypedViewHolderFactory]
  */
 typealias ViewHolderFactory = TypedViewHolderFactory<out RecyclerView.ViewHolder>
+
+
+private fun RecyclerView.ViewHolder.getBoundItem(): FlatListItem? {
+    return this.itemView.getTag(R.id.flat_list_bound_item_tag_id) as? FlatListItem
+}
+
+private fun RecyclerView.ViewHolder.setBoundItem(item: FlatListItem) {
+    this.itemView.setTag(R.id.flat_list_bound_item_tag_id, item)
+}
 
 
 inline fun <reified T : FlatListItem> RecyclerView.ViewHolder.runWithListItem(crossinline block: (T) -> Unit) {

@@ -30,7 +30,7 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
     }
 
     override fun onBindViewHolder(viewHolder: VH) {
-        lifecycleScope.launchWhenStarted {
+        lifecycleScope.launchWhenCreated {
             singleRunner.runInIsolation {
                 getPagingSourceLoadStateFlow(viewHolder)?.collectLatest {
                     val state = when (it) {
