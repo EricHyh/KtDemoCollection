@@ -56,6 +56,8 @@ internal class LoadEventHandler {
         when (event) {
             LoadEvent.Refresh -> {
                 refreshComplete.set(true)
+                appendComplete.set(true)
+                rearrangeComplete.set(true)
             }
             LoadEvent.Append -> {
                 appendComplete.set(true)

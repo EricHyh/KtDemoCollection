@@ -7,6 +7,8 @@ package com.hyh.list
  */
 class SingleItemSource(override val sourceToken: Any, private val item: FlatListItem) : SimpleItemSource<Unit>() {
 
+    constructor(item: FlatListItem) : this(item.javaClass, item)
+
     override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
         return PreShowResult.Success(listOf(item))
     }

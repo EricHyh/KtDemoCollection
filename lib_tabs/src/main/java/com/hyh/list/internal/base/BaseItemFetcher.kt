@@ -20,9 +20,6 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
 
     protected abstract val uiReceiver: BaseUiReceiverForSource
 
-    private val stateFlowProvider: StateFlowProvider?
-        get() = uiReceiver.stateFlowProvider
-
     val flow: Flow<SourceData> = simpleChannelFlow {
         launch {
             this@simpleChannelFlow.initChannelFlow()

@@ -8,9 +8,7 @@ import com.hyh.coroutine.SingleRunner
 import com.hyh.list.*
 import com.hyh.list.adapter.getItemSourceLoadState
 import com.hyh.list.adapter.getRefreshActuator
-import com.hyh.page.state.PageState
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 /**
  * 监听某个数据源加载状态的Item
@@ -24,6 +22,10 @@ abstract class ItemSourceStateItem<VH : RecyclerView.ViewHolder>(
         private const val TAG = "ItemSourceStateItem"
     }
 
+    private var _itemSourceState: ItemSourceState? = null
+    protected val itemSourceState: ItemSourceState?
+        get() = _itemSourceState
+
     private val singleRunner = SingleRunner()
 
     protected fun getRefreshActuator(viewHolder: VH): RefreshActuator? {
@@ -31,45 +33,46 @@ abstract class ItemSourceStateItem<VH : RecyclerView.ViewHolder>(
     }
 
     override fun onBindViewHolder(viewHolder: VH) {
-        lifecycleScope.launchWhenCreated {
+        lifecycleScope.launchWhenStarted {
             singleRunner.runInIsolation {
                 getItemSourceLoadStateFlow(viewHolder)?.collectLatest {
                     val state = when (it) {
                         is ItemSourceLoadState.Initial -> {
-                            PageState.LOADING
+                            ItemSourceState.Loading
                         }
                         is ItemSourceLoadState.Loading -> {
-                            PageState.LOADING
+                            ItemSourceState.Loading
                         }
                         is ItemSourceLoadState.PreShow -> {
                             if (it.itemCount > 0) {
-                                PageState.SUCCESS
+                                ItemSourceState.Success
                             } else {
-                                PageState.LOADING
+                                ItemSourceState.Loading
                             }
                         }
                         is ItemSourceLoadState.Success -> {
                             if (it.itemCount > 0) {
-                                PageState.SUCCESS
+                                ItemSourceState.Success
                             } else {
-                                PageState.EMPTY
+                                ItemSourceState.Empty
                             }
                         }
                         is ItemSourceLoadState.Error -> {
                             if (it.currentItemCount > 0) {
-                                PageState.SUCCESS
+                                ItemSourceState.Success
                             } else {
-                                PageState.ERROR
+                                ItemSourceState.Error
                             }
                         }
                     }
+                    _itemSourceState = state
                     bindPageState(viewHolder, state)
                 }
             }
         }
     }
 
-    abstract fun bindPageState(viewHolder: VH, state: PageState)
+    abstract fun bindPageState(viewHolder: VH, state: ItemSourceState)
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is ItemSourceStateItem) return false
@@ -84,4 +87,14 @@ abstract class ItemSourceStateItem<VH : RecyclerView.ViewHolder>(
     private fun getItemSourceLoadStateFlow(viewHolder: VH): SimpleStateFlow<ItemSourceLoadState>? {
         return viewHolder.getItemSourceLoadState(sourceToken)
     }
+}
+
+
+enum class ItemSourceState {
+
+    Loading,
+    Success,
+    Error,
+    Empty,
+
 }

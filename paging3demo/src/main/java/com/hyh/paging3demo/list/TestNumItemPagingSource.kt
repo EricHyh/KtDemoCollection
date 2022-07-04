@@ -1,7 +1,9 @@
 package com.hyh.paging3demo.list
 
+import android.util.Log
 import com.hyh.list.FlatListItem
 import com.hyh.list.SimpleItemPagingSource
+import kotlinx.coroutines.delay
 
 /**
  * TODO: Add Description
@@ -14,7 +16,13 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
         private const val TAG = "TestNumItemPagingSource"
     }
 
+
+    var loadNum = 0
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, FlatListItem> {
+        Log.d(TAG, "load: ")
+        delay(2000)
+        if (loadNum++ % 2 == 0) return LoadResult.Error(NullPointerException())
         when (params) {
             is LoadParams.Refresh -> {
                 val items = mutableListOf<FlatListItem>()

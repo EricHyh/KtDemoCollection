@@ -24,8 +24,6 @@ interface UiReceiverForRepo<Param : Any> {
 
 interface UiReceiverForSource {
 
-    fun injectLoadState(provider: StateFlowProvider)
-
     fun refresh(important: Boolean)
 
     fun append(important: Boolean)

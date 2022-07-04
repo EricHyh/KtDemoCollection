@@ -1,18 +1,14 @@
 package com.hyh.list
 
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.CallSuper
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.AppendActuator
-import com.hyh.RearrangeActuator
-import com.hyh.RefreshActuator
-import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.lifecycle.ChildLifecycleOwner
 import com.hyh.lifecycle.IChildLifecycleOwner
-import com.hyh.list.adapter.IFlatListManager
 import com.hyh.tabs.BuildConfig
 import com.hyh.tabs.R
 import java.lang.ref.WeakReference
@@ -139,7 +135,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
     abstract fun getViewHolderFactory(): TypedViewHolderFactory<VH>
 
     fun bindViewHolder(viewHolder: VH, payloads: List<Any>) {
-        delegate.onBindViewHolder(viewHolder)
+        delegate.onBindItemView(viewHolder.itemView)
         onBindViewHolder(viewHolder, payloads)
     }
 
@@ -149,14 +145,12 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
     protected abstract fun onBindViewHolder(viewHolder: VH)
 
     internal fun viewAttachedToWindow(viewHolder: VH) {
-        delegate.onViewAttachedToWindow(viewHolder)
         onViewAttachedToWindow(viewHolder)
     }
 
     protected open fun onViewAttachedToWindow(viewHolder: VH) {}
 
     internal fun viewDetachedFromWindow(viewHolder: VH) {
-        delegate.onViewDetachedFromWindow(viewHolder)
         onViewDetachedFromWindow(viewHolder)
     }
 
@@ -200,7 +194,8 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
     internal abstract inner class Delegate<VH : RecyclerView.ViewHolder> :
         DataDelegate<VH>,
-        IChildLifecycleOwner {
+        IChildLifecycleOwner,
+        View.OnAttachStateChangeListener {
 
         override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
@@ -214,7 +209,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
         var isBoundViewHolder: Boolean = false
 
-        private val boundViewHolderRefSet = mutableSetOf<VHReference<VH>>()
+        private val boundItemViewRefSet = mutableSetOf<VHReference>()
 
         @CallSuper
         override fun onItemAttached() {
@@ -222,7 +217,9 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
             Log.d(
                 TAG,
-                "onItemAttached: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
+                "onItemAttached: ${this@IFlatListItem}, " +
+                        "currentSelfState=${lifecycleOwner.lifecycle.selfState}, " +
+                        "currentState=${lifecycleOwner.lifecycle.currentState}"
             )
         }
 
@@ -231,7 +228,9 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             val currentSelfState = lifecycleOwner.lifecycle.selfState
             Log.d(
                 TAG,
-                "onItemActivated: ${this@IFlatListItem}, currentSelfState=$currentSelfState, currentState=${lifecycleOwner.lifecycle.currentState}"
+                "onItemActivated: ${this@IFlatListItem}, " +
+                        "currentSelfState=$currentSelfState, " +
+                        "currentState=${lifecycleOwner.lifecycle.currentState}"
             )
 
             if (currentSelfState != Lifecycle.State.CREATED) {
@@ -247,59 +246,101 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
         }
 
-        fun onViewAttachedToWindow(viewHolder: VH) {
-            Log.d(TAG, "onViewAttachedToWindow: $viewHolder - ${this@IFlatListItem}")
-            val currentSelfState = lifecycleOwner.lifecycle.selfState
-            if (currentSelfState < Lifecycle.State.STARTED) {
-                val errorMsg =
-                    getErrorMsg("onViewAttachedToWindow", currentSelfState, Lifecycle.State.STARTED)
-                if (BuildConfig.DEBUG) {
-                    throw IllegalStateException(errorMsg)
-                } else {
-                    Log.e(TAG, errorMsg)
-                }
-            }
-            lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
-        }
-
         @Suppress("UNCHECKED_CAST")
-        fun onBindViewHolder(viewHolder: VH) {
-            val boundItem = viewHolder.getBoundItem() as? IFlatListItem<VH>
+        fun onBindItemView(itemView: View) {
+            val boundItem = itemView.getBoundItem() as? IFlatListItem<VH>
             if (boundItem === this@IFlatListItem) return
-            boundItem?.delegate?.onUnBindViewHolder(viewHolder)
-            val isAttached = viewHolder.itemView.isAttachedToWindow
+            boundItem?.delegate?.onUnBindItemView(itemView)
+
+            val isAttached = itemView.isAttachedToWindow
+            Log.d(
+                TAG,
+                "onBindItemView: ${this@IFlatListItem}, " +
+                        "currentSelfState=${lifecycleOwner.lifecycle.selfState}, " +
+                        "currentState=${lifecycleOwner.lifecycle.currentState}, " +
+                        "isAttached=${isAttached}"
+            )
             if (isAttached) {
                 lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
             }
-            boundViewHolderRefSet.add(VHReference(viewHolder))
-            viewHolder.setBoundItem(this@IFlatListItem)
+
+            itemView.addOnAttachStateChangeListener(this)
+            boundItemViewRefSet.add(VHReference(itemView))
+
+            itemView.setBoundItem(this@IFlatListItem)
         }
 
-        private fun onUnBindViewHolder(viewHolder: VH) {
-            val vhReference = VHReference(viewHolder)
-            boundViewHolderRefSet.remove(vhReference)
-            val iterator = boundViewHolderRefSet.iterator()
-            var isAttached = false
-            while (iterator.hasNext()) {
-                val next = iterator.next()
-                val vh = next.get()
-                if (vh == null) {
-                    iterator.remove()
-                } else {
-                    isAttached = vh.itemView.isAttachedToWindow || isAttached
+        private fun onUnBindItemView(itemView: View) {
+
+            itemView.removeOnAttachStateChangeListener(this)
+            val vhReference = VHReference(itemView)
+            boundItemViewRefSet.remove(vhReference)
+
+            val isAttached = isAttachedToWindow()
+
+            Log.d(
+                TAG,
+                "onUnBindItemView: ${this@IFlatListItem}, " +
+                        "currentSelfState=${lifecycleOwner.lifecycle.selfState}, " +
+                        "currentState=${lifecycleOwner.lifecycle.currentState}, " +
+                        "isAttached=${isAttached}"
+            )
+
+            if (!isAttached) {
+                val currentSelfState = lifecycleOwner.lifecycle.selfState
+                if (currentSelfState == Lifecycle.State.RESUMED) {
+                    lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
                 }
             }
-            val currentSelfState = lifecycleOwner.lifecycle.selfState
-            if (currentSelfState == Lifecycle.State.RESUMED) {
-                lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
+        }
+
+
+        override fun onViewAttachedToWindow(itemView: View) {
+            val boundItem = itemView.getBoundItem()
+            if (boundItem === this@IFlatListItem) {
+                val currentSelfState = lifecycleOwner.lifecycle.selfState
+                if (currentSelfState < Lifecycle.State.STARTED) {
+                    val errorMsg =
+                        getErrorMsg("onViewAttachedToWindow", currentSelfState, Lifecycle.State.STARTED)
+                    if (BuildConfig.DEBUG) {
+                        throw IllegalStateException(errorMsg)
+                    } else {
+                        Log.e(TAG, errorMsg)
+                    }
+                }
+
+                Log.d(
+                    TAG,
+                    "onViewAttachedToWindow: ${this@IFlatListItem}, " +
+                            "currentSelfState=${lifecycleOwner.lifecycle.selfState}, " +
+                            "currentState=${lifecycleOwner.lifecycle.currentState}"
+                )
+
+                lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
+            } else {
+                onUnBindItemView(itemView)
             }
         }
 
-        fun onViewDetachedFromWindow(viewHolder: VH) {
-            Log.d(TAG, "onViewDetachedFromWindow: $viewHolder - ${this@IFlatListItem}")
-            val currentSelfState = lifecycleOwner.lifecycle.selfState
-            if (currentSelfState == Lifecycle.State.RESUMED) {
-                lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
+        override fun onViewDetachedFromWindow(itemView: View) {
+            val boundItem = itemView.getBoundItem()
+            if (boundItem === this@IFlatListItem) {
+                val isAttached = isAttachedToWindow(itemView)
+                Log.d(
+                    TAG,
+                    "onViewDetachedFromWindow: ${this@IFlatListItem}, " +
+                            "currentSelfState=${lifecycleOwner.lifecycle.selfState}, " +
+                            "currentState=${lifecycleOwner.lifecycle.currentState}, " +
+                            "isAttached=${isAttached}"
+                )
+                if (!isAttached) {
+                    val currentSelfState = lifecycleOwner.lifecycle.selfState
+                    if (currentSelfState == Lifecycle.State.RESUMED) {
+                        lifecycleOwner.lifecycle.currentState = Lifecycle.State.STARTED
+                    }
+                }
+            } else {
+                onUnBindItemView(itemView)
             }
         }
 
@@ -307,20 +348,47 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
         override fun onItemInactivated() {
             Log.d(
                 TAG,
-                "onItemInactivated: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
+                "onItemInactivated: ${this@IFlatListItem}, " +
+                        "currentSelfState=${lifecycleOwner.lifecycle.selfState}, " +
+                        "currentState=${lifecycleOwner.lifecycle.currentState}"
             )
-            boundViewHolderRefSet.clear()
+
+            val iterator = boundItemViewRefSet.iterator()
+            while (iterator.hasNext()) {
+                val next = iterator.next()
+                iterator.remove()
+                next.get()?.removeOnAttachStateChangeListener(this)
+            }
+
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.CREATED
         }
 
         @CallSuper
         override fun onItemDetached() {
+            displayedItems = null
             _attached = false
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             Log.d(
                 TAG,
-                "onItemDetached: ${this@IFlatListItem}, currentSelfState=${lifecycleOwner.lifecycle.selfState}, currentState=${lifecycleOwner.lifecycle.currentState}"
+                "onItemDetached: ${this@IFlatListItem}, " +
+                        "currentSelfState=${lifecycleOwner.lifecycle.selfState}," +
+                        " currentState=${lifecycleOwner.lifecycle.currentState}"
             )
+        }
+
+        private fun isAttachedToWindow(detachedItemView: View? = null): Boolean {
+            val iterator = boundItemViewRefSet.iterator()
+            var isAttached = false
+            while (iterator.hasNext()) {
+                val next = iterator.next()
+                val itemView = next.get()
+                if (itemView == null) {
+                    iterator.remove()
+                } else {
+                    isAttached = (itemView !== detachedItemView && itemView.isAttachedToWindow) || isAttached
+                }
+            }
+            return isAttached
         }
 
         private fun getErrorMsg(
@@ -335,10 +403,10 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
     }
 
 
-    private class VHReference<VH : RecyclerView.ViewHolder>(viewHolder: VH) :
-        WeakReference<VH>(viewHolder) {
+    private class VHReference(view: View) :
+        WeakReference<View>(view) {
 
-        private val hashCode = System.identityHashCode(viewHolder)
+        private val hashCode = System.identityHashCode(view)
 
         override fun hashCode(): Int {
             return hashCode
@@ -346,7 +414,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
         override fun equals(other: Any?): Boolean {
             if (other === this) return true
-            if (other !is VHReference<*>) return false
+            if (other !is VHReference) return false
             return get() == other.get()
         }
     }
@@ -377,16 +445,19 @@ typealias TypedViewHolderFactory<VH> = (parent: ViewGroup) -> VH
 typealias ViewHolderFactory = TypedViewHolderFactory<out RecyclerView.ViewHolder>
 
 
-private fun RecyclerView.ViewHolder.getBoundItem(): FlatListItem? {
-    return this.itemView.getTag(R.id.flat_list_bound_item_tag_id) as? FlatListItem
+// region BoundIte
+
+private fun View.getBoundItem(): FlatListItem? {
+    return this.getTag(R.id.flat_list_bound_item_tag_id) as? FlatListItem
 }
 
-private fun RecyclerView.ViewHolder.setBoundItem(item: FlatListItem) {
-    this.itemView.setTag(R.id.flat_list_bound_item_tag_id, item)
+private fun View.setBoundItem(item: FlatListItem) {
+    this.setTag(R.id.flat_list_bound_item_tag_id, item)
 }
-
 
 inline fun <reified T : FlatListItem> RecyclerView.ViewHolder.runWithListItem(crossinline block: (T) -> Unit) {
     val item = this.itemView.getTag(R.id.flat_list_bound_item_tag_id) as? T
     item?.let { block.invoke(it) }
 }
+
+// endregion

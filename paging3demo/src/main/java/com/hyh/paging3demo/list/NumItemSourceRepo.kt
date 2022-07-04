@@ -3,6 +3,7 @@ package com.hyh.paging3demo.list
 import android.util.Log
 import com.hyh.list.SimpleItemSourceRepo
 import com.hyh.base.RefreshStrategy
+import com.hyh.list.SingleItemSource
 import com.hyh.list.internal.RepoDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -26,8 +27,13 @@ class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
     override suspend fun load(param: Unit): LoadResult {
         //delay(1000)
         //SystemClock.sleep(1000)
-        val sources = listOf(NumItemSource("${num}"), TestNumItemPagingSource())
-
+        val sources =
+            listOf(
+                NumItemSource("${num}"),
+                SingleItemSource(TextSourceStateItem(TestNumItemPagingSource::class.java)),
+                TestNumItemPagingSource(),
+                SingleItemSource(TextAppendStateItem(TestNumItemPagingSource::class.java)),
+            )
 
         /*val sources = ListConfig.randomTypes()
             .map {
@@ -45,3 +51,6 @@ class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
     }
 
 }
+
+
+

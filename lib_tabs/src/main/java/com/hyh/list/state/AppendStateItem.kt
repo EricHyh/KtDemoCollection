@@ -9,7 +9,6 @@ import com.hyh.list.*
 import com.hyh.list.adapter.getAppendActuator
 import com.hyh.list.adapter.getPagingSourceLoadState
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 /**
  * 监听加载更多状态的Item
@@ -23,6 +22,10 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
         private const val TAG = "ItemSourceStateItem"
     }
 
+    private var _appendState: AppendState? = null
+    protected val appendState: AppendState?
+        get() = _appendState
+
     private val singleRunner = SingleRunner()
 
     protected fun getAppendActuator(viewHolder: VH): AppendActuator? {
@@ -30,7 +33,7 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
     }
 
     override fun onBindViewHolder(viewHolder: VH) {
-        lifecycleScope.launchWhenCreated {
+        lifecycleScope.launchWhenStarted {
             singleRunner.runInIsolation {
                 getPagingSourceLoadStateFlow(viewHolder)?.collectLatest {
                     val state = when (it) {
@@ -64,13 +67,19 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
                             }
                         }
                     }
-                    bindPageState(viewHolder, state)
+                    _appendState = state
+                    bindAppendState(viewHolder, state)
                 }
             }
         }
     }
 
-    abstract fun bindPageState(viewHolder: VH, state: AppendState)
+    override fun onItemInactivated() {
+        super.onItemInactivated()
+        _appendState = null
+    }
+
+    abstract fun bindAppendState(viewHolder: VH, state: AppendState)
 
     override fun areContentsTheSame(newItem: FlatListItem): Boolean {
         if (newItem !is AppendStateItem) return false
@@ -85,7 +94,6 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
     private fun getPagingSourceLoadStateFlow(viewHolder: VH): SimpleStateFlow<PagingSourceLoadState>? {
         return viewHolder.getPagingSourceLoadState(pagingSourceToken)
     }
-
 }
 
 

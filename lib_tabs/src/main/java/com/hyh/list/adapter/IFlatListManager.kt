@@ -66,11 +66,11 @@ fun RecyclerView.ViewHolder.getRefreshActuator(sourceToken: Any): RefreshActuato
 }
 
 fun RecyclerView.ViewHolder.getAppendActuator(sourceToken: Any): AppendActuator? {
-    return getFlatListManager()?.getRefreshActuator(sourceToken)
+    return getFlatListManager()?.getAppendActuator(sourceToken)
 }
 
 fun RecyclerView.ViewHolder.getRearrangeActuator(sourceToken: Any): RearrangeActuator? {
-    return getFlatListManager()?.getRefreshActuator(sourceToken)
+    return getFlatListManager()?.getRearrangeActuator(sourceToken)
 }
 
 fun RecyclerView.ViewHolder.getItemSourceLoadState(sourceToken: Any): SimpleStateFlow<ItemSourceLoadState>? {
