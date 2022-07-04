@@ -22,7 +22,11 @@ sealed class RepoLoadState {
 }
 
 
-interface SourceLoadState
+interface SourceLoadState {
+
+    val currentItemCount: Int
+
+}
 
 
 /**
@@ -31,36 +35,36 @@ interface SourceLoadState
  * @author eriche
  * @data 2021/1/29
  */
-sealed class ItemSourceLoadState : SourceLoadState {
+sealed class ItemSourceLoadState(override val currentItemCount: Int) : SourceLoadState {
 
-    object Initial : ItemSourceLoadState()
+    object Initial : ItemSourceLoadState(0)
 
-    object Loading : ItemSourceLoadState()
+    data class Loading(override val currentItemCount: Int) : ItemSourceLoadState(currentItemCount)
 
-    data class PreShow(val itemCount: Int) : ItemSourceLoadState()
+    data class PreShow(override val currentItemCount: Int) : ItemSourceLoadState(currentItemCount)
 
-    data class Success(val itemCount: Int) : ItemSourceLoadState()
+    data class Success(override val currentItemCount: Int) : ItemSourceLoadState(currentItemCount)
 
-    data class Error(val error: Throwable, val preShowing: Boolean, val currentItemCount: Int) : ItemSourceLoadState()
+    data class Error(override val currentItemCount: Int, val error: Throwable, val preShowing: Boolean) : ItemSourceLoadState(currentItemCount)
 
 }
 
 
-sealed class PagingSourceLoadState : SourceLoadState {
+sealed class PagingSourceLoadState(override val currentItemCount: Int) : SourceLoadState {
 
-    object Initial : PagingSourceLoadState()
+    object Initial : PagingSourceLoadState(0)
 
-    object Refreshing : PagingSourceLoadState()
+    data class Refreshing(override val currentItemCount: Int) : PagingSourceLoadState(currentItemCount)
 
-    data class RefreshSuccess(val endOfPaginationReached: Boolean) : PagingSourceLoadState()
+    data class RefreshSuccess(override val currentItemCount: Int, val endOfPaginationReached: Boolean) : PagingSourceLoadState(currentItemCount)
 
-    data class RefreshError(val error: Throwable) : PagingSourceLoadState()
+    data class RefreshError(override val currentItemCount: Int, val error: Throwable) : PagingSourceLoadState(currentItemCount)
 
-    object Appending : PagingSourceLoadState()
+    data class Appending(override val currentItemCount: Int) : PagingSourceLoadState(currentItemCount)
 
-    data class AppendError(val error: Throwable) : PagingSourceLoadState()
+    data class AppendError(override val currentItemCount: Int, val error: Throwable) : PagingSourceLoadState(currentItemCount)
 
-    data class AppendSuccess(val endOfPaginationReached: Boolean) : PagingSourceLoadState()
+    data class AppendSuccess(override val currentItemCount: Int, val endOfPaginationReached: Boolean) : PagingSourceLoadState(currentItemCount)
 }
 
 

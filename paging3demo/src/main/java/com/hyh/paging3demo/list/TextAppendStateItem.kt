@@ -6,8 +6,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.TypedViewHolderFactory
-import com.hyh.list.state.AppendState
-import com.hyh.list.state.AppendStateItem
+import com.hyh.list.stateitem.AppendState
+import com.hyh.list.stateitem.AppendStateItem
 
 /**
  * TODO: Add Description

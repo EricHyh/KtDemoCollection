@@ -4,11 +4,12 @@ import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.coroutine.SimpleStateFlow
 import com.hyh.list.*
+import com.hyh.list.internal.IFetcher
 import com.hyh.list.internal.RepoData
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.abs
 
-interface IListAdapter<Param : Any> {
+interface IListAdapter<Param : Any> : IFetcher<Param> {
 
     val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
 
@@ -33,17 +34,6 @@ interface IListAdapter<Param : Any> {
 
     fun findItemLocalInfo(globalPosition: Int): ItemLocalInfo?
     fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo?
-
-    fun refreshRepo(param: Param)
-
-    fun refreshSources(important: Boolean = false)
-    fun refreshSources(vararg sourceIndexes: Int, important: Boolean = false)
-    fun refreshSources(sourceIndexStart: Int, count: Int, important: Boolean = false)
-    fun refreshSources(vararg sourceTokens: Any, important: Boolean = false)
-    fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean = false)
-
-    fun sourceAppend(sourceToken: Any, important: Boolean = false)
-    fun sourceRearrange(sourceToken: Any, important: Boolean = false)
 
     fun moveGlobalItem(from: Int, to: Int): Boolean {
         if (from < 0 || to < 0) return false

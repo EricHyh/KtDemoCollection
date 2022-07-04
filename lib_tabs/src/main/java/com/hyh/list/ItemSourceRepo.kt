@@ -4,6 +4,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import com.hyh.list.internal.ItemSourceFetcher
 import com.hyh.base.RefreshStrategy
+import com.hyh.list.internal.IFetcher
 import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.RepoData
 import com.hyh.list.internal.RepoDisplayedData
@@ -30,6 +31,9 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwne
     }
 
     val flow: Flow<RepoData<Param>> = itemSourceFetcher.flow
+
+    val fetcher: IFetcher<Param>
+        get() = itemSourceFetcher
 
     final override fun getLifecycle(): Lifecycle {
         return itemSourceFetcher.lifecycleOwner.lifecycle

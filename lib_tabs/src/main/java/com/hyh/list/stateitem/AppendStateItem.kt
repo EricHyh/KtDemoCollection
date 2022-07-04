@@ -1,4 +1,4 @@
-package com.hyh.list.state
+package com.hyh.list.stateitem
 
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -38,32 +38,32 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
                 getPagingSourceLoadStateFlow(viewHolder)?.collectLatest {
                     val state = when (it) {
                         is PagingSourceLoadState.Initial -> {
-                            AppendState.Loading
+                            AppendState.Loading(it.currentItemCount)
                         }
                         is PagingSourceLoadState.Refreshing -> {
-                            AppendState.Loading
+                            AppendState.Loading(it.currentItemCount)
                         }
                         is PagingSourceLoadState.RefreshSuccess -> {
                             if (it.endOfPaginationReached) {
-                                AppendState.NoMore
+                                AppendState.NoMore(it.currentItemCount)
                             } else {
-                                AppendState.Loading
+                                AppendState.Loading(it.currentItemCount)
                             }
                         }
                         is PagingSourceLoadState.RefreshError -> {
-                            AppendState.Error
+                            AppendState.Error(it.currentItemCount)
                         }
                         is PagingSourceLoadState.Appending -> {
-                            AppendState.Loading
+                            AppendState.Loading(it.currentItemCount)
                         }
                         is PagingSourceLoadState.AppendError -> {
-                            AppendState.Error
+                            AppendState.Error(it.currentItemCount)
                         }
                         is PagingSourceLoadState.AppendSuccess -> {
                             if (it.endOfPaginationReached) {
-                                AppendState.NoMore
+                                AppendState.NoMore(it.currentItemCount)
                             } else {
-                                AppendState.Success
+                                AppendState.Success(it.currentItemCount)
                             }
                         }
                     }
@@ -97,11 +97,14 @@ abstract class AppendStateItem<VH : RecyclerView.ViewHolder>(
 }
 
 
-enum class AppendState {
+sealed class AppendState(open val currentItemCount: Int) {
 
-    Loading,
-    Success,
-    Error,
-    NoMore,
+    data class Loading(override val currentItemCount: Int) : AppendState(currentItemCount)
+
+    data class Success(override val currentItemCount: Int) : AppendState(currentItemCount)
+
+    data class Error(override val currentItemCount: Int) : AppendState(currentItemCount)
+
+    data class NoMore(override val currentItemCount: Int) : AppendState(currentItemCount)
 
 }

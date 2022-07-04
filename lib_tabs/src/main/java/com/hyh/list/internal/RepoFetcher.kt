@@ -2,7 +2,6 @@ package com.hyh.list.internal
 
 import android.util.Log
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
 import com.hyh.Invoke
 import com.hyh.base.RefreshEventHandler
 import com.hyh.base.RefreshStrategy
@@ -22,9 +21,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.*
+import kotlin.math.min
 
 
-abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) :
+abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) : IFetcher<Param>,
     IChildLifecycleOwner {
 
     companion object {
@@ -120,6 +120,72 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             it.delegate.detach()
         }
     }
+
+
+    // region IFetcher
+    override fun refreshRepo(param: Param) {
+        uiReceiver.refresh(param)
+    }
+
+    override fun refreshSources(important: Boolean) {
+        repoDisplayedData.sources?.forEach {
+            it.refreshActuator(important)
+        }
+    }
+
+    override fun refreshSources(vararg sourceIndexes: Int, important: Boolean) {
+        var index = 0
+        val sourceIndexList = sourceIndexes.toMutableList()
+        repoDisplayedData.sources?.forEach {
+            if (sourceIndexList.isEmpty()) return@refreshSources
+            if (sourceIndexList.remove(index)) {
+                it.refreshActuator(important)
+            }
+            index++
+        }
+    }
+
+    override fun refreshSources(sourceIndexStart: Int, count: Int, important: Boolean) {
+        val sources = repoDisplayedData.sources
+        val size = sources?.size ?: return
+        if (sourceIndexStart >= size) {
+            return
+        }
+        val end = min(sourceIndexStart + count - 1, size - 1)
+        for (index in sourceIndexStart..end) {
+            sources[index].refreshActuator(important)
+        }
+    }
+
+    override fun refreshSources(vararg sourceTokens: Any, important: Boolean) {
+        val sourcesMap = repoDisplayedData.sourcesMap ?: return
+        sourceTokens.forEach {
+            sourcesMap[it]?.refreshActuator?.invoke(important)
+        }
+    }
+
+    override fun refreshSources(sourceTokenStart: Any, count: Int, important: Boolean) {
+        val baseItemSource = repoDisplayedData.sourcesMap?.get(sourceTokenStart) ?: return
+        val sourcePosition = baseItemSource.sourcePosition
+        refreshSources(sourcePosition, count, important)
+    }
+
+    override fun sourceAppend(sourceToken: Any, important: Boolean) {
+        val baseItemSource = repoDisplayedData.sourcesMap?.get(sourceToken) ?: return
+        if (baseItemSource is ItemPagingSource<*, *>) {
+            baseItemSource.appendActuator(important)
+        }
+    }
+
+    override fun sourceRearrange(sourceToken: Any, important: Boolean) {
+        val baseItemSource = repoDisplayedData.sourcesMap?.get(sourceToken) ?: return
+        if (baseItemSource is ItemPagingSource<*, *>) {
+            baseItemSource.rearrangeActuator(important)
+        }
+    }
+
+    // endregion
+
 }
 
 class RepoResultProcessorGenerator(
@@ -159,15 +225,19 @@ class RepoResultProcessorGenerator(
 
         val lazySources = mutableListOf<LazySourceData>()
         val sources = mutableListOf<BaseItemSource<out Any, out Any>>()
+        val sourcesMap = mutableMapOf<Any, BaseItemSource<out Any, out Any>>()
+
         updateResult.resultList.forEachIndexed { index, itemSourceWrapper ->
             lazySources.add(itemSourceWrapper.lazySourceData)
             sources.add(itemSourceWrapper.itemSource)
+            sourcesMap[itemSourceWrapper.sourceToken] = itemSourceWrapper.itemSource
             sourceIndexMap[itemSourceWrapper.sourceToken] = index
         }
 
         return RepoProcessedResult(lazySources, updateResult.listOperates) {
             repoDisplayedData.lazySources = lazySources
             repoDisplayedData.sources = sources
+            repoDisplayedData.sourcesMap = sourcesMap
             repoDisplayedData.resultExtra = resultExtra
 
             lazySources.forEach {

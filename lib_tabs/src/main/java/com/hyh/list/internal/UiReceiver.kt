@@ -40,15 +40,3 @@ interface UiReceiverForSource {
 
     fun destroy()
 }
-
-
-
-
-
-interface StateFlowProvider {
-
-    val loadStateFlow: SimpleStateFlow<ItemSourceLoadState>
-
-    val pagingLoadStateFlow: SimpleStateFlow<PagingSourceLoadState>
-
-}

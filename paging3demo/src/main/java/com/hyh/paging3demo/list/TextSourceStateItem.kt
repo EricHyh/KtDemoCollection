@@ -6,10 +6,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.TypedViewHolderFactory
-import com.hyh.list.state.AppendState
-import com.hyh.list.state.AppendStateItem
-import com.hyh.list.state.ItemSourceState
-import com.hyh.list.state.ItemSourceStateItem
+import com.hyh.list.stateitem.ItemSourceState
+import com.hyh.list.stateitem.ItemSourceStateItem
 
 /**
  * TODO: Add Description
@@ -24,21 +22,30 @@ class TextSourceStateItem(pagingSourceToken: Any) : ItemSourceStateItem<TextView
 
     override fun bindPageState(viewHolder: TextViewHolder, state: ItemSourceState) {
         viewHolder.textView.text = when (state) {
-            ItemSourceState.Loading -> {
+            is ItemSourceState.Loading -> {
                 "加载中..."
             }
-            ItemSourceState.Success -> {
+            is ItemSourceState.Success -> {
                 "成功"
             }
-            ItemSourceState.Error -> {
+            is ItemSourceState.Error -> {
                 "失败了，点击重试"
             }
-            ItemSourceState.Empty -> {
+            is ItemSourceState.Empty -> {
                 "没数据"
             }
         }
+        val height = viewHolder.textView.layoutParams?.height
+        val newHeight = if (state.currentItemCount > 0) {
+            0
+        } else {
+            ViewGroup.LayoutParams.MATCH_PARENT
+        }
+        if (height != newHeight) {
+            viewHolder.textView.layoutParams?.height = newHeight
+        }
         viewHolder.textView.setOnClickListener {
-            if (itemSourceState == ItemSourceState.Error) {
+            if (itemSourceState is ItemSourceState.Error) {
                 getRefreshActuator(viewHolder)?.invoke(false)
             }
         }

@@ -57,6 +57,9 @@ class RepoDisplayedData(
     var sources: List<BaseItemSource<out Any, out Any>>? = null,
 
     @Volatile
+    var sourcesMap: Map<Any, BaseItemSource<out Any, out Any>>? = null,
+
+    @Volatile
     var resultExtra: Any? = null
 )
 

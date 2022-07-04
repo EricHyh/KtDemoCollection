@@ -83,8 +83,8 @@ class FlatListItemAdapter constructor(
                 withContext(mainDispatcher) {
                     when (event) {
                         is SourceEvent.Loading -> {
-                            _loadStateFlow.value = ItemSourceLoadState.Loading
-                            onStateChanged(ItemSourceLoadState.Loading)
+                            _loadStateFlow.value = ItemSourceLoadState.Loading(itemCount)
+                            onStateChanged(ItemSourceLoadState.Loading(itemCount))
                             event.onReceived()
                         }
                         is SourceEvent.PreShowing -> {
@@ -94,39 +94,39 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.RefreshError -> {
-                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, event.preShowing, itemCount)
-                            onStateChanged(ItemSourceLoadState.Error(event.error, event.preShowing, itemCount))
+                            _loadStateFlow.value = ItemSourceLoadState.Error(itemCount, event.error, event.preShowing)
+                            onStateChanged(ItemSourceLoadState.Error(itemCount, event.error, event.preShowing))
                             event.onReceived()
                         }
 
 
                         is SourceEvent.PagingRefreshing -> {
-                            _pagingLoadStateFlow.value = PagingSourceLoadState.Refreshing
-                            _loadStateFlow.value = ItemSourceLoadState.Loading
-                            onStateChanged(PagingSourceLoadState.Refreshing)
+                            _pagingLoadStateFlow.value = PagingSourceLoadState.Refreshing(itemCount)
+                            _loadStateFlow.value = ItemSourceLoadState.Loading(itemCount)
+                            onStateChanged(PagingSourceLoadState.Refreshing(itemCount))
                             event.onReceived()
                         }
                         is SourceEvent.PagingRefreshSuccess -> {
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.PagingRefreshError -> {
-                            val refreshError = PagingSourceLoadState.RefreshError(event.error)
+                            val refreshError = PagingSourceLoadState.RefreshError(itemCount, event.error)
                             _pagingLoadStateFlow.value = refreshError
-                            _loadStateFlow.value = ItemSourceLoadState.Error(event.error, false, itemCount)
+                            _loadStateFlow.value = ItemSourceLoadState.Error(itemCount, event.error, false)
                             onStateChanged(refreshError)
                             event.onReceived()
                         }
 
                         is SourceEvent.PagingAppending -> {
-                            _pagingLoadStateFlow.value = PagingSourceLoadState.Appending
-                            onStateChanged(PagingSourceLoadState.Appending)
+                            _pagingLoadStateFlow.value = PagingSourceLoadState.Appending(itemCount)
+                            onStateChanged(PagingSourceLoadState.Appending(itemCount))
                             event.onReceived()
                         }
                         is SourceEvent.PagingAppendSuccess -> {
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.PagingAppendError -> {
-                            val appendError = PagingSourceLoadState.AppendError(event.error)
+                            val appendError = PagingSourceLoadState.AppendError(itemCount, event.error)
                             _pagingLoadStateFlow.value = appendError
                             onStateChanged(appendError)
                             event.onReceived()
@@ -221,10 +221,10 @@ class FlatListItemAdapter constructor(
                 ItemSourceLoadState.Success(resultItems.size)
             }
             is SourceEvent.PagingRefreshSuccess -> {
-                PagingSourceLoadState.RefreshSuccess(sourceEvent.endOfPaginationReached)
+                PagingSourceLoadState.RefreshSuccess(itemCount, sourceEvent.endOfPaginationReached)
             }
             is SourceEvent.PagingAppendSuccess -> {
-                PagingSourceLoadState.AppendSuccess(sourceEvent.endOfPaginationReached)
+                PagingSourceLoadState.AppendSuccess(itemCount, sourceEvent.endOfPaginationReached)
             }
             is SourceEvent.ItemOperate -> {
                 null

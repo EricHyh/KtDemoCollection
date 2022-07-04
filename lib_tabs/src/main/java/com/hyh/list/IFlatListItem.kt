@@ -207,8 +207,6 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
         var displayedItems: List<FlatListItem>? = null
 
-        var isBoundViewHolder: Boolean = false
-
         private val boundItemViewRefSet = mutableSetOf<VHReference>()
 
         @CallSuper

@@ -1,4 +1,4 @@
-package com.hyh.list.state
+package com.hyh.list.stateitem
 
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -38,30 +38,30 @@ abstract class ItemSourceStateItem<VH : RecyclerView.ViewHolder>(
                 getItemSourceLoadStateFlow(viewHolder)?.collectLatest {
                     val state = when (it) {
                         is ItemSourceLoadState.Initial -> {
-                            ItemSourceState.Loading
+                            ItemSourceState.Loading(it.currentItemCount)
                         }
                         is ItemSourceLoadState.Loading -> {
-                            ItemSourceState.Loading
+                            ItemSourceState.Loading(it.currentItemCount)
                         }
                         is ItemSourceLoadState.PreShow -> {
-                            if (it.itemCount > 0) {
-                                ItemSourceState.Success
+                            if (it.currentItemCount > 0) {
+                                ItemSourceState.Success(it.currentItemCount)
                             } else {
-                                ItemSourceState.Loading
+                                ItemSourceState.Loading(it.currentItemCount)
                             }
                         }
                         is ItemSourceLoadState.Success -> {
-                            if (it.itemCount > 0) {
-                                ItemSourceState.Success
+                            if (it.currentItemCount > 0) {
+                                ItemSourceState.Success(it.currentItemCount)
                             } else {
-                                ItemSourceState.Empty
+                                ItemSourceState.Empty()
                             }
                         }
                         is ItemSourceLoadState.Error -> {
                             if (it.currentItemCount > 0) {
-                                ItemSourceState.Success
+                                ItemSourceState.Success(it.currentItemCount)
                             } else {
-                                ItemSourceState.Error
+                                ItemSourceState.Error(it.currentItemCount)
                             }
                         }
                     }
@@ -90,11 +90,11 @@ abstract class ItemSourceStateItem<VH : RecyclerView.ViewHolder>(
 }
 
 
-enum class ItemSourceState {
+sealed class ItemSourceState(open val currentItemCount: Int) {
 
-    Loading,
-    Success,
-    Error,
-    Empty,
+    data class Loading(override val currentItemCount: Int) : ItemSourceState(currentItemCount)
+    data class Success(override val currentItemCount: Int) : ItemSourceState(currentItemCount)
+    data class Error(override val currentItemCount: Int) : ItemSourceState(currentItemCount)
+    data class Empty(override val currentItemCount: Int = 0) : ItemSourceState(currentItemCount)
 
 }
