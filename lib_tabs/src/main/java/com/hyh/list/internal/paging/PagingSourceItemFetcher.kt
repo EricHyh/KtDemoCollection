@@ -2,6 +2,7 @@ package com.hyh.list.internal.paging
 
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
+import com.hyh.list.FlatListItem
 import com.hyh.list.ItemPagingSource
 import com.hyh.list.internal.*
 import com.hyh.list.internal.base.BaseItemFetcher
@@ -55,6 +56,10 @@ class PagingSourceItemFetcher<Param : Any, Item : Any>(
 
         fun onRearrangeComplete() {
             loadEventHandler.onLoadEventComplete(LoadEvent.Rearrange)
+        }
+
+        override fun getDisplayedItems(): List<FlatListItem> {
+            return sourceDisplayedData.flatListItems ?: emptyList()
         }
     }
 

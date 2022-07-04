@@ -248,6 +248,11 @@ class MultiItemSourceAdapter<Param : Any>(
         sourceAdapterWrapper.removeItem(item)
     }
 
+    override fun insertItems(sourceToken: Any, position: Int, items: List<FlatListItem>) {
+        val sourceAdapterWrapper = wrapperMap[sourceToken] ?: return
+        sourceAdapterWrapper.insertItems(position, items)
+    }
+
     private fun findWrappers(sourceIndexStart: Int, count: Int): List<SourceAdapterWrapper> {
         val wrappers = mutableListOf<SourceAdapterWrapper>()
         var index = 0
@@ -297,7 +302,10 @@ class MultiItemSourceAdapter<Param : Any>(
             val oldReceiver = receiver
             val newReceiver = data.receiver
             if (oldReceiver != newReceiver) {
-                Log.i(TAG, "submitData: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver")
+                Log.i(
+                    TAG,
+                    "submitData: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver"
+                )
                 newReceiver.injectParentLifecycle(lifecycleOwner.lifecycle)
                 oldReceiver?.destroy()
                 receiver = newReceiver
@@ -316,13 +324,15 @@ class MultiItemSourceAdapter<Param : Any>(
                                 it.invoke()
                             }
                             _sourceLoadStatesFlow.value = createSourceLoadStates()
-                            _repoLoadStateFlow.value = RepoLoadState.UsingCache(result.newWrapperMap.size)
+                            _repoLoadStateFlow.value =
+                                RepoLoadState.UsingCache(result.newWrapperMap.size)
                         }
                         is RepoEvent.Loading -> {
                             _repoLoadStateFlow.value = RepoLoadState.Loading
                         }
                         is RepoEvent.Error -> {
-                            _repoLoadStateFlow.value = RepoLoadState.Error(event.error, event.usingCache)
+                            _repoLoadStateFlow.value =
+                                RepoLoadState.Error(event.error, event.usingCache)
                         }
                         is RepoEvent.Success -> {
                             val processedResult = event.processor.invoke()
@@ -335,7 +345,8 @@ class MultiItemSourceAdapter<Param : Any>(
                                 it.invoke()
                             }
                             _sourceLoadStatesFlow.value = createSourceLoadStates()
-                            _repoLoadStateFlow.value = RepoLoadState.Success(result.newWrapperMap.size)
+                            _repoLoadStateFlow.value =
+                                RepoLoadState.Success(result.newWrapperMap.size)
                         }
                     }
                     event.onReceived()
@@ -435,7 +446,13 @@ class MultiItemSourceAdapter<Param : Any>(
             return null
         }
         val item = resultWrapper.flatListItemAdapter.findItem(localPosition) ?: return null
-        return ItemLocalInfo(globalPosition, resultWrapper.sourceToken, localPosition, resultWrapper.cachedItemCount, item)
+        return ItemLocalInfo(
+            globalPosition,
+            resultWrapper.sourceToken,
+            localPosition,
+            resultWrapper.cachedItemCount,
+            item
+        )
     }
 
     override fun findItemLocalInfo(view: View, recyclerView: RecyclerView): ItemLocalInfo? {
@@ -714,7 +731,8 @@ class SourceAdapterWrapper constructor(
         private const val TAG = "SourceAdapterWrapper"
     }
 
-    private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val coroutineScope =
+        CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     suspend fun submitData(flow: Flow<SourceData>) {
         coroutineScope.launch {
@@ -738,6 +756,10 @@ class SourceAdapterWrapper constructor(
 
     fun removeItem(item: FlatListItem) {
         flatListItemAdapter.removeItem(item)
+    }
+
+    fun insertItems(position: Int, items: List<FlatListItem>) {
+        flatListItemAdapter.insertItems(position, items)
     }
 
     override fun destroy() {

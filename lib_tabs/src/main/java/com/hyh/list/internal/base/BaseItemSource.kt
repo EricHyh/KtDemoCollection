@@ -10,6 +10,8 @@ import com.hyh.lifecycle.ChildLifecycleOwner
 import com.hyh.lifecycle.IChildLifecycleOwner
 import com.hyh.list.FlatListItem
 import com.hyh.list.ItemSourceLoadState
+import com.hyh.list.internal.EmptyItemOperator
+import com.hyh.list.internal.IItemOperator
 import com.hyh.list.internal.utils.IElementDiff
 import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
@@ -55,6 +57,10 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
         override fun injectRefreshActuator(refreshActuator: RefreshActuator) {
             _refreshActuator = refreshActuator
+        }
+
+        override fun injectItemOperator(itemOperator: IItemOperator) {
+            _itemOperator = itemOperator
         }
 
         override fun getElementDiff(): IElementDiff<FlatListItem> {
@@ -114,6 +120,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
     internal open val delegate: Delegate<Param, Item> = DefaultDelegate()
 
+
     protected val displayedFlatListItemsSnapshot: List<FlatListItem>?
         get() = delegate.displayedFlatListItemsSnapshot
 
@@ -132,6 +139,10 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
     val refreshActuator: RefreshActuator = {
         _refreshActuator?.invoke(it)
     }
+
+    private var _itemOperator: IItemOperator = EmptyItemOperator()
+    val itemOperator: IItemOperator
+        get() = _itemOperator
 
     final override fun getLifecycle(): Lifecycle {
         return delegate.lifecycleOwner.lifecycle
@@ -188,6 +199,8 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
         abstract fun updateItemSourceLoadState(state: ItemSourceLoadState)
 
         abstract fun injectRefreshActuator(refreshActuator: RefreshActuator)
+
+        abstract fun injectItemOperator(itemOperator: IItemOperator)
 
         abstract fun getElementDiff(): IElementDiff<FlatListItem>
         abstract fun mapItems(items: List<Item>): List<FlatListItem>

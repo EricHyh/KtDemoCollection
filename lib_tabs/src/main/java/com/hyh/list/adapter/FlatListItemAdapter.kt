@@ -50,7 +50,8 @@ class FlatListItemAdapter constructor(
         get() = _pagingLoadStateFlow.asStateFlow()
 
 
-    private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> = SimpleMutableStateFlow(Pair(0, null))
+    private val resultFlow: SimpleMutableStateFlow<Pair<Long, SourceEvent?>> =
+        SimpleMutableStateFlow(Pair(0, null))
 
     private var recyclerView: RecyclerView? = null
 
@@ -94,8 +95,15 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.RefreshError -> {
-                            _loadStateFlow.value = ItemSourceLoadState.Error(itemCount, event.error, event.preShowing)
-                            onStateChanged(ItemSourceLoadState.Error(itemCount, event.error, event.preShowing))
+                            _loadStateFlow.value =
+                                ItemSourceLoadState.Error(itemCount, event.error, event.preShowing)
+                            onStateChanged(
+                                ItemSourceLoadState.Error(
+                                    itemCount,
+                                    event.error,
+                                    event.preShowing
+                                )
+                            )
                             event.onReceived()
                         }
 
@@ -110,9 +118,11 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.PagingRefreshError -> {
-                            val refreshError = PagingSourceLoadState.RefreshError(itemCount, event.error)
+                            val refreshError =
+                                PagingSourceLoadState.RefreshError(itemCount, event.error)
                             _pagingLoadStateFlow.value = refreshError
-                            _loadStateFlow.value = ItemSourceLoadState.Error(itemCount, event.error, false)
+                            _loadStateFlow.value =
+                                ItemSourceLoadState.Error(itemCount, event.error, false)
                             onStateChanged(refreshError)
                             event.onReceived()
                         }
@@ -126,7 +136,8 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.PagingAppendError -> {
-                            val appendError = PagingSourceLoadState.AppendError(itemCount, event.error)
+                            val appendError =
+                                PagingSourceLoadState.AppendError(itemCount, event.error)
                             _pagingLoadStateFlow.value = appendError
                             onStateChanged(appendError)
                             event.onReceived()
@@ -155,7 +166,11 @@ class FlatListItemAdapter constructor(
         this.recyclerView = recyclerView
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+    override fun onBindViewHolder(
+        holder: RecyclerView.ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
         super.onBindViewHolder(holder, position, payloads)
         recyclerView?.post {
             receiver?.accessItem(position)
@@ -176,8 +191,7 @@ class FlatListItemAdapter constructor(
 
     fun moveItem(from: Int, to: Int): Boolean {
         receiver ?: return false
-        receiver?.move(from, to)
-        return true
+        return receiver?.moveItem(from, to) == true
     }
 
     fun removeItem(position: Int, count: Int) {
@@ -186,6 +200,10 @@ class FlatListItemAdapter constructor(
 
     fun removeItem(item: FlatListItem) {
         receiver?.removeItem(item)
+    }
+
+    fun insertItems(position: Int, items: List<FlatListItem>) {
+        receiver?.insertItems(position, items)
     }
 
     fun destroy() {

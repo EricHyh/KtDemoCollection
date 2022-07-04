@@ -4,6 +4,7 @@ import androidx.annotation.CallSuper
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.list.FlatListItem
+import com.hyh.list.IFlatListItem
 import com.hyh.list.internal.*
 import com.hyh.list.internal.utils.ListOperate
 import com.hyh.list.internal.utils.ListUpdate
@@ -19,6 +20,9 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
     protected open val sourceDisplayedData = SourceDisplayedData()
 
     protected abstract val uiReceiver: BaseUiReceiverForSource
+
+    val itemOperator: IItemOperator
+        get() = uiReceiver
 
     val flow: Flow<SourceData> = simpleChannelFlow {
         launch {
@@ -56,17 +60,25 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
         uiReceiver.removeItem(position, count)
     }
 
-    fun move(from: Int, to: Int) {
-        uiReceiver.move(from, to)
+    fun moveItem(from: Int, to: Int) {
+        uiReceiver.moveItem(from, to)
     }
 
     protected fun getFetchDispatcherProvider(): DispatcherProvider<Param> = ::getFetchDispatcher
-    protected fun getProcessDataDispatcherProvider(): DispatcherProvider<Param> = ::getProcessDataDispatcher
-    private fun getFetchDispatcher(param: Param, displayedData: SourceDisplayedData): CoroutineDispatcher {
+    protected fun getProcessDataDispatcherProvider(): DispatcherProvider<Param> =
+        ::getProcessDataDispatcher
+
+    private fun getFetchDispatcher(
+        param: Param,
+        displayedData: SourceDisplayedData
+    ): CoroutineDispatcher {
         return itemSource.getFetchDispatcher(param, displayedData)
     }
 
-    private fun getProcessDataDispatcher(param: Param, displayedData: SourceDisplayedData): CoroutineDispatcher {
+    private fun getProcessDataDispatcher(
+        param: Param,
+        displayedData: SourceDisplayedData
+    ): CoroutineDispatcher {
         return itemSource.getProcessDataDispatcher(param, displayedData)
     }
 
@@ -207,6 +219,15 @@ abstract class BaseUiReceiverForSource : UiReceiverForSource {
 
     val eventFlow = eventState.asStateFlow()
 
+    override fun moveItem(from: Int, to: Int): Boolean {
+        val indices = getDisplayedItems().indices
+        if (from !in indices || to !in indices) {
+            return false
+        }
+        eventState.value = OperateItemEvent.MoveItem(from, to)
+        return true
+    }
+
     override fun removeItem(item: FlatListItem) {
         eventState.value = OperateItemEvent.RemoveItem(item)
     }
@@ -215,9 +236,11 @@ abstract class BaseUiReceiverForSource : UiReceiverForSource {
         eventState.value = OperateItemEvent.RemoveItems(position, count)
     }
 
-    override fun move(from: Int, to: Int) {
-        eventState.value = OperateItemEvent.MoveItem(from, to)
+    override fun insertItems(position: Int, items: List<FlatListItem>) {
+        eventState.value = OperateItemEvent.InsertItems(position, items)
     }
+
+    abstract fun getDisplayedItems(): List<FlatListItem>
 
     @CallSuper
     override fun destroy() {

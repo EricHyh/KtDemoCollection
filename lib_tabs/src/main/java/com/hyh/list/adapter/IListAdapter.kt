@@ -53,6 +53,8 @@ interface IListAdapter<Param : Any> : IFetcher<Param> {
 
     fun removeItem(sourceToken: Any, item: FlatListItem)
 
+    fun insertItems(sourceToken: Any, position: Int, items: List<FlatListItem>)
+
 }
 
 data class ItemLocalInfo constructor(

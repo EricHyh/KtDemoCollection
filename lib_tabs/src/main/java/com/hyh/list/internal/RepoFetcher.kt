@@ -268,12 +268,14 @@ class RepoResultProcessorGenerator(
             is ItemPagingSource<*, *> -> PagingSourceItemFetcher(itemSource).apply {
                 itemSource.delegate.bindParentLifecycle(repoLifecycle)
                 itemSource.delegate.injectRefreshActuator(::refresh)
+                itemSource.delegate.injectItemOperator(this.itemOperator)
                 itemSource.delegate.injectAppendActuator(::append)
                 itemSource.delegate.injectRearrangeActuator(::rearrange)
             }
             else -> ItemFetcher(itemSource as ItemSource<*, *>).apply {
                 itemSource.delegate.bindParentLifecycle(repoLifecycle)
                 itemSource.delegate.injectRefreshActuator(::refresh)
+                itemSource.delegate.injectItemOperator(this.itemOperator)
             }
         }
     }

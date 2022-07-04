@@ -22,7 +22,7 @@ interface UiReceiverForRepo<Param : Any> {
 
 }
 
-interface UiReceiverForSource {
+interface UiReceiverForSource : IItemOperator {
 
     fun refresh(important: Boolean)
 
@@ -31,12 +31,6 @@ interface UiReceiverForSource {
     fun rearrange(important: Boolean)
 
     fun accessItem(position: Int) {}
-
-    fun removeItem(item: FlatListItem)
-
-    fun removeItem(position: Int, count: Int)
-
-    fun move(from: Int, to: Int)
 
     fun destroy()
 }

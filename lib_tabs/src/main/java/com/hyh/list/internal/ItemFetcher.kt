@@ -7,6 +7,7 @@ import com.hyh.base.RefreshStrategy
 import com.hyh.coroutine.cancelableChannelFlow
 import com.hyh.coroutine.simpleMapLatest
 import com.hyh.coroutine.simpleScan
+import com.hyh.list.FlatListItem
 import com.hyh.list.ItemSource
 import com.hyh.list.internal.base.*
 import com.hyh.list.internal.base.DispatcherProvider
@@ -48,11 +49,14 @@ class ItemFetcher<Param : Any, Item : Any>(
             refreshEventHandler.onRefreshComplete()
         }
 
+        override fun getDisplayedItems(): List<FlatListItem> {
+            return sourceDisplayedData.flatListItems ?: emptyList()
+        }
+
         override fun destroy() {
             super.destroy()
             refreshEventHandler.onDestroy()
         }
-
     }
 
     override val uiReceiver: ItemFetcherUiReceiver = ItemFetcherUiReceiver()
