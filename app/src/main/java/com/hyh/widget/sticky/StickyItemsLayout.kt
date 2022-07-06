@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import androidx.core.view.get
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.demo.R
+import com.hyh.list.internal.utils.ListUpdate
 import java.util.*
 import kotlin.collections.LinkedHashMap
 import kotlin.math.abs
@@ -50,6 +51,8 @@ class StickyItemsLayout : ViewGroup {
     private var stickyItemsAdapter: IStickyItemsAdapter<RecyclerView.ViewHolder>? = null
 
     private var stickyItemDecoration: StickyItemDecoration? = null
+
+    var stickyItemsListener: StickyItemsListener? = null
 
     private val stickyHeaders = StickyHeaders()
     private val stickyFooters = StickyFooters()
@@ -547,6 +550,9 @@ class StickyItemsLayout : ViewGroup {
         protected abstract val cachePositions: TreeSet<Int>
         protected abstract val tempPositions: TreeSet<Int>
 
+        private val tempAddedPositions: MutableList<Int> = mutableListOf()
+        private val tempRemovedPositions: MutableList<Int> = mutableListOf()
+
         private var cacheFirstCompletelyVisibleItemPosition: Int? = null
         private var cacheLastCompletelyVisibleItemPosition: Int? = null
 
@@ -598,7 +604,17 @@ class StickyItemsLayout : ViewGroup {
             changedRange: IntRange? = null
         ) {
             val adapter = recyclerView.adapter
+
+            val oldPositions = attachedItemMap.keys
             val positions = findCurrentItemsPosition(recyclerView, changedRange)
+
+            ListUpdate.calculateDiff(
+                oldPositions,
+                positions,
+                tempAddedPositions,
+                tempRemovedPositions
+            )
+
             if (adapter == null || positions.isEmpty()) {
                 var attachedItem = this.firstAttachedItem
                 while (attachedItem != null) {
@@ -610,6 +626,7 @@ class StickyItemsLayout : ViewGroup {
                 this.lastAttachedItem = null
                 this.itemsHeight = 0.0F
                 this.attachedItemMap.clear()
+                notifyStickPositionsChanged(tempAddedPositions, tempRemovedPositions)
                 return
             }
 
@@ -717,6 +734,8 @@ class StickyItemsLayout : ViewGroup {
                 }
             }
 
+            notifyStickPositionsChanged(tempAddedPositions, tempRemovedPositions)
+
             updateItemsOffsetY()
         }
 
@@ -746,6 +765,17 @@ class StickyItemsLayout : ViewGroup {
                     }
                 }
             })
+        }
+
+        private fun notifyStickPositionsChanged(added: List<Int>, removed: List<Int>) {
+            val stickyItemsListener = this@StickyItemsLayout.stickyItemsListener ?: return
+            val stickyItemsAdapter = this@StickyItemsLayout.stickyItemsAdapter ?: return
+            removed.forEach {
+                stickyItemsListener.onStickItemsRemoved(this@StickyItemsLayout, stickyItemsAdapter, it)
+            }
+            added.forEach {
+                stickyItemsListener.onStickItemsAdded(this@StickyItemsLayout, stickyItemsAdapter, it)
+            }
         }
 
         private fun findCurrentItemsPosition(

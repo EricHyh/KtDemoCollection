@@ -192,6 +192,40 @@ object ListUpdate {
         return removed
     }
 
+    fun <E> calculateDiff(
+        old: Collection<E>?,
+        new: Collection<E>?,
+        added: MutableList<E>,
+        removed: MutableList<E>
+    ) {
+        added.clear()
+        removed.clear()
+        if (old.isNullOrEmpty()) {
+            added.addAll(new ?: emptyList())
+            return
+        }
+        if (new.isNullOrEmpty()) {
+            removed.addAll(old)
+            return
+        }
+
+        added.addAll(new)
+        added.removeAll(old)
+
+        removed.addAll(old)
+        removed.removeAll(new)
+    }
+
+    fun <E> calculateDiff(
+        old: Collection<E>?,
+        new: Collection<E>?
+    ): Pair<Collection<E>, Collection<E>> {
+        val added = mutableListOf<E>()
+        val removed = mutableListOf<E>()
+        calculateDiff(old, new, added, removed)
+        return Pair(added, removed)
+    }
+
     fun handleListOperates(listOperates: List<ListOperate>, adapter: RecyclerView.Adapter<*>) {
         listOperates.forEach {
             when (it) {

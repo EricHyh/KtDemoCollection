@@ -95,15 +95,8 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.RefreshError -> {
-                            _loadStateFlow.value =
-                                ItemSourceLoadState.Error(itemCount, event.error, event.preShowing)
-                            onStateChanged(
-                                ItemSourceLoadState.Error(
-                                    itemCount,
-                                    event.error,
-                                    event.preShowing
-                                )
-                            )
+                            _loadStateFlow.value = ItemSourceLoadState.Error(itemCount, event.error, event.preShowing)
+                            onStateChanged(ItemSourceLoadState.Error(itemCount, event.error, event.preShowing))
                             event.onReceived()
                         }
 
@@ -118,11 +111,9 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.PagingRefreshError -> {
-                            val refreshError =
-                                PagingSourceLoadState.RefreshError(itemCount, event.error)
+                            val refreshError = PagingSourceLoadState.RefreshError(itemCount, event.error)
                             _pagingLoadStateFlow.value = refreshError
-                            _loadStateFlow.value =
-                                ItemSourceLoadState.Error(itemCount, event.error, false)
+                            _loadStateFlow.value = ItemSourceLoadState.Error(itemCount, event.error, false)
                             onStateChanged(refreshError)
                             event.onReceived()
                         }
@@ -136,8 +127,7 @@ class FlatListItemAdapter constructor(
                             resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
                         is SourceEvent.PagingAppendError -> {
-                            val appendError =
-                                PagingSourceLoadState.AppendError(itemCount, event.error)
+                            val appendError = PagingSourceLoadState.AppendError(itemCount, event.error)
                             _pagingLoadStateFlow.value = appendError
                             onStateChanged(appendError)
                             event.onReceived()

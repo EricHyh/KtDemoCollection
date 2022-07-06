@@ -21,6 +21,7 @@ import com.hyh.widget.TestItemDecoration
 import com.hyh.widget.sticky.IStickyItemsAdapter
 import com.hyh.widget.sticky.StickyItemDecoration
 import com.hyh.widget.sticky.StickyItemsLayout
+import com.hyh.widget.sticky.StickyItemsListener
 import com.scwang.smart.refresh.header.ClassicsHeader
 import kotlinx.android.synthetic.main.activity_sticky_heads.*
 
@@ -31,6 +32,10 @@ import kotlinx.android.synthetic.main.activity_sticky_heads.*
  * @data 2020/12/1
  */
 class StickyHeadsActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "_StickyHeadsActivity_"
+    }
 
     private var mAdapter: ListAdapter = ListAdapter()
 
@@ -51,6 +56,19 @@ class StickyHeadsActivity : AppCompatActivity() {
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         recycler_view.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))*/
         // recycler_view.addItemDecoration(TestItemDecoration())
+
+
+        sticky_headers_layout.stickyItemsListener = object : StickyItemsListener {
+
+            override fun onStickItemsAdded(parent: StickyItemsLayout, adapter: IStickyItemsAdapter<*>, position: Int) {
+                Log.d(TAG, "onStickItemsAdded: $position")
+            }
+
+            override fun onStickItemsRemoved(parent: StickyItemsLayout, adapter: IStickyItemsAdapter<*>, position: Int) {
+                Log.d(TAG, "onStickItemsRemoved: $position")
+            }
+
+        }
 
         test(EventData().apply {
 
