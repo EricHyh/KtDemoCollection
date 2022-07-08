@@ -22,21 +22,21 @@ class TextAppendStateItem(pagingSourceToken: Any) : AppendStateItem<AppendStateT
 
     override fun bindAppendState(viewHolder: AppendStateTextViewHolder, state: AppendState) {
         viewHolder.textView.text = when (state) {
-            AppendState.Loading -> {
+            is AppendState.Loading -> {
                 "加载中..."
             }
-            AppendState.Success -> {
+            is AppendState.Success -> {
                 "成功"
             }
-            AppendState.Error -> {
+            is AppendState.Error -> {
                 "失败了，点击重试"
             }
-            AppendState.NoMore -> {
+            is AppendState.NoMore -> {
                 "到底了"
             }
         }
         viewHolder.textView.setOnClickListener {
-            if (appendState == AppendState.Error) {
+            if (appendState is  AppendState.Error) {
                 getAppendActuator(viewHolder)?.invoke(false)
             }
         }

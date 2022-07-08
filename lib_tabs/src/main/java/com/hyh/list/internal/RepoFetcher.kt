@@ -327,7 +327,7 @@ class RepoResultProcessorGenerator(
             newElement: ItemSourceWrapper
         ): Boolean {
             val delegate = oldElement.itemSource.delegate as BaseItemSource.Delegate<Any, Any>
-            return delegate.areSourceTheSame(newElement.itemSource as BaseItemSource<Any, Any>)
+            return delegate.areSourceContentsTheSame(newElement.itemSource as BaseItemSource<Any, Any>)
         }
 
         override fun getChangePayload(

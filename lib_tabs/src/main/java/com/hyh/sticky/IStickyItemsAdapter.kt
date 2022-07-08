@@ -1,4 +1,4 @@
-package com.hyh.widget.sticky
+package com.hyh.sticky
 
 import androidx.recyclerview.widget.RecyclerView
 

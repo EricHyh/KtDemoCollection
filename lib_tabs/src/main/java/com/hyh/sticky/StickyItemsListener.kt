@@ -1,4 +1,7 @@
-package com.hyh.widget.sticky
+package com.hyh.sticky
+
+import com.hyh.sticky.IStickyItemsAdapter
+import com.hyh.sticky.StickyItemsLayout
 
 
 /**

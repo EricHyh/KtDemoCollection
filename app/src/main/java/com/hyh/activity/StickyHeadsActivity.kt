@@ -17,11 +17,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.demo.R
 import com.hyh.feeds.EventData
-import com.hyh.widget.TestItemDecoration
-import com.hyh.widget.sticky.IStickyItemsAdapter
-import com.hyh.widget.sticky.StickyItemDecoration
-import com.hyh.widget.sticky.StickyItemsLayout
-import com.hyh.widget.sticky.StickyItemsListener
+import com.hyh.sticky.IStickyItemsAdapter
+import com.hyh.sticky.StickyItemDecoration
+import com.hyh.sticky.StickyItemsLayout
+import com.hyh.sticky.StickyItemsListener
 import com.scwang.smart.refresh.header.ClassicsHeader
 import kotlinx.android.synthetic.main.activity_sticky_heads.*
 

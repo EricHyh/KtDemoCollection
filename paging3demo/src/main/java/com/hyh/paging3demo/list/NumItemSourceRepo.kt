@@ -29,7 +29,7 @@ class NumItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
         //SystemClock.sleep(1000)
         val sources =
             listOf(
-                NumItemSource("${num}"),
+                //NumItemSource("${num}"),
                 SingleItemSource(TextSourceStateItem(TestNumItemPagingSource::class.java)),
                 TestNumItemPagingSource(),
                 SingleItemSource(TextAppendStateItem(TestNumItemPagingSource::class.java)),

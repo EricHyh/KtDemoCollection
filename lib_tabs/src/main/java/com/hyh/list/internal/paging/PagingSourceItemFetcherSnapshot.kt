@@ -192,7 +192,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
 
         fun process(): SourceProcessedResult {
             val items = success.items
-            val resultExtra = null
+            val resultExtra = success.resultExtra
             val flatListItems = delegate.mapItems(items)
             val nextParam = success.nextParam
             val noMore = success.noMore

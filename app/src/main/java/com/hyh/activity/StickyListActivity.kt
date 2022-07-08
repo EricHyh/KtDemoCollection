@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.widget.layoutmanager.StickyHeaders
 import com.hyh.widget.layoutmanager.StickyHeadersLinearLayoutManager
-import com.hyh.widget.sticky.IStickyItemsAdapter
+import com.hyh.sticky.IStickyItemsAdapter
 
 class StickyListActivity : AppCompatActivity() {
 

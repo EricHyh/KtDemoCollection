@@ -40,6 +40,8 @@ public class WebActivity extends AppCompatActivity {
 
         String url = getIntent().getStringExtra("url");
 
+
+
         Toolbar toolbar = findViewById(R.id.tool_bar);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();

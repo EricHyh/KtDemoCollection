@@ -2,7 +2,6 @@ package com.hyh.list.internal.base
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.lifecycleScope
 import com.hyh.RefreshActuator
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SimpleStateFlow
@@ -16,7 +15,6 @@ import com.hyh.list.internal.utils.IElementDiff
 import com.hyh.list.internal.SourceDisplayedData
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 
 /**
  * [com.hyh.list.IFlatListItem]列表的数据源
@@ -30,7 +28,9 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
     open inner class DefaultDelegate : Delegate<Param, Item>() {
         override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
 
-        private var displayedData: SourceDisplayedData? = null
+        private var _displayedData: SourceDisplayedData? = null
+        override val displayedData: SourceDisplayedData?
+            get() = _displayedData
 
         override val displayedFlatListItemsSnapshot: List<FlatListItem>?
             get() = displayedData?.flatListItems
@@ -71,8 +71,8 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
             return this@BaseItemSource.mapItems(items)
         }
 
-        override fun areSourceTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean {
-            return this@BaseItemSource.areSourceTheSame(newItemSource)
+        override fun areSourceContentsTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean {
+            return this@BaseItemSource.areSourceContentsTheSame(newItemSource)
         }
 
         override fun updateItemSource(newItemSource: BaseItemSource<Param, Item>) {
@@ -100,7 +100,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
         }
 
         override fun onResultDisplayed(displayedData: SourceDisplayedData) {
-            this.displayedData = displayedData
+            this._displayedData = displayedData
             return this@BaseItemSource.onResultDisplayed(displayedData)
         }
 
@@ -111,7 +111,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
                     item.delegate.onItemDetached()
                 }
             }
-            displayedData = null
+            _displayedData = null
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
             this@BaseItemSource.onDetached()
         }
@@ -120,6 +120,8 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
     internal open val delegate: Delegate<Param, Item> = DefaultDelegate()
 
+    protected val displayedData: SourceDisplayedData?
+        get() = delegate.displayedData
 
     protected val displayedFlatListItemsSnapshot: List<FlatListItem>?
         get() = delegate.displayedFlatListItemsSnapshot
@@ -151,7 +153,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
     protected open fun onAttached() {}
     protected open fun onSourcePositionChanged(oldPosition: Int, newPosition: Int) {}
 
-    protected open fun areSourceTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean {
+    protected open fun areSourceContentsTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean {
         return this.javaClass == newItemSource.javaClass
     }
 
@@ -190,6 +192,8 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
     abstract class Delegate<Param : Any, Item : Any> : IChildLifecycleOwner {
 
+        abstract val displayedData: SourceDisplayedData?
+
         abstract val displayedFlatListItemsSnapshot: List<FlatListItem>?
 
         abstract var sourcePosition: Int
@@ -205,7 +209,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
         abstract fun getElementDiff(): IElementDiff<FlatListItem>
         abstract fun mapItems(items: List<Item>): List<FlatListItem>
 
-        abstract fun areSourceTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean
+        abstract fun areSourceContentsTheSame(newItemSource: BaseItemSource<Param, Item>): Boolean
         abstract fun updateItemSource(newItemSource: BaseItemSource<Param, Item>)
 
         abstract fun onItemsDisplayed(items: List<FlatListItem>)

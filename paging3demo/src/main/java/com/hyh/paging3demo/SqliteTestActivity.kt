@@ -2,12 +2,13 @@ package com.hyh.paging3demo
 
 import android.os.Bundle
 import android.util.Log
+import android.util.SparseArray
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.util.keyIterator
 import androidx.lifecycle.lifecycleScope
 import com.hyh.paging3demo.bean.ProjectRemoteKey
 import com.hyh.paging3demo.db.ProjectDB
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 /**

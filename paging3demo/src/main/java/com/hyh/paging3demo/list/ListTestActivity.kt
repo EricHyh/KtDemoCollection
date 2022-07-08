@@ -18,6 +18,8 @@ import android.view.WindowManager
 import java.lang.Exception
 
 import androidx.annotation.RequiresApi
+import com.hyh.sticky.MultiSourceStickyItemsAdapter
+import com.hyh.sticky.StickyItemsLayout
 
 
 class ListTestActivity : AppCompatActivity() {
@@ -49,11 +51,16 @@ class ListTestActivity : AppCompatActivity() {
         recyclerView.itemAnimator = null
 
 
+        val stickyItemsLayout = findViewById<StickyItemsLayout>(R.id.sticky_items_layout)
+        stickyItemsLayout.setup(recyclerView, MultiSourceStickyItemsAdapter(
+            multiSourceAdapter,
+            1
+        ))
 
 
-        Handler().postDelayed({
-            multiSourceAdapter.submitData(NumItemSourceRepo().flow)
-        }, 2000)
+
+
+        multiSourceAdapter.submitData(NumItemSourceRepo().flow)
 
         val tvTypes = findViewById<TextView>(R.id.tv_types)
         ListConfig.typesLiveData.observe(this, Observer<List<String>> { list ->

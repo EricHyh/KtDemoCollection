@@ -1,4 +1,4 @@
-package com.hyh.widget.sticky
+package com.hyh.sticky
 
 import android.content.Context
 import android.graphics.Canvas
@@ -11,8 +11,10 @@ import android.view.ViewConfiguration
 import android.view.ViewGroup
 import androidx.core.view.get
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.demo.R
 import com.hyh.list.internal.utils.ListUpdate
+import com.hyh.tabs.R
+import com.hyh.widget.sticky.DefaultVisibleItemFinder
+import com.hyh.widget.sticky.VisibleItemFinder
 import java.util.*
 import kotlin.collections.LinkedHashMap
 import kotlin.math.abs
@@ -401,7 +403,7 @@ class StickyItemsLayout : ViewGroup {
     private fun forceCalculateHeight(position: Int): Int {
         val recyclerView = this.recyclerView ?: return 0
         val adapter = recyclerView.adapter ?: return 0
-        val itemViewType = adapter.getItemViewType(position)
+        val itemViewType = getItemViewType(adapter, position) ?: return 0
         val viewHolder: RecyclerView.ViewHolder =
             recyclerView.recycledViewPool.getRecycledView(itemViewType)
                 ?: adapter.onCreateViewHolder(recyclerView, itemViewType)
@@ -442,6 +444,15 @@ class StickyItemsLayout : ViewGroup {
             false
         }
     }
+
+    private fun getItemViewType(
+        adapter: RecyclerView.Adapter<RecyclerView.ViewHolder>,
+        position: Int
+    ): Int? {
+        if (position >= adapter.itemCount) return null
+        return adapter.getItemViewType(position)
+    }
+
     //endregion
 
 
@@ -684,7 +695,7 @@ class StickyItemsLayout : ViewGroup {
             }
 
             attachedItemMapBackup.forEach {
-                val itemViewType = adapter.getItemViewType(it.key)
+                val itemViewType = getItemViewType(adapter, it.key) ?: 0
                 val stickyItem: StickyItem = it.value
                     ?: getStickyItem(it.key, itemViewType, changedRange).let { item ->
                         if (item == null) return@let null
@@ -1162,7 +1173,7 @@ class StickyItemsLayout : ViewGroup {
                     if (dataChanged) {
                         val recyclerView = recyclerView ?: return 0
                         val adapter = recyclerView.adapter ?: return 0
-                        val itemViewType = adapter.getItemViewType(position)
+                        val itemViewType = getItemViewType(adapter, position) ?: return 0
                         val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
                         if (attachedItem != null) {
                             return attachedItem.heightWithDecor
@@ -1472,7 +1483,7 @@ class StickyItemsLayout : ViewGroup {
                     if (dataChanged) {
                         val recyclerView = recyclerView ?: return 0
                         val adapter = recyclerView.adapter ?: return 0
-                        val itemViewType = adapter.getItemViewType(getRealPosition(position))
+                        val itemViewType = getItemViewType(adapter, getRealPosition(position)) ?: return 0
                         val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
                         if (attachedItem != null) {
                             return attachedItem.heightWithDecor
@@ -1785,7 +1796,9 @@ class StickyItemsLayout : ViewGroup {
             val recyclerView = this@StickyItemsLayout.recyclerView ?: return
             if (!stickyItemBound) return
             val adapter = recyclerView.adapter ?: return
-            if (adapter.getItemViewType(position) != itemViewType) return
+            val itemCount = adapter.itemCount
+            if (position >= itemCount) return
+            if (getItemViewType(adapter, position) != itemViewType) return
             val viewHolder = recyclerView.findViewHolderForAdapterPosition(position) ?: return
             adapter.bindViewHolder(viewHolder, position)
             stickyItemBound = false
@@ -1870,7 +1883,6 @@ class StickyItemsLayout : ViewGroup {
             return position in firstVisibleItemPosition..lastVisibleItemPosition
         }
     }
-
 
     private inner class StickyHeader(
         position: Int,
