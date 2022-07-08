@@ -50,14 +50,13 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs
         renderFixedPositionGrid(grid = grid as IGrid<GridHolder>)
         gridAdapter.setGrids(grids)
         syncScroll()
-
     }
 
     private fun renderFixedPositionGrid(grid: IGrid<GridHolder>) {
         fixedViewContainer.removeAllViews()
         val holder = grid.getGridHolderFactory().invoke(fixedViewContainer)
         fixedViewContainer.addView(holder.view)
-        grid.render(holder, true)
+        grid.render(holder)
     }
 }
 
@@ -77,13 +76,13 @@ interface IGrid<Holder : GridHolder> {
                 }
             }
 
-            override fun getFieldId(): Int = -1
+            override fun getGridId(): Int = -1
 
             override fun areContentsTheSame(other: IGrid<GridHolder>): Boolean {
                 return true
             }
 
-            override fun render(holder: GridHolder, showAssets: Boolean) {}
+            override fun render(holder: GridHolder) {}
         }
 
         fun createEmpty(fieldId: Int): IGrid<GridHolder> {
@@ -98,13 +97,13 @@ interface IGrid<Holder : GridHolder> {
                     }
                 }
 
-                override fun getFieldId(): Int = fieldId
+                override fun getGridId(): Int = fieldId
 
                 override fun areContentsTheSame(other: IGrid<GridHolder>): Boolean {
                     return true
                 }
 
-                override fun render(holder: GridHolder, showAssets: Boolean) {}
+                override fun render(holder: GridHolder) {}
             }
         }
     }
@@ -113,13 +112,13 @@ interface IGrid<Holder : GridHolder> {
 
     fun getViewType(): Int
 
-    fun getFieldId(): Int
+    fun getGridId(): Int
 
     fun areContentsTheSame(other: IGrid<Holder>) = false
 
-    fun onContentsNotChanged(holder: Holder, showAssets: Boolean) {}
+    fun onContentsNotChanged(holder: Holder) {}
 
-    fun render(holder: Holder, showAssets: Boolean)
+    fun render(holder: Holder)
 
 }
 
@@ -138,18 +137,18 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
     private val viewTypeStorage = ViewTypeStorage()
 
     private val differ: AsyncListDiffer<IGrid<GridHolder>> =
-        AsyncListDiffer<IGrid<GridHolder>>(this, object : DiffUtil.ItemCallback<IGrid<GridHolder>>() {
+        AsyncListDiffer(this, object : DiffUtil.ItemCallback<IGrid<GridHolder>>() {
 
             override fun areItemsTheSame(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Boolean {
-                return oldItem.getFieldId() == newItem.getFieldId()
+                return oldItem.getGridId() == newItem.getGridId()
             }
 
             override fun areContentsTheSame(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Boolean {
-                return false
+                return oldItem.areContentsTheSame(newItem)
             }
 
             override fun getChangePayload(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Any? {
-                return oldItem.areContentsTheSame(newItem)
+                return null
             }
         })
 
@@ -190,7 +189,7 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
         val currentList = differ.currentList
         if (position in currentList.indices) {
             val grid = differ.currentList[position]
-            grid.render(holder.holder, true)
+            grid.render(holder.holder)
         }
     }
 
@@ -201,12 +200,12 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
             if (payloads.size > 0) {
                 val areContentsTheSame = payloads[0] as? Boolean
                 if (areContentsTheSame == true) {
-                    grid.onContentsNotChanged(holder.holder, true)
+                    grid.onContentsNotChanged(holder.holder)
                 } else {
-                    grid.render(holder.holder, true)
+                    grid.render(holder.holder)
                 }
             } else {
-                grid.render(holder.holder, true)
+                grid.render(holder.holder)
             }
         }
     }

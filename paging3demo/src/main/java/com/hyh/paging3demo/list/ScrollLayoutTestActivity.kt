@@ -2,15 +2,12 @@ package com.hyh.paging3demo.list
 
 import android.annotation.SuppressLint
 import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -124,12 +121,12 @@ class FixedTextGrid(
         return 0
     }
 
-    override fun getFieldId(): Int {
+    override fun getGridId(): Int {
         return gridFieldId
     }
 
     @SuppressLint("SetTextI18n")
-    override fun render(holder: TextHolder, showAssets: Boolean) {
+    override fun render(holder: TextHolder) {
         (holder.view as TextView).text = "固定的数据: $gridFieldId"
     }
 
@@ -159,12 +156,12 @@ class TextGrid(
         return 1
     }
 
-    override fun getFieldId(): Int {
+    override fun getGridId(): Int {
         return gridFieldId
     }
 
     @SuppressLint("SetTextI18n")
-    override fun render(holder: TextHolder, showAssets: Boolean) {
+    override fun render(holder: TextHolder) {
         (holder.view as TextView).text = "数据: $gridFieldId"
         holder.view.setOnClickListener {
             Toast.makeText(holder.view.context, "数据: $gridFieldId", Toast.LENGTH_SHORT).show()
