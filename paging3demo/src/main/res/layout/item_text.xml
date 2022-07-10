@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.AppCompatTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:ellipsize="end"
+    android:gravity="center_vertical|left"
+    android:maxLines="1"
+    android:orientation="horizontal"
+    app:autoSizeMaxTextSize="20dp"
+    app:autoSizeMinTextSize="12dp"
+    app:autoSizeStepGranularity="1dp"
+    app:autoSizeTextType="uniform">
+
+</androidx.appcompat.widget.AppCompatTextView>

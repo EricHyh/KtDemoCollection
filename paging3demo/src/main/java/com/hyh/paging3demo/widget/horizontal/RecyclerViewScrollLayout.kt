@@ -1,6 +1,7 @@
 package com.hyh.paging3demo.widget.horizontal
 
 import android.content.Context
+import android.graphics.Color
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -35,6 +36,9 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         recyclerView.adapter = gridAdapter
         initView()
+        setBackgroundColor(Color.BLUE)
+        fixedViewContainer.setBackgroundColor(Color.GREEN)
+        recyclerView.setBackgroundColor(Color.RED)
     }
 
     override fun findFixedView(): View = fixedViewContainer

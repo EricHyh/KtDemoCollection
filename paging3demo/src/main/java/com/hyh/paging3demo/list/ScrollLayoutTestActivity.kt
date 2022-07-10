@@ -4,13 +4,19 @@ import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.widget.TextViewCompat
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.paging3demo.R
 import com.hyh.paging3demo.widget.horizontal.GridHolder
 import com.hyh.paging3demo.widget.horizontal.HorizontalScrollSyncHelper
 import com.hyh.paging3demo.widget.horizontal.IGrid
@@ -33,6 +39,9 @@ class ScrollLayoutTestActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false)
             adapter = ScrollLayoutTestAdapter()
             setBackgroundColor(0x55FF0000)
+
+            addItemDecoration(DividerItemDecoration(this.context, LinearLayoutManager.VERTICAL))
+
         }.apply {
             setContentView(this)
         }
@@ -100,20 +109,11 @@ class FixedTextGrid(
     private val gridFieldId: Int
 ) : IGrid<TextHolder> {
 
+    @SuppressLint("RestrictedApi", "WrongConstant")
     override fun getGridHolderFactory(): (parent: ViewGroup) -> TextHolder {
         return {
-            val textView = TextView(it.context).apply {
-                textSize = 20F
-                setTextColor(Color.BLACK)
-                gravity = Gravity.CENTER_VERTICAL or Gravity.LEFT
-                ellipsize = TextUtils.TruncateAt.END
-                maxLines = 1
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-            TextHolder(textView)
+            val textView = LayoutInflater.from(it.context).inflate(R.layout.item_text, it, false)
+            TextHolder(textView as TextView)
         }
     }
 
@@ -145,7 +145,7 @@ class TextGrid(
                 gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
+                    200
                 )
             }
             TextHolder(textView)

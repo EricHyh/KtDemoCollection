@@ -1,6 +1,7 @@
 package com.hyh.paging3demo.widget.horizontal
 
 import java.util.*
+import kotlin.collections.HashSet
 
 /**
  * 水平滑动状态同步工具类
@@ -9,28 +10,36 @@ import java.util.*
  */
 class HorizontalScrollSyncHelper {
 
-    companion object {
-        private const val TAG = "ScrollSyncHelper"
-    }
-
     private var scrollDataWrapper: ScrollDataWrapper = ScrollDataWrapper(ScrollState.INITIAL, Unit)
 
     private val scrollSyncObservable = ScrollSyncObservable()
+
+    private val actionDownPublishers: MutableSet<ScrollSyncObserver> = HashSet()
 
     internal fun addObserver(observer: ScrollSyncObserver) {
         scrollSyncObservable.addObserver(observer)
         observer.onScroll(scrollDataWrapper.scrollState, scrollDataWrapper.data)
     }
 
+    internal fun removeObserver(observer: ScrollSyncObserver) {
+        scrollSyncObservable.deleteObserver(observer)
+        actionDownPublishers.remove(observer)
+    }
+
     internal fun sync(observer: ScrollSyncObserver) {
         observer.onScroll(scrollDataWrapper.scrollState, scrollDataWrapper.data)
     }
 
-    internal fun removeObserver(observer: ScrollSyncObserver) {
-        scrollSyncObservable.deleteObserver(observer)
+    internal fun isAllowReleaseDrag(observer: ScrollSyncObserver): Boolean {
+        if (actionDownPublishers.size <= 0) return true
+        if (actionDownPublishers.size == 1 && actionDownPublishers.contains(observer)) return true
+        return false
     }
 
-    internal fun notifyScrollEvent(scrollState: ScrollState, data: Any) {
+    internal fun notifyScrollEvent(
+        scrollState: ScrollState,
+        data: Any
+    ) {
         if (scrollState == scrollDataWrapper.scrollState && data == scrollDataWrapper.data) return
         scrollDataWrapper.scrollState = scrollState
         scrollDataWrapper.data = when (scrollState) {
@@ -52,28 +61,49 @@ class HorizontalScrollSyncHelper {
         scrollSyncObservable.setScrollData(scrollDataWrapper)
     }
 
-    internal fun notifyStopScroll() {
+
+    internal fun notifyActionDown(publisher: ScrollSyncObserver) {
+        actionDownPublishers.add(publisher)
         scrollSyncObservable.stopScroll()
     }
 
-    internal inner class ScrollSyncObservable : Observable() {
+    internal fun notifyActionCancel(publisher: ScrollSyncObserver) {
+        actionDownPublishers.remove(publisher)
+    }
+
+    internal inner class ScrollSyncObservable {
+
+        private val observers: MutableCollection<ScrollSyncObserver> = Vector()
+
+        fun addObserver(o: ScrollSyncObserver) {
+            if (observers.contains(o)) return
+            observers.add(o)
+        }
+
+        fun deleteObserver(o: ScrollSyncObserver) {
+            observers.remove(o)
+        }
 
         fun setScrollData(scrollDataWrapper: ScrollDataWrapper) {
-            setChanged()
             notifyObservers(scrollDataWrapper)
         }
 
         fun stopScroll() {
-            setChanged()
             notifyObservers(StopScroll)
+        }
+
+        private fun notifyObservers(arg: Any?) {
+            observers.forEach {
+                it.update(arg)
+            }
         }
     }
 }
 
-interface ScrollSyncObserver : Observer {
+interface ScrollSyncObserver {
 
     @Suppress("UNCHECKED_CAST")
-    override fun update(o: Observable?, arg: Any?) {
+    fun update(arg: Any?) {
         when (arg) {
             is ScrollDataWrapper -> {
                 val data = arg.data

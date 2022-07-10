@@ -8,13 +8,15 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
+import kotlin.math.max
 
 internal class FixedBehavior constructor(
     var fixedMinWidth: Int,
     var fixedMaxWidth: Int = Int.MAX_VALUE,
+    private val scrollableView: View,
     private val scrollable: Scrollable<out IScrollData>,
     private val onScrollChanged: (scrollState: ScrollState, data: Any) -> Unit,
-    private val onStopScroll: () -> Unit,
+    private val isAllowReleaseDrag: () -> Boolean,
 ) : CoordinatorLayout.Behavior<View>() {
 
     companion object {
@@ -62,13 +64,72 @@ internal class FixedBehavior constructor(
     ): Boolean {
         this.parent = parent
         this.child = child
-        val fixedWidth =
-            (fixedMinWidth + (currentDragWith * DRAG_RATIO).toInt()).coerceAtMost(fixedMaxWidth)
-        val fixedWidthMeasureSpec =
-            View.MeasureSpec.makeMeasureSpec(fixedWidth, View.MeasureSpec.EXACTLY)
-        child.measure(fixedWidthMeasureSpec, parentHeightMeasureSpec)
+
+        child.measure(
+            getFixedWidthMeasureSpec(),
+            parentHeightMeasureSpec
+        )
+
+        scrollableView.measure(
+            getScrollableWidthMeasureSpec(parentWidthMeasureSpec),
+            parentHeightMeasureSpec
+        )
+
+        val fixedViewHeight = child.measuredHeight
+        val scrollableViewHeight = scrollableView.measuredHeight
+        if (fixedViewHeight != scrollableViewHeight) {
+            val height = max(fixedViewHeight, scrollableViewHeight)
+            val heightMeasureSpec = View.MeasureSpec.makeMeasureSpec(
+                height,
+                View.MeasureSpec.EXACTLY
+            )
+            if (fixedViewHeight < height) {
+                child.measure(
+                    getFixedWidthMeasureSpec(),
+                    heightMeasureSpec
+                )
+            }
+            if (scrollableViewHeight < height) {
+                scrollableView.measure(
+                    getScrollableWidthMeasureSpec(parentWidthMeasureSpec),
+                    heightMeasureSpec
+                )
+            }
+        }
+
         return true
     }
+
+    private fun getFixedWidthMeasureSpec(): Int {
+        val fixedWidth =
+            (fixedMinWidth + (currentDragWith * DRAG_RATIO).toInt()).coerceAtMost(fixedMaxWidth)
+        return View.MeasureSpec.makeMeasureSpec(fixedWidth, View.MeasureSpec.EXACTLY)
+    }
+
+    private fun getScrollableWidthMeasureSpec(parentWidthMeasureSpec: Int): Int {
+        val widthMode = View.MeasureSpec.getMode(parentWidthMeasureSpec)
+        val widthSize = View.MeasureSpec.getSize(parentWidthMeasureSpec)
+        val maxWidth = (widthSize - fixedMinWidth).coerceAtLeast(0)
+
+        val width: Int
+        val widthMeasureSpec: Int
+
+        when (widthMode) {
+            View.MeasureSpec.EXACTLY -> {
+                width = widthSize.coerceAtMost(maxWidth)
+                widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY)
+            }
+            View.MeasureSpec.AT_MOST -> {
+                width = widthSize.coerceAtMost(maxWidth)
+                widthMeasureSpec = View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.AT_MOST)
+            }
+            else -> {
+                widthMeasureSpec = parentWidthMeasureSpec
+            }
+        }
+        return widthMeasureSpec
+    }
+
 
     override fun onLayoutChild(
         parent: CoordinatorLayout,
@@ -102,7 +163,9 @@ internal class FixedBehavior constructor(
     ) {
         when (type) {
             ViewCompat.TYPE_TOUCH -> {
+
                 releaseDragHelper.stop()
+
                 if (currentDragWith != 0) {
                     onScrollChanged(ScrollState.DRAG, currentDragWith)
                 } else {
@@ -188,10 +251,8 @@ internal class FixedBehavior constructor(
         type: Int
     ) {
         if (type == ViewCompat.TYPE_TOUCH) {
-            if (currentDragWith != 0) {
-
+            if (currentDragWith != 0 && isAllowReleaseDrag()) {
                 releaseDragHelper.start()
-
                 onScrollChanged(ScrollState.REBOUND, currentDragWith)
             }
         }
