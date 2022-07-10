@@ -31,7 +31,6 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
     private val forceRefresh: Boolean
 ) : IItemFetcherSnapshot {
 
-
     companion object {
         private const val TAG = "PagingSourceItemFetcher"
     }
@@ -41,9 +40,12 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
     private val sourceEventChannelFlowJob = Job()
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
 
+    @Volatile
+    var isRefresh = false
 
     override val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
         val isRefresh = displayedData.lastPaging == null || forceRefresh
+        this@PagingSourceItemFetcherSnapshot.isRefresh = isRefresh
         if (displayedData.noMore && !isRefresh) {
             onAppendComplete()
             return@cancelableChannelFlow

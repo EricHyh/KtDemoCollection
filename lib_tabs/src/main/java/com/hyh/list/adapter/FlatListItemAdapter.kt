@@ -63,7 +63,13 @@ class FlatListItemAdapter constructor(
                 .map { it.second }
                 .filterNotNull()
                 .simpleScan(null) { previousSnapshot: ResultProcessorSnapshot?, sourceEvent: SourceEvent ->
-                    previousSnapshot?.close()
+                    if ((previousSnapshot?.sourceEvent is SourceEvent.PagingRearrangeSuccess
+                                && sourceEvent is SourceEvent.PagingRearrangeSuccess)
+                        || (previousSnapshot?.sourceEvent !is SourceEvent.PagingRearrangeSuccess
+                                && sourceEvent !is SourceEvent.PagingRearrangeSuccess)
+                    ) {
+                        previousSnapshot?.close()
+                    }
                     ResultProcessorSnapshot(sourceEvent)
                 }
                 .filterNotNull()
@@ -131,6 +137,10 @@ class FlatListItemAdapter constructor(
                             _pagingLoadStateFlow.value = appendError
                             onStateChanged(appendError)
                             event.onReceived()
+                        }
+
+                        is SourceEvent.PagingRearrangeSuccess -> {
+                            resultFlow.value = Pair(resultFlow.value.first + 1, event)
                         }
 
                         is SourceEvent.ItemOperate -> {
@@ -243,7 +253,7 @@ class FlatListItemAdapter constructor(
         }
     }
 
-    inner class ResultProcessorSnapshot(private val sourceEvent: SourceEvent) {
+    inner class ResultProcessorSnapshot(val sourceEvent: SourceEvent) {
 
         private val coroutineScope =
             CloseableCoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

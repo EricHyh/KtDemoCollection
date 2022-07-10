@@ -41,7 +41,7 @@ internal class LoadEventHandler {
                 }
             }
             LoadEvent.Rearrange -> {
-                if (refreshComplete.get() && appendComplete.get()) {
+                if (rearrangeComplete.get()) {
                     rearrangeComplete.set(false)
                     state.value = Pair(state.value.first + 1, event)
                 } else {
@@ -64,6 +64,7 @@ internal class LoadEventHandler {
             }
             LoadEvent.Rearrange -> {
                 rearrangeComplete.set(true)
+                appendComplete.set(true)
             }
         }
         val cacheEvent = cacheEvent

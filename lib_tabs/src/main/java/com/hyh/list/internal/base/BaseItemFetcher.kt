@@ -4,11 +4,11 @@ import androidx.annotation.CallSuper
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.simpleChannelFlow
 import com.hyh.list.FlatListItem
-import com.hyh.list.IFlatListItem
 import com.hyh.list.internal.*
 import com.hyh.list.internal.utils.ListOperate
 import com.hyh.list.internal.utils.ListUpdate
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
 
@@ -25,9 +25,7 @@ abstract class BaseItemFetcher<Param : Any, Item : Any>(
         get() = uiReceiver
 
     val flow: Flow<SourceData> = simpleChannelFlow {
-        launch {
-            this@simpleChannelFlow.initChannelFlow()
-        }
+        initChannelFlow()
         launch {
             uiReceiver
                 .eventFlow

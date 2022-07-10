@@ -62,7 +62,7 @@ class PagingSourceItemRearrangeSnapshot<Param : Any, Item : Any>(
                 if (loadResult.ignore) {
                     onRearrangeComplete()
                 } else {
-                    SourceEvent.RefreshSuccess(
+                    SourceEvent.PagingRearrangeSuccess(
                         rearrangeProcessor(param, loadResult),
                     ) {
                         onRearrangeComplete()

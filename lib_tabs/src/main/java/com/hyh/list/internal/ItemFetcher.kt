@@ -62,30 +62,34 @@ class ItemFetcher<Param : Any, Item : Any>(
     override val uiReceiver: ItemFetcherUiReceiver = ItemFetcherUiReceiver()
 
     override suspend fun SendChannel<SourceData>.initChannelFlow() {
-        uiReceiver
-            .flow
-            .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: IItemFetcherSnapshot?, _: Unit? ->
-                previousSnapshot?.close()
-                ItemFetcherSnapshot(
-                    displayedData = sourceDisplayedData,
-                    paramProvider = getParamProvider(),
-                    preShowLoader = getPreShowLoader(),
-                    loader = getLoader(),
-                    fetchDispatcherProvider = getFetchDispatcherProvider(),
-                    processDataDispatcherProvider = getProcessDataDispatcherProvider(),
-                    onRefreshComplete = uiReceiver::onRefreshComplete,
-                    delegate = itemSource.delegate
-                )
+        coroutineScope {
+            launch {
+                uiReceiver
+                    .flow
+                    .flowOn(Dispatchers.Main)
+                    .simpleScan(null) { previousSnapshot: IItemFetcherSnapshot?, _: Unit? ->
+                        previousSnapshot?.close()
+                        ItemFetcherSnapshot(
+                            displayedData = sourceDisplayedData,
+                            paramProvider = getParamProvider(),
+                            preShowLoader = getPreShowLoader(),
+                            loader = getLoader(),
+                            fetchDispatcherProvider = getFetchDispatcherProvider(),
+                            processDataDispatcherProvider = getProcessDataDispatcherProvider(),
+                            onRefreshComplete = uiReceiver::onRefreshComplete,
+                            delegate = itemSource.delegate
+                        )
+                    }
+                    .filterNotNull()
+                    .simpleMapLatest { snapshot: IItemFetcherSnapshot ->
+                        val downstreamFlow = snapshot.sourceEventFlow
+                        SourceData(downstreamFlow, uiReceiver)
+                    }
+                    .collect {
+                        send(it)
+                    }
             }
-            .filterNotNull()
-            .simpleMapLatest { snapshot: IItemFetcherSnapshot ->
-                val downstreamFlow = snapshot.sourceEventFlow
-                SourceData(downstreamFlow, uiReceiver)
-            }
-            .collect {
-                send(it)
-            }
+        }
     }
 
     private fun getRefreshStrategy(): RefreshStrategy {

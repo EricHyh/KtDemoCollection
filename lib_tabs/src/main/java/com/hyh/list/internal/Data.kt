@@ -119,6 +119,11 @@ sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {
         onReceived: (suspend () -> Unit) = {}
     ) : SourceEvent(onReceived)
 
+    class PagingRearrangeSuccess(
+        processor: SourceResultProcessor,
+        onReceived: (suspend () -> Unit) = {}
+    ) : ProcessorSourceEvent(processor, onReceived)
+
     // endregion
 
     class ItemOperate(

@@ -33,11 +33,11 @@
         </activity>-->
 
         <activity android:name="com.hyh.paging3demo.list.ScrollLayoutTestActivity">
-            <intent-filter>
+            <!--<intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            </intent-filter>-->
         </activity>
 
         <activity android:name=".SqliteTestActivity">
@@ -72,11 +72,11 @@
             android:name=".list.ListTestActivity"
             android:label="@string/list_demo"
             android:screenOrientation="portrait">
-            <!--<intent-filter>
+            <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>-->
+            </intent-filter>
         </activity>
 
 

@@ -66,48 +66,58 @@ class PagingSourceItemFetcher<Param : Any, Item : Any>(
     override val uiReceiver: ItemFetcherUiReceiver = ItemFetcherUiReceiver()
 
     override suspend fun SendChannel<SourceData>.initChannelFlow() {
-        uiReceiver
-            .flow
-            .flowOn(Dispatchers.Main)
-            .simpleScan(null) { previousSnapshot: IItemFetcherSnapshot?, loadEvent: LoadEvent ->
-                if (loadEvent == LoadEvent.Rearrange) {
-                    previousSnapshot?.close()
-                    PagingSourceItemRearrangeSnapshot(
-                        displayedData = sourceDisplayedData,
-                        loader = getPagingSourceLoader(),
-                        onRearrangeComplete = uiReceiver::onRearrangeComplete,
-                        delegate = pagingSource.delegate,
-                        fetchDispatcherProvider = getFetchDispatcherProvider(),
-                        processDataDispatcherProvider = getProcessDataDispatcherProvider(),
-                    )
-                } else {
-                    if (sourceDisplayedData.noMore && loadEvent != LoadEvent.Refresh) {
-                        uiReceiver.onAppendComplete()
-                        return@simpleScan null
+        coroutineScope {
+            launch {
+                uiReceiver
+                    .flow
+                    .flowOn(Dispatchers.Main)
+                    .simpleScan(null) { previousSnapshot: IItemFetcherSnapshot?, loadEvent: LoadEvent ->
+                        if (loadEvent == LoadEvent.Rearrange) {
+                            if (previousSnapshot is PagingSourceItemRearrangeSnapshot<*, *>
+                                || (previousSnapshot is PagingSourceItemFetcherSnapshot<*, *> && !previousSnapshot.isRefresh)
+                            ) {
+                                previousSnapshot.close()
+                            }
+                            PagingSourceItemRearrangeSnapshot(
+                                displayedData = sourceDisplayedData,
+                                loader = getPagingSourceLoader(),
+                                onRearrangeComplete = uiReceiver::onRearrangeComplete,
+                                delegate = pagingSource.delegate,
+                                fetchDispatcherProvider = getFetchDispatcherProvider(),
+                                processDataDispatcherProvider = getProcessDataDispatcherProvider(),
+                            )
+
+                        } else {
+                            if (sourceDisplayedData.noMore && loadEvent != LoadEvent.Refresh) {
+                                uiReceiver.onAppendComplete()
+                                return@simpleScan null
+                            }
+                            previousSnapshot?.close()
+                            PagingSourceItemFetcherSnapshot(
+                                displayedData = sourceDisplayedData,
+                                refreshKeyProvider = getRefreshKeyProvider(),
+                                appendKeyProvider = getAppendKeyProvider(),
+                                loader = getPagingSourceLoader(),
+                                onRefreshComplete = uiReceiver::onRefreshComplete,
+                                onAppendComplete = uiReceiver::onAppendComplete,
+                                delegate = pagingSource.delegate,
+                                fetchDispatcherProvider = getFetchDispatcherProvider(),
+                                processDataDispatcherProvider = getProcessDataDispatcherProvider(),
+                                forceRefresh = loadEvent == LoadEvent.Refresh
+                            )
+                        }
                     }
-                    previousSnapshot?.close()
-                    PagingSourceItemFetcherSnapshot(
-                        displayedData = sourceDisplayedData,
-                        refreshKeyProvider = getRefreshKeyProvider(),
-                        appendKeyProvider = getAppendKeyProvider(),
-                        loader = getPagingSourceLoader(),
-                        onRefreshComplete = uiReceiver::onRefreshComplete,
-                        onAppendComplete = uiReceiver::onAppendComplete,
-                        delegate = pagingSource.delegate,
-                        fetchDispatcherProvider = getFetchDispatcherProvider(),
-                        processDataDispatcherProvider = getProcessDataDispatcherProvider(),
-                        forceRefresh = loadEvent == LoadEvent.Refresh
-                    )
-                }
+                    .filterNotNull()
+                    .simpleMapLatest { snapshot: IItemFetcherSnapshot ->
+                        val downstreamFlow = snapshot.sourceEventFlow
+                        SourceData(downstreamFlow, uiReceiver)
+                    }
+                    .collect {
+                        send(it)
+                    }
             }
-            .filterNotNull()
-            .simpleMapLatest { snapshot: IItemFetcherSnapshot ->
-                val downstreamFlow = snapshot.sourceEventFlow
-                SourceData(downstreamFlow, uiReceiver)
-            }
-            .collect {
-                send(it)
-            }
+
+        }
     }
 
 
