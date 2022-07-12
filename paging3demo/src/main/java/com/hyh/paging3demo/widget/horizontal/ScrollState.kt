@@ -7,16 +7,16 @@ package com.hyh.paging3demo.widget.horizontal
  */
 enum class ScrollState {
 
-    INITIAL,
+    INITIAL,    //初始状态
 
-    IDLE,
+    IDLE,       //空闲状态
 
-    SCROLL,
+    SCROLL,     //滑动状态
 
-    DRAG,
+    DRAG,       //拖拽状态
 
-    REBOUND,
+    REBOUND,    //回弹状态
 
-    SETTLING
+    SETTLING    //惯性状态
 
 }
