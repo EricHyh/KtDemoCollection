@@ -1,7 +1,6 @@
 package com.hyh.paging3demo.widget.horizontal
 
 import android.content.Context
-import android.graphics.Color
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
@@ -36,9 +35,6 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs
         recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         recyclerView.adapter = gridAdapter
         initView()
-        setBackgroundColor(Color.BLUE)
-        fixedViewContainer.setBackgroundColor(Color.GREEN)
-        recyclerView.setBackgroundColor(Color.RED)
     }
 
     override fun findFixedView(): View = fixedViewContainer
@@ -72,7 +68,9 @@ interface IGrid<Holder : GridHolder> {
         val EMPTY = object :
             IGrid<GridHolder> {
 
-            override fun getViewType(): Int = IGrid::class.java.hashCode()
+            override val gridId: Int = -1
+
+            override val gridViewType: Int = IGrid::class.java.hashCode()
 
             override fun getGridHolderFactory(): (parent: ViewGroup) -> GridHolder {
                 return {
@@ -80,9 +78,7 @@ interface IGrid<Holder : GridHolder> {
                 }
             }
 
-            override fun getGridId(): Int = -1
-
-            override fun areContentsTheSame(other: IGrid<GridHolder>): Boolean {
+            override fun areContentsTheSame(other: IGrid<*>): Boolean {
                 return true
             }
 
@@ -93,7 +89,9 @@ interface IGrid<Holder : GridHolder> {
             return object :
                 IGrid<GridHolder> {
 
-                override fun getViewType(): Int = IGrid::class.java.hashCode()
+                override val gridId: Int = fieldId
+
+                override val gridViewType: Int = IGrid::class.java.hashCode()
 
                 override fun getGridHolderFactory(): (parent: ViewGroup) -> GridHolder {
                     return {
@@ -101,9 +99,7 @@ interface IGrid<Holder : GridHolder> {
                     }
                 }
 
-                override fun getGridId(): Int = fieldId
-
-                override fun areContentsTheSame(other: IGrid<GridHolder>): Boolean {
+                override fun areContentsTheSame(other: IGrid<*>): Boolean {
                     return true
                 }
 
@@ -112,13 +108,13 @@ interface IGrid<Holder : GridHolder> {
         }
     }
 
+    val gridId: Int
+
+    val gridViewType: Int
+
     fun getGridHolderFactory(): (parent: ViewGroup) -> Holder
 
-    fun getViewType(): Int
-
-    fun getGridId(): Int
-
-    fun areContentsTheSame(other: IGrid<Holder>) = false
+    fun areContentsTheSame(other: IGrid<*>) = false
 
     fun onContentsNotChanged(holder: Holder) {}
 
@@ -144,7 +140,7 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
         AsyncListDiffer(this, object : DiffUtil.ItemCallback<IGrid<GridHolder>>() {
 
             override fun areItemsTheSame(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Boolean {
-                return oldItem.getGridId() == newItem.getGridId()
+                return oldItem.gridId == newItem.gridId
             }
 
             override fun areContentsTheSame(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Boolean {
@@ -165,7 +161,7 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
         val currentList = differ.currentList
         if (position in currentList.indices) {
             val grid = differ.currentList[position]
-            val viewType = grid.getViewType()
+            val viewType = grid.gridViewType
             if (viewTypeStorage.get(viewType, false) == null) {
                 viewTypeStorage.put(viewType, grid)
             }
@@ -251,7 +247,7 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
             var grid: IGrid<*>? = null
             kotlin.run {
                 obtainGridsSnapshot.grids.forEach {
-                    if (it.getViewType() == viewType) {
+                    if (it.gridViewType == viewType) {
                         grid = it
                         return@run
                     }

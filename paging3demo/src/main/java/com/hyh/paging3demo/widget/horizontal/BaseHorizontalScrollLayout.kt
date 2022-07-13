@@ -210,6 +210,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         this.helper?.removeObserver(this)
+        scrollable.stopScroll()
     }
 
     protected abstract fun findFixedView(): View

@@ -5,6 +5,76 @@
     android:fitsSystemWindows="true"
     android:orientation="vertical">
 
+
+
+    <com.hyh.paging3demo.widget.horizontal.NestedHorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#55FF0000"
+        android:orientation="horizontal">
+
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字1"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字2"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字3"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字4"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字5"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字6"
+            android:layout_height="wrap_content"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#000"
+            android:background="#FFF"
+            android:padding="20dp"
+            android:text="文字7"
+            android:layout_height="wrap_content"/>
+
+
+    </com.hyh.paging3demo.widget.horizontal.NestedHorizontalScrollView>
+
+
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -3,24 +3,17 @@ package com.hyh.paging3demo.list
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
-import android.text.TextUtils
-import android.util.TypedValue
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatTextView
-import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.R
-import com.hyh.paging3demo.widget.horizontal.GridHolder
-import com.hyh.paging3demo.widget.horizontal.HorizontalScrollSyncHelper
-import com.hyh.paging3demo.widget.horizontal.IGrid
-import com.hyh.paging3demo.widget.horizontal.RecyclerViewScrollLayout
+import com.hyh.paging3demo.widget.horizontal.*
 
 /**
  * TODO: Add Description
@@ -57,7 +50,7 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScrollLayoutTestHolder {
         return ScrollLayoutTestHolder(
-            RecyclerViewScrollLayout(parent.context).apply {
+            HorizontalScrollLayout(parent.context).apply {
                 fixedMinWidth = 200
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -101,7 +94,7 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 }
 
 
-class ScrollLayoutTestHolder(val recyclerViewScrollLayout: RecyclerViewScrollLayout) :
+class ScrollLayoutTestHolder(val recyclerViewScrollLayout: HorizontalScrollLayout) :
     RecyclerView.ViewHolder(recyclerViewScrollLayout) {
 }
 
@@ -109,20 +102,20 @@ class FixedTextGrid(
     private val gridFieldId: Int
 ) : IGrid<TextHolder> {
 
+
+    override val gridViewType: Int
+        get() = 0
+
+    override val gridId: Int
+        get() = gridFieldId
+
+
     @SuppressLint("RestrictedApi", "WrongConstant")
     override fun getGridHolderFactory(): (parent: ViewGroup) -> TextHolder {
         return {
             val textView = LayoutInflater.from(it.context).inflate(R.layout.item_text, it, false)
             TextHolder(textView as TextView)
         }
-    }
-
-    override fun getViewType(): Int {
-        return 0
-    }
-
-    override fun getGridId(): Int {
-        return gridFieldId
     }
 
     @SuppressLint("SetTextI18n")
@@ -137,6 +130,13 @@ class TextGrid(
     private val gridFieldId: Int
 ) : IGrid<TextHolder> {
 
+    override val gridViewType: Int
+        get() = 1
+
+    override val gridId: Int
+        get() = gridFieldId
+
+
     override fun getGridHolderFactory(): (parent: ViewGroup) -> TextHolder {
         return {
             val textView = TextView(it.context).apply {
@@ -150,14 +150,6 @@ class TextGrid(
             }
             TextHolder(textView)
         }
-    }
-
-    override fun getViewType(): Int {
-        return 1
-    }
-
-    override fun getGridId(): Int {
-        return gridFieldId
     }
 
     @SuppressLint("SetTextI18n")
