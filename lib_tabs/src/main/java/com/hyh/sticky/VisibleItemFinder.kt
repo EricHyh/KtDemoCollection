@@ -44,11 +44,11 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
 
         return when (layoutManager) {
             is LinearLayoutManager -> {
-                layoutManager.findFirstCompletelyVisibleItemPosition()
+                layoutManager.findFirstVisibleItemPosition()
             }
             is StaggeredGridLayoutManager -> {
                 val into = obtainIntArray(layoutManager.spanCount)
-                layoutManager.findFirstCompletelyVisibleItemPositions(into)
+                layoutManager.findFirstVisibleItemPositions(into)
                 findMin(into)
             }
             else -> RecyclerView.NO_POSITION
@@ -76,11 +76,11 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
 
         return when (layoutManager) {
             is LinearLayoutManager -> {
-                layoutManager.findLastCompletelyVisibleItemPosition()
+                layoutManager.findLastVisibleItemPosition()
             }
             is StaggeredGridLayoutManager -> {
                 val into = obtainIntArray(layoutManager.spanCount)
-                layoutManager.findLastCompletelyVisibleItemPositions(into)
+                layoutManager.findLastVisibleItemPositions(into)
                 findMax(into)
             }
             else -> RecyclerView.NO_POSITION

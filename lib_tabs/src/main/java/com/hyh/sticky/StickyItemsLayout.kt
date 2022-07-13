@@ -782,10 +782,18 @@ class StickyItemsLayout : ViewGroup {
             val stickyItemsListener = this@StickyItemsLayout.stickyItemsListener ?: return
             val stickyItemsAdapter = this@StickyItemsLayout.stickyItemsAdapter ?: return
             removed.forEach {
-                stickyItemsListener.onStickItemsRemoved(this@StickyItemsLayout, stickyItemsAdapter, it)
+                stickyItemsListener.onStickItemsRemoved(
+                    this@StickyItemsLayout,
+                    stickyItemsAdapter,
+                    it
+                )
             }
             added.forEach {
-                stickyItemsListener.onStickItemsAdded(this@StickyItemsLayout, stickyItemsAdapter, it)
+                stickyItemsListener.onStickItemsAdded(
+                    this@StickyItemsLayout,
+                    stickyItemsAdapter,
+                    it
+                )
             }
         }
 
@@ -793,7 +801,8 @@ class StickyItemsLayout : ViewGroup {
             recyclerView: RecyclerView,
             changedRange: IntRange?
         ): Collection<Int> {
-            if (recyclerView.computeVerticalScrollRange() <= 0 || currentItemsPositionHelper.maxStickyItems <= 0) {
+            if (currentItemsPositionHelper.isReachBound || currentItemsPositionHelper.maxStickyItems <= 0
+            ) {
                 cacheFixedPositions.clear()
                 cachePositions.clear()
                 tempPositions.clear()
@@ -804,14 +813,14 @@ class StickyItemsLayout : ViewGroup {
 
             val firstCompletelyVisibleItemPosition =
                 currentItemsPositionHelper.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
-            if (firstCompletelyVisibleItemPosition == 0) {
+            /*if (firstCompletelyVisibleItemPosition == 0) {
                 cacheFixedPositions.clear()
                 cachePositions.clear()
                 tempPositions.clear()
                 cacheFirstCompletelyVisibleItemPosition = null
                 cacheLastCompletelyVisibleItemPosition = null
                 return emptyList()
-            }
+            }*/
 
             val lastCompletelyVisibleItemPosition =
                 currentItemsPositionHelper.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
@@ -835,13 +844,13 @@ class StickyItemsLayout : ViewGroup {
 
             val dataChanged = changedRange != null
 
-            if (!dataChanged) {
+            /*if (!dataChanged) {
                 if (cacheFirstCompletelyVisibleItemPosition == firstCompletelyVisibleItemPosition
                     && cacheLastCompletelyVisibleItemPosition == lastCompletelyVisibleItemPosition
                 ) {
                     return tempPositions
                 }
-            }
+            }*/
 
 
             cacheFirstCompletelyVisibleItemPosition = currentItemsPositionHelper
@@ -1046,6 +1055,8 @@ class StickyItemsLayout : ViewGroup {
 
             abstract val maxFixedStickyItems: Int
 
+            abstract val isReachBound: Boolean
+
             abstract fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int
 
             abstract fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int
@@ -1105,6 +1116,12 @@ class StickyItemsLayout : ViewGroup {
 
                 override val maxFixedStickyItems: Int
                     get() = maxFixedStickyHeaders
+
+                override val isReachBound: Boolean
+                    get() {
+                        val recyclerView = recyclerView ?: return true
+                        return !recyclerView.canScrollVertically(-1)
+                    }
 
                 override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
                     return visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView?.layoutManager)
@@ -1410,6 +1427,12 @@ class StickyItemsLayout : ViewGroup {
                 override val maxFixedStickyItems: Int
                     get() = maxFixedStickyFooters
 
+                override val isReachBound: Boolean
+                    get() {
+                        val recyclerView = recyclerView ?: return true
+                        return !recyclerView.canScrollVertically(1)
+                    }
+
                 override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
                     val position =
                         visibleItemFinder.findLastCompletelyVisibleItemPosition(layoutManager)
@@ -1483,7 +1506,8 @@ class StickyItemsLayout : ViewGroup {
                     if (dataChanged) {
                         val recyclerView = recyclerView ?: return 0
                         val adapter = recyclerView.adapter ?: return 0
-                        val itemViewType = getItemViewType(adapter, getRealPosition(position)) ?: return 0
+                        val itemViewType =
+                            getItemViewType(adapter, getRealPosition(position)) ?: return 0
                         val attachedItem = attachedItemTypeMap[itemViewType]?.firstOrNull()
                         if (attachedItem != null) {
                             return attachedItem.heightWithDecor

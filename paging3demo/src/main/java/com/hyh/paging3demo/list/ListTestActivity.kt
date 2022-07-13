@@ -48,7 +48,7 @@ class ListTestActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
-        recyclerView.itemAnimator = null
+        //recyclerView.itemAnimator = null
 
 
         val stickyItemsLayout = findViewById<StickyItemsLayout>(R.id.sticky_items_layout)
@@ -56,8 +56,6 @@ class ListTestActivity : AppCompatActivity() {
             multiSourceAdapter,
             1
         ))
-
-
 
 
         multiSourceAdapter.submitData(NumItemSourceRepo().flow)
