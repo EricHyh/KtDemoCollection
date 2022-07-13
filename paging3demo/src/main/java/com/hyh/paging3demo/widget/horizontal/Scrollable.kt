@@ -1,6 +1,5 @@
 package com.hyh.paging3demo.widget.horizontal
 
-import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -92,7 +91,7 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollabl
 }
 
 
-class NestedScrollable(private val nestedScrollView: NestedHorizontalScrollLayout) : Scrollable<NestedScrollable.NestedViewScrollData> {
+class NestedScrollable(private val nestedScrollView: NestedHorizontalScrollView) : Scrollable<NestedScrollable.NestedViewScrollData> {
 
     override fun getScrollData(): NestedViewScrollData {
         return NestedViewScrollData(
@@ -109,7 +108,7 @@ class NestedScrollable(private val nestedScrollView: NestedHorizontalScrollLayou
     }
 
     override fun stopScroll() {
-
+        nestedScrollView.stopScroll()
     }
 
     data class NestedViewScrollData(

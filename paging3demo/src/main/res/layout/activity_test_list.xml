@@ -7,7 +7,7 @@
 
 
 
-    <com.hyh.paging3demo.widget.horizontal.NestedHorizontalScrollLayout
+    <com.hyh.paging3demo.widget.horizontal.NestedHorizontalScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#55FF0000"
@@ -72,7 +72,7 @@
             android:layout_height="wrap_content"/>
 
 
-    </com.hyh.paging3demo.widget.horizontal.NestedHorizontalScrollLayout>
+    </com.hyh.paging3demo.widget.horizontal.NestedHorizontalScrollView>
 
 
     <Button

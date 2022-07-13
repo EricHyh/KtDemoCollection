@@ -2,14 +2,9 @@ package com.hyh.paging3demo.widget.horizontal
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
-import androidx.core.widget.NestedScrollView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.R
 
 /**
@@ -17,7 +12,7 @@ import com.hyh.paging3demo.R
  *
  * @author eriche 2022/7/11
  */
-class LinearScrollLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyle: Int = 0) :
+class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyle: Int = 0) :
     BaseHorizontalScrollLayout(context, attrs, defStyle) {
 
     companion object {
@@ -25,13 +20,13 @@ class LinearScrollLayout @JvmOverloads constructor(context: Context, attrs: Attr
     }
 
     private val fixedViewContainer: FrameLayout = FrameLayout(context)
-    private val nestedHorizontalScrollLayout: NestedHorizontalScrollLayout = NestedHorizontalScrollLayout(context)
+    private val nestedHorizontalScrollView: NestedHorizontalScrollView = NestedHorizontalScrollView(context)
 
     private var fixedGrid: IGrid<*>? = null
     
     init {
         addView(fixedViewContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        addView(nestedHorizontalScrollLayout, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        addView(nestedHorizontalScrollView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         initView()
     }
 
@@ -40,11 +35,11 @@ class LinearScrollLayout @JvmOverloads constructor(context: Context, attrs: Attr
     }
 
     override fun findScrollableView(): View {
-        return nestedHorizontalScrollLayout
+        return nestedHorizontalScrollView
     }
 
     override fun asScrollable(scrollableView: View): Scrollable<*> {
-        return NestedScrollable(nestedHorizontalScrollLayout)
+        return NestedScrollable(nestedHorizontalScrollView)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -92,7 +87,7 @@ class LinearScrollLayout @JvmOverloads constructor(context: Context, attrs: Attr
         }
 
         record?.holder?.view?.removeFromParent()
-        val holder = grid.getGridHolderFactory().invoke(nestedHorizontalScrollLayout)
+        val holder = grid.getGridHolderFactory().invoke(nestedHorizontalScrollView)
         val newRecord = PositionGridRecord(grid, type, holder)
         if (index >= size) {
             scrollableGridRecords.add(newRecord)
@@ -100,7 +95,7 @@ class LinearScrollLayout @JvmOverloads constructor(context: Context, attrs: Attr
             scrollableGridRecords[index] = newRecord
         }
 
-        nestedHorizontalScrollLayout.addView(
+        nestedHorizontalScrollView.addView(
             holder.view,
             index
         )

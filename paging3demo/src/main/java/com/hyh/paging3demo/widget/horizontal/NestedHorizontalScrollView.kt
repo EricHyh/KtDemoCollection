@@ -15,6 +15,7 @@ import androidx.core.view.NestedScrollingChildHelper
 import androidx.core.view.ViewCompat
 import androidx.core.view.ViewCompat.TYPE_NON_TOUCH
 import androidx.core.view.ViewCompat.TYPE_TOUCH
+import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -25,7 +26,7 @@ import kotlin.math.roundToInt
  *
  * @author eriche 2022/7/12
  */
-class NestedHorizontalScrollLayout @JvmOverloads constructor(
+class NestedHorizontalScrollView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyle: Int = 0
@@ -371,6 +372,8 @@ class NestedHorizontalScrollLayout @JvmOverloads constructor(
         stopNestedScroll(TYPE_TOUCH)
     }
 
+
+
     private fun setScrollState(state: Int) {
         if (state == scrollState) {
             return
@@ -380,6 +383,13 @@ class NestedHorizontalScrollLayout @JvmOverloads constructor(
             stopScrollersInternal()
         }
     }
+
+
+    fun stopScroll() {
+        setScrollState(SCROLL_STATE_IDLE)
+        stopScrollersInternal()
+    }
+
 
     private fun stopScrollersInternal() {
         mViewFlinger.stop()
@@ -668,7 +678,7 @@ class NestedHorizontalScrollLayout @JvmOverloads constructor(
                 mReSchedulePostAnimationCallback = true
             } else {
                 removeCallbacks(this)
-                ViewCompat.postOnAnimation(this@NestedHorizontalScrollLayout, this)
+                ViewCompat.postOnAnimation(this@NestedHorizontalScrollView, this)
             }
         }
 
