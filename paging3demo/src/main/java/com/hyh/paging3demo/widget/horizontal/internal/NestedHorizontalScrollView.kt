@@ -1,4 +1,4 @@
-package com.hyh.paging3demo.widget.horizontal
+package com.hyh.paging3demo.widget.horizontal.internal
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -15,14 +15,13 @@ import androidx.core.view.NestedScrollingChildHelper
 import androidx.core.view.ViewCompat
 import androidx.core.view.ViewCompat.TYPE_NON_TOUCH
 import androidx.core.view.ViewCompat.TYPE_TOUCH
-import androidx.recyclerview.widget.RecyclerView
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * TODO: Add Description
+ * 水平方向支持嵌套滑动的View
  *
  * @author eriche 2022/7/12
  */
@@ -71,6 +70,7 @@ class NestedHorizontalScrollView @JvmOverloads constructor(
     private val childHelper: NestedScrollingChildHelper = NestedScrollingChildHelper(this)
 
     private val touchSlop: Int
+    private var overTouchSlop: Boolean = false
     private val minFlingVelocity: Int
     private val maxFlingVelocity: Int
 
@@ -160,6 +160,7 @@ class NestedHorizontalScrollView @JvmOverloads constructor(
 
         when (action) {
             MotionEvent.ACTION_DOWN -> {
+                overTouchSlop = false
                 scrollPointerId = ev.getPointerId(0)
 
                 initialTouchX = ev.x.roundToInt()
@@ -202,14 +203,17 @@ class NestedHorizontalScrollView @JvmOverloads constructor(
 
                 val x = ev.getX(index).roundToInt()
                 val y = ev.getY(index).roundToInt()
-                if (scrollState != SCROLL_STATE_DRAGGING) {
+                if (!overTouchSlop && scrollState != SCROLL_STATE_DRAGGING) {
                     val dx: Int = x - initialTouchX
                     val dy: Int = y - initialTouchY
                     var startScroll = false
                     if (abs(dx) > touchSlop || abs(dy) > touchSlop) {
-                        lastTouchX = x
-                        lastTouchY = y
-                        startScroll = true
+                        if (abs(dx) > abs(dy)) {
+                            lastTouchX = x
+                            lastTouchY = y
+                            startScroll = true
+                        }
+                        overTouchSlop = true
                     }
                     if (startScroll) {
                         setScrollState(SCROLL_STATE_DRAGGING)
@@ -371,7 +375,6 @@ class NestedHorizontalScrollView @JvmOverloads constructor(
         }
         stopNestedScroll(TYPE_TOUCH)
     }
-
 
 
     private fun setScrollState(state: Int) {

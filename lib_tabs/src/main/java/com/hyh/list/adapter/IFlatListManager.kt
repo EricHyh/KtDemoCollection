@@ -17,6 +17,10 @@ interface IFlatListManager {
 
     fun <T : Any> setService(clazz: Class<T>, service: T)
 
+    fun scrollItem2Top(sourceToken: Any, localPosition: Int)
+
+    fun requestKeepPosition(sourceToken: Any, localPosition: Int)
+
     fun getRefreshActuator(sourceToken: Any): RefreshActuator {
         return {
             listAdapter.refreshSources(sourceToken, it)

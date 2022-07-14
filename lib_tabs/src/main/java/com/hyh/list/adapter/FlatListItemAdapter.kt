@@ -3,7 +3,9 @@ package com.hyh.list.adapter
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.hyh.Invoke
 import com.hyh.InvokeWithParam
 import com.hyh.coroutine.*
 import com.hyh.coroutine.SingleRunner
@@ -55,6 +57,7 @@ class FlatListItemAdapter constructor(
 
     private var recyclerView: RecyclerView? = null
 
+    private var pendingAction: Invoke? = null
 
     init {
         lifecycleOwner.lifecycleScope.launch {
@@ -206,6 +209,26 @@ class FlatListItemAdapter constructor(
         receiver?.insertItems(position, items)
     }
 
+    fun requestKeepPosition(localInfo: ItemLocalInfo) {
+        val recyclerView = recyclerView ?: return
+        val linearLayoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+        val item = findItem(localInfo.localPosition) ?: return
+        val viewHolder = recyclerView.findViewHolderForAdapterPosition(localInfo.globalPosition)
+        val top = viewHolder?.itemView?.top ?: 0
+
+        pendingAction = invoke@{
+            pendingAction = null
+            var index: Int = -1
+            if (getFlatListItems()?.any {
+                    index++
+                    item.areItemsTheSame(it)
+                } == true) {
+
+                linearLayoutManager.scrollToPositionWithOffset(localInfo.globalPosition, top)
+            }
+        }
+    }
+
     fun destroy() {
         _loadStateFlow.close()
         resultFlow.close()
@@ -220,6 +243,8 @@ class FlatListItemAdapter constructor(
         _items = processedResult.resultItems
         processedResult.onResultUsed()
         ListUpdate.handleListOperates(processedResult.listOperates, this@FlatListItemAdapter)
+
+        pendingAction?.invoke()
 
         createSourceLoadState(sourceEvent, processedResult.resultItems)?.apply {
             onStateChanged(this)

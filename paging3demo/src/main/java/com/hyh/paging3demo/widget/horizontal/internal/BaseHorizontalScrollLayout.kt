@@ -1,4 +1,4 @@
-package com.hyh.paging3demo.widget.horizontal
+package com.hyh.paging3demo.widget.horizontal.internal
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -7,6 +7,9 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.hyh.paging3demo.R
+import com.hyh.paging3demo.widget.horizontal.HorizontalScrollSyncHelper
+import com.hyh.paging3demo.widget.horizontal.ScrollState
+import com.hyh.paging3demo.widget.horizontal.ScrollSyncObserver
 
 /**
  * 支持水平滑动的控件基类，分为固定部分与可滑动部分

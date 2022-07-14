@@ -13,8 +13,6 @@ import androidx.core.view.get
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.list.internal.utils.ListUpdate
 import com.hyh.tabs.R
-import com.hyh.widget.sticky.DefaultVisibleItemFinder
-import com.hyh.widget.sticky.VisibleItemFinder
 import java.util.*
 import kotlin.collections.LinkedHashMap
 import kotlin.math.abs
@@ -564,6 +562,10 @@ class StickyItemsLayout : ViewGroup {
         private val tempAddedPositions: MutableList<Int> = mutableListOf()
         private val tempRemovedPositions: MutableList<Int> = mutableListOf()
 
+
+        private var cacheFirstVisibleItemPosition: Int? = null
+        private var cacheLastVisibleItemPosition: Int? = null
+
         private var cacheFirstCompletelyVisibleItemPosition: Int? = null
         private var cacheLastCompletelyVisibleItemPosition: Int? = null
 
@@ -806,58 +808,91 @@ class StickyItemsLayout : ViewGroup {
                 cacheFixedPositions.clear()
                 cachePositions.clear()
                 tempPositions.clear()
-                cacheFirstCompletelyVisibleItemPosition = null
-                cacheLastCompletelyVisibleItemPosition = null
-                return emptyList()
-            }
 
-            val firstCompletelyVisibleItemPosition =
-                currentItemsPositionHelper.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
-            /*if (firstCompletelyVisibleItemPosition == 0) {
-                cacheFixedPositions.clear()
-                cachePositions.clear()
-                tempPositions.clear()
-                cacheFirstCompletelyVisibleItemPosition = null
-                cacheLastCompletelyVisibleItemPosition = null
-                return emptyList()
-            }*/
+                cacheFirstVisibleItemPosition = null
+                cacheLastVisibleItemPosition = null
 
-            val lastCompletelyVisibleItemPosition =
-                currentItemsPositionHelper.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
-            if (lastCompletelyVisibleItemPosition <= firstCompletelyVisibleItemPosition) {
-                cacheFixedPositions.clear()
-                cachePositions.clear()
-                tempPositions.clear()
                 cacheFirstCompletelyVisibleItemPosition = null
                 cacheLastCompletelyVisibleItemPosition = null
+
                 return emptyList()
             }
 
 
-            var cacheFirstCompletelyVisibleItemPosition =
-                this.cacheFirstCompletelyVisibleItemPosition
+            val firstCompletelyVisibleItemPosition = currentItemsPositionHelper
+                .findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
+
+
+            if (firstCompletelyVisibleItemPosition == 0) {
+                cacheFixedPositions.clear()
+                cachePositions.clear()
+                tempPositions.clear()
+
+                cacheFirstVisibleItemPosition = null
+                cacheFirstVisibleItemPosition = null
+
+                cacheFirstCompletelyVisibleItemPosition = null
+                cacheLastCompletelyVisibleItemPosition = null
+
+                return emptyList()
+            }
+
+
+            val firstVisibleItemPosition =
+                currentItemsPositionHelper.findFirstVisibleItemPosition(recyclerView.layoutManager)
+
+
+            val lastVisibleItemPosition =
+                currentItemsPositionHelper.findLastVisibleItemPosition(recyclerView.layoutManager)
+            if (lastVisibleItemPosition < firstVisibleItemPosition) {
+                cacheFixedPositions.clear()
+                cachePositions.clear()
+                tempPositions.clear()
+
+                cacheFirstVisibleItemPosition = null
+                cacheLastVisibleItemPosition = null
+
+                cacheFirstCompletelyVisibleItemPosition = null
+                cacheLastCompletelyVisibleItemPosition = null
+
+                return emptyList()
+            }
+
+
+            var cacheFirstVisibleItemPosition = this.cacheFirstVisibleItemPosition
+            this.cacheFirstVisibleItemPosition = firstVisibleItemPosition
+
+            val cacheLastVisibleItemPosition = this.cacheLastVisibleItemPosition
+            this.cacheLastVisibleItemPosition = lastVisibleItemPosition
+
+
+            val cacheFirstCompletelyVisibleItemPosition = this.cacheFirstCompletelyVisibleItemPosition
             this.cacheFirstCompletelyVisibleItemPosition = firstCompletelyVisibleItemPosition
 
             val cacheLastCompletelyVisibleItemPosition = this.cacheLastCompletelyVisibleItemPosition
+            val lastCompletelyVisibleItemPosition = currentItemsPositionHelper
+                .findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
             this.cacheLastCompletelyVisibleItemPosition = lastCompletelyVisibleItemPosition
 
 
             val dataChanged = changedRange != null
 
-            /*if (!dataChanged) {
-                if (cacheFirstCompletelyVisibleItemPosition == firstCompletelyVisibleItemPosition
-                    && cacheLastCompletelyVisibleItemPosition == lastCompletelyVisibleItemPosition
+            if (!dataChanged) {
+                if ((firstCompletelyVisibleItemPosition >= 0 && cacheFirstCompletelyVisibleItemPosition == firstCompletelyVisibleItemPosition)
+                    && (lastCompletelyVisibleItemPosition >= 0 && cacheLastCompletelyVisibleItemPosition == lastCompletelyVisibleItemPosition)
+                    && firstVisibleItemPosition == cacheFirstVisibleItemPosition
+                    && lastVisibleItemPosition == cacheLastVisibleItemPosition
                 ) {
                     return tempPositions
                 }
-            }*/
+            }
 
-
-            cacheFirstCompletelyVisibleItemPosition = currentItemsPositionHelper
-                .adjustCacheFirstCompletelyVisibleItemPosition(
-                    cacheFirstCompletelyVisibleItemPosition,
+            cacheFirstVisibleItemPosition = currentItemsPositionHelper
+                .adjustCacheFirstVisibleItemPosition(
+                    cacheFirstVisibleItemPosition,
                     changedRange
                 )
+
 
             currentItemsPositionHelper.adjustCacheFixedPositions(cacheFixedPositions, changedRange)
             currentItemsPositionHelper.adjustCachePositions(cachePositions, changedRange)
@@ -867,14 +902,14 @@ class StickyItemsLayout : ViewGroup {
             if (maxFixedStickyHeaders > 0) {
                 if (cacheFixedPositions.isNotEmpty()) {
                     while (cacheFixedPositions.size > maxFixedStickyHeaders ||
-                        (cacheFixedPositions.size > 0 && cacheFixedPositions.last() >= firstCompletelyVisibleItemPosition)
+                        (cacheFixedPositions.size > 0 && cacheFixedPositions.last() >= firstVisibleItemPosition)
                     ) {
                         cacheFixedPositions.pollLast()
                     }
                     if (cacheFixedPositions.size < maxFixedStickyHeaders) {
-                        var position = cacheFirstCompletelyVisibleItemPosition
+                        var position = cacheFirstVisibleItemPosition
                             ?: cacheFixedPositions.last() + 1
-                        while (position < firstCompletelyVisibleItemPosition
+                        while (position < firstVisibleItemPosition
                             && cacheFixedPositions.size < maxFixedStickyHeaders
                         ) {
                             if (currentItemsPositionHelper.isFixedStickyItemPosition(position)) {
@@ -887,7 +922,7 @@ class StickyItemsLayout : ViewGroup {
                     cacheFixedPositions.clear()
 
                     var position = 0
-                    while (position < firstCompletelyVisibleItemPosition
+                    while (position < firstVisibleItemPosition
                         && cacheFixedPositions.size < maxFixedStickyHeaders
                     ) {
                         if (currentItemsPositionHelper.isFixedStickyItemPosition(position)) {
@@ -905,15 +940,15 @@ class StickyItemsLayout : ViewGroup {
 
             if (maxStickyHeaders > 0) {
                 if (cachePositions.isNotEmpty()) {
-                    var position = if (cacheFirstCompletelyVisibleItemPosition != null) {
+                    var position = if (cacheFirstVisibleItemPosition != null) {
                         max(
-                            cacheFirstCompletelyVisibleItemPosition,
+                            cacheFirstVisibleItemPosition,
                             cachePositions.last() + 1
                         )
                     } else {
                         cachePositions.last() + 1
                     }
-                    while (position < firstCompletelyVisibleItemPosition) {
+                    while (position < firstVisibleItemPosition) {
                         if (currentItemsPositionHelper.isStickyItemPosition(position)
                             && !currentItemsPositionHelper.isFixedStickyItemPosition(position)
                         ) {
@@ -921,7 +956,7 @@ class StickyItemsLayout : ViewGroup {
                         }
                         position++
                     }
-                    while ((cachePositions.isNotEmpty() && cachePositions.last() >= firstCompletelyVisibleItemPosition)
+                    while ((cachePositions.isNotEmpty() && cachePositions.last() >= firstVisibleItemPosition)
                     ) {
                         cachePositions.pollLast()
                     }
@@ -930,7 +965,7 @@ class StickyItemsLayout : ViewGroup {
                     }
                     if (cachePositions.size < maxStickyHeaders) {
                         position = if (cachePositions.isEmpty()) {
-                            firstCompletelyVisibleItemPosition - 1
+                            firstVisibleItemPosition - 1
                         } else {
                             cachePositions.first() - 1
                         }
@@ -947,7 +982,7 @@ class StickyItemsLayout : ViewGroup {
                     }
                 } else {
                     cachePositions.clear()
-                    for (position in (firstCompletelyVisibleItemPosition - 1) downTo 0) {
+                    for (position in (firstVisibleItemPosition - 1) downTo 0) {
                         if (currentItemsPositionHelper.isStickyItemPosition(position)
                             && !currentItemsPositionHelper.isFixedStickyItemPosition(position)
                         ) {
@@ -964,7 +999,7 @@ class StickyItemsLayout : ViewGroup {
 
             var isHeadersHeightNotPrepare = false
 
-            for (position in firstCompletelyVisibleItemPosition..lastCompletelyVisibleItemPosition) {
+            for (position in firstVisibleItemPosition..lastVisibleItemPosition) {
                 if (currentItemsPositionHelper.isStickyItemPosition(position)) {
                     val bounds = currentItemsPositionHelper.findItemViewBounds(position) ?: continue
                     val headersHeight = currentItemsPositionHelper.calculateHeight(
@@ -1057,8 +1092,10 @@ class StickyItemsLayout : ViewGroup {
 
             abstract val isReachBound: Boolean
 
+            abstract fun findFirstVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int
             abstract fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int
 
+            abstract fun findLastVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int
             abstract fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int
 
             abstract fun isFixedStickyItemPosition(position: Int): Boolean
@@ -1084,7 +1121,7 @@ class StickyItemsLayout : ViewGroup {
                 positions: Collection<Int>
             )
 
-            abstract fun adjustCacheFirstCompletelyVisibleItemPosition(
+            abstract fun adjustCacheFirstVisibleItemPosition(
                 position: Int?,
                 changedRange: IntRange?
             ): Int?
@@ -1123,8 +1160,16 @@ class StickyItemsLayout : ViewGroup {
                         return !recyclerView.canScrollVertically(-1)
                     }
 
+                override fun findFirstVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    return visibleItemFinder.findFirstVisibleItemPosition(recyclerView?.layoutManager)
+                }
+
                 override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
                     return visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView?.layoutManager)
+                }
+
+                override fun findLastVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    return visibleItemFinder.findLastVisibleItemPosition(recyclerView?.layoutManager)
                 }
 
                 override fun findLastCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
@@ -1223,7 +1268,7 @@ class StickyItemsLayout : ViewGroup {
                     }
                 }
 
-                override fun adjustCacheFirstCompletelyVisibleItemPosition(
+                override fun adjustCacheFirstVisibleItemPosition(
                     position: Int?,
                     changedRange: IntRange?
                 ): Int? {
@@ -1372,7 +1417,7 @@ class StickyItemsLayout : ViewGroup {
             val firstVisibleItemPosition =
                 visibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
             val lastCompletelyVisibleItemPosition =
-                visibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
+                visibleItemFinder.findLastVisibleItemPosition(recyclerView.layoutManager)
             return when {
                 firstVisibleItemPosition == lastHeaderPosition -> {
                     findFirstHeaderPosition(
@@ -1433,9 +1478,23 @@ class StickyItemsLayout : ViewGroup {
                         return !recyclerView.canScrollVertically(1)
                     }
 
+                override fun findFirstVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    val position =
+                        visibleItemFinder.findLastVisibleItemPosition(layoutManager)
+                    if (position == RecyclerView.NO_POSITION) return position
+                    return getRealPosition(position)
+                }
+
                 override fun findFirstCompletelyVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
                     val position =
                         visibleItemFinder.findLastCompletelyVisibleItemPosition(layoutManager)
+                    if (position == RecyclerView.NO_POSITION) return position
+                    return getRealPosition(position)
+                }
+
+                override fun findLastVisibleItemPosition(layoutManager: RecyclerView.LayoutManager?): Int {
+                    val position =
+                        visibleItemFinder.findFirstVisibleItemPosition(layoutManager)
                     if (position == RecyclerView.NO_POSITION) return position
                     return getRealPosition(position)
                 }
@@ -1552,7 +1611,7 @@ class StickyItemsLayout : ViewGroup {
                 }
 
 
-                override fun adjustCacheFirstCompletelyVisibleItemPosition(
+                override fun adjustCacheFirstVisibleItemPosition(
                     position: Int?,
                     changedRange: IntRange?
                 ): Int? {
@@ -1716,7 +1775,7 @@ class StickyItemsLayout : ViewGroup {
                 visibleItemFinder.findLastVisibleItemPosition(recyclerView.layoutManager)
 
             val firstCompletelyVisibleItemPosition =
-                visibleItemFinder.findFirstCompletelyVisibleItemPosition(recyclerView.layoutManager)
+                visibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
 
             return when {
                 lastVisibleItemPosition == lastFooterPosition -> {
@@ -1901,7 +1960,7 @@ class StickyItemsLayout : ViewGroup {
             val firstVisibleItemPosition =
                 visibleItemFinder.findFirstVisibleItemPosition(recyclerView.layoutManager)
             val lastVisibleItemPosition =
-                visibleItemFinder.findLastCompletelyVisibleItemPosition(recyclerView.layoutManager)
+                visibleItemFinder.findLastVisibleItemPosition(recyclerView.layoutManager)
             if (firstVisibleItemPosition < 0) return false
             if (firstVisibleItemPosition > lastVisibleItemPosition) return false
             return position in firstVisibleItemPosition..lastVisibleItemPosition

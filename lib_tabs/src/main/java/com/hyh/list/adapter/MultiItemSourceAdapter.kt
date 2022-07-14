@@ -7,9 +7,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.Invoke
-import com.hyh.InvokeWithParam
 import com.hyh.coroutine.CloseableCoroutineScope
 import com.hyh.coroutine.SimpleMutableStateFlow
 import com.hyh.coroutine.SimpleStateFlow
@@ -54,6 +54,30 @@ class MultiItemSourceAdapter<Param : Any>(
 
         override fun <T : Any> setService(clazz: Class<T>, service: T) {
             serviceMap[clazz] = service as Any
+        }
+
+        override fun scrollItem2Top(sourceToken: Any, localPosition: Int) {
+            attachedRecyclerViews.find { it.get() != null }?.get()?.apply {
+                val linearLayoutManager = layoutManager as? LinearLayoutManager
+                if (linearLayoutManager != null) {
+                    val itemLocalInfo = findItemLocalInfo(sourceToken, localPosition) ?: return
+                    /*linearLayoutManager.scrollToPositionWithOffset(itemLocalInfo.globalPosition, 0)
+                    stopScroll()*/
+                    wrapperMap[sourceToken]?.flatListItemAdapter?.requestKeepPosition(itemLocalInfo)
+                }
+            }
+        }
+
+        override fun requestKeepPosition(sourceToken: Any, localPosition: Int) {
+            attachedRecyclerViews.find { it.get() != null }?.get()?.apply {
+                /*val linearLayoutManager = layoutManager as? LinearLayoutManager
+                if (linearLayoutManager != null) {
+                    val itemLocalInfo = findItemLocalInfo(sourceToken, localPosition) ?: return
+                    linearLayoutManager.scrollToPositionWithOffset(itemLocalInfo.globalPosition,0)
+                    stopScroll()
+                }*/
+
+            }
         }
     }
 
@@ -253,6 +277,7 @@ class MultiItemSourceAdapter<Param : Any>(
         sourceAdapterWrapper.insertItems(position, items)
     }
 
+
     private fun findWrappers(sourceIndexStart: Int, count: Int): List<SourceAdapterWrapper> {
         val wrappers = mutableListOf<SourceAdapterWrapper>()
         var index = 0
@@ -424,6 +449,32 @@ class MultiItemSourceAdapter<Param : Any>(
         return UpdateWrappersResult(
             newWrapperMap,
             refreshInvokes
+        )
+    }
+
+
+    fun findItemLocalInfo(sourceToken: Any, localPosition: Int): ItemLocalInfo? {
+        var itemBefore = 0
+        var tempWrapper: SourceAdapterWrapper? = null
+        kotlin.run {
+            wrappers.forEach {
+                if (it.sourceToken == sourceToken) {
+                    tempWrapper = it
+                    return@run
+                }
+                itemBefore += it.cachedItemCount
+            }
+        }
+        val wrapper = tempWrapper ?: return null
+        val cachedItemCount = wrapper.cachedItemCount
+        if (localPosition >= cachedItemCount) return null
+        val item = wrapper.flatListItemAdapter.findItem(localPosition) ?: return null
+        return ItemLocalInfo(
+            globalPosition = itemBefore + localPosition,
+            sourceToken = sourceToken,
+            localPosition = localPosition,
+            sourceItemCount = cachedItemCount,
+            item = item,
         )
     }
 

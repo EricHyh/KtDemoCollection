@@ -11,6 +11,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.BuildConfig
+import com.hyh.paging3demo.widget.horizontal.internal.BaseHorizontalScrollLayout
+import com.hyh.paging3demo.widget.horizontal.internal.RecyclerViewScrollable
+import com.hyh.paging3demo.widget.horizontal.internal.Scrollable
 import java.lang.ref.WeakReference
 
 /**

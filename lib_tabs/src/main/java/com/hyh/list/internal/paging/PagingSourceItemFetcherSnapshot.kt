@@ -227,7 +227,7 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
 
                 flatListItems.forEach {
                     it.delegate.bindParentLifecycle(delegate.lifecycleOwner.lifecycle)
-                    it.delegate.displayedItems = flatListItems
+                    it.delegate.displayedItems = resultFlatListItems
                 }
 
                 delegate.run {

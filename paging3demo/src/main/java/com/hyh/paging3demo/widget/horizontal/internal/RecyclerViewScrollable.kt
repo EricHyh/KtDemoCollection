@@ -1,34 +1,7 @@
-package com.hyh.paging3demo.widget.horizontal
+package com.hyh.paging3demo.widget.horizontal.internal
 
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
-/**
- * 可滑动控件接口描述
- *
- * @author eriche 2021/12/28
- */
-interface Scrollable<T : IScrollData> {
-
-    fun getScrollData(): T
-
-    fun scrollTo(t: T)
-
-    fun resetScroll()
-
-    fun stopScroll()
-
-}
-
-
-interface IScrollData : Cloneable {
-
-    public override fun clone(): Any
-
-    fun copy(other: IScrollData)
-
-}
-
 
 class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollable<RecyclerViewScrollable.RecyclerViewScrollData> {
 
@@ -88,45 +61,4 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) : Scrollabl
     override fun stopScroll() {
         recyclerView.stopScroll()
     }
-}
-
-
-class NestedScrollable(private val nestedScrollView: NestedHorizontalScrollView) : Scrollable<NestedScrollable.NestedViewScrollData> {
-
-    override fun getScrollData(): NestedViewScrollData {
-        return NestedViewScrollData(
-            nestedScrollView.scrollX
-        )
-    }
-
-    override fun scrollTo(t: NestedViewScrollData) {
-        nestedScrollView.scrollTo(t.offset, 0)
-    }
-
-    override fun resetScroll() {
-        nestedScrollView.scrollTo(0, 0)
-    }
-
-    override fun stopScroll() {
-        nestedScrollView.stopScroll()
-    }
-
-    data class NestedViewScrollData(
-        var offset: Int = 0
-    ) : IScrollData {
-
-        override fun toString(): String {
-            return "NestedViewScrollData(offset=$offset)"
-        }
-
-        override fun clone(): Any {
-            return NestedViewScrollData(offset)
-        }
-
-        override fun copy(other: IScrollData) {
-            if (other !is NestedViewScrollData) return
-            this.offset = other.offset
-        }
-    }
-
 }

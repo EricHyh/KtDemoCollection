@@ -7,12 +7,9 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.hyh.Invoke
 import com.hyh.InvokeWithParam
-import com.hyh.list.FlatListItem
-import com.hyh.list.IFlatListItem
-import com.hyh.list.SimpleItemPagingSource
-import com.hyh.list.ViewHolderFactory
+import com.hyh.list.*
+import com.hyh.list.adapter.getFlatListManager
 import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.sticky.IStickyHeader
 import kotlinx.coroutines.delay
@@ -48,7 +45,7 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, FlatListItem> {
         Log.d(TAG, "load: ")
-        //if (loadNum++ % 2 == 0) return LoadResult.Error(NullPointerException())
+        if (loadNum++ % 10 != 0) return LoadResult.Error(NullPointerException())
         when (params) {
             is LoadParams.Refresh -> {
                 delay(2000)
@@ -174,7 +171,19 @@ class GroupTitleListItem constructor(
         val expandStr = "点击${if (expand) "折叠" else "展开"}"
         (viewHolder.itemView as TextView).text = "第${group}组 - $expandStr"
         viewHolder.itemView.setOnClickListener {
+
+            val attachedSourceToken = attachedSourceToken!!
+            val localPosition = localPosition
+
+
+
+
             clickInvoke(group)
+
+
+            viewHolder.runWithListItem<GroupTitleListItem> {
+                viewHolder.getFlatListManager()?.scrollItem2Top(attachedSourceToken, localPosition)
+            }
         }
     }
 

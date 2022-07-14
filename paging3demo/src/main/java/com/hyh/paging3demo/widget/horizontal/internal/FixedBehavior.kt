@@ -1,13 +1,10 @@
-package com.hyh.paging3demo.widget.horizontal
+package com.hyh.paging3demo.widget.horizontal.internal
 
 import android.animation.ValueAnimator
-import android.content.Context
-import android.util.AttributeSet
-import android.util.Log
-import android.view.MotionEvent
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
+import com.hyh.paging3demo.widget.horizontal.ScrollState
 import kotlin.math.max
 
 internal class FixedBehavior constructor(

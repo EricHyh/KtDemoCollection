@@ -6,9 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.hyh.paging3demo.R
+import com.hyh.paging3demo.widget.horizontal.internal.BaseHorizontalScrollLayout
+import com.hyh.paging3demo.widget.horizontal.internal.NestedHorizontalScrollView
+import com.hyh.paging3demo.widget.horizontal.internal.NestedHorizontalScrollable
+import com.hyh.paging3demo.widget.horizontal.internal.Scrollable
 
 /**
- * TODO: Add Description
+ * 水平滚动的布局
  *
  * @author eriche 2022/7/11
  */
@@ -16,14 +20,14 @@ class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: 
     BaseHorizontalScrollLayout(context, attrs, defStyle) {
 
     companion object {
-        private const val TAG = "NestedViewScrollLayout"
+        private const val TAG = "HorizontalScrollLayout"
     }
 
     private val fixedViewContainer: FrameLayout = FrameLayout(context)
     private val nestedHorizontalScrollView: NestedHorizontalScrollView = NestedHorizontalScrollView(context)
 
     private var fixedGrid: IGrid<*>? = null
-    
+
     init {
         addView(fixedViewContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         addView(nestedHorizontalScrollView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
@@ -31,7 +35,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: 
     }
 
     override fun findFixedView(): View {
-       return fixedViewContainer
+        return fixedViewContainer
     }
 
     override fun findScrollableView(): View {
@@ -39,7 +43,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: 
     }
 
     override fun asScrollable(scrollableView: View): Scrollable<*> {
-        return NestedScrollable(nestedHorizontalScrollView)
+        return NestedHorizontalScrollable(nestedHorizontalScrollView)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -49,9 +53,8 @@ class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: 
         syncScroll()
     }
 
-
     private val scrollableGridRecords: MutableList<PositionGridRecord> = mutableListOf()
-    
+
     private fun renderScrollablePositionGrids(scrollableGrids: List<IGrid<*>>) {
         val newSize = scrollableGrids.size
 
@@ -148,3 +151,5 @@ class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: 
         val holder: GridHolder
     )
 }
+
+

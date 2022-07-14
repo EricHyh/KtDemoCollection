@@ -1,4 +1,4 @@
-package com.hyh.paging3demo.widget.horizontal
+package com.hyh.paging3demo.widget.horizontal.internal
 
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout

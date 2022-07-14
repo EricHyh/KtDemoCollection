@@ -23,7 +23,7 @@ abstract class MultiSourceAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder
 
     protected val binderLookup = IdentityHashMap<RecyclerView.ViewHolder, AdapterWrapper>()
     private var reusableHolder: WrapperAndLocalPosition = WrapperAndLocalPosition()
-    private val attachedRecyclerViews: MutableList<WeakReference<RecyclerView>> = mutableListOf()
+    protected val attachedRecyclerViews: MutableList<WeakReference<RecyclerView>> = mutableListOf()
 
     private val wrappers: List<AdapterWrapper>
         get() = getItemDataAdapterWrappers()

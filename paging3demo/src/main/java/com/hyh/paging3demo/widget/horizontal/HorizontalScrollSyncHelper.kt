@@ -1,5 +1,6 @@
 package com.hyh.paging3demo.widget.horizontal
 
+import com.hyh.paging3demo.widget.horizontal.internal.IScrollData
 import java.util.*
 import kotlin.collections.HashSet
 

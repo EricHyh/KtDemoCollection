@@ -35,6 +35,7 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
     override fun onItemsDisplayed(items: List<FlatListItem>) {
         items.forEach {
             if (!it.delegate.attached) {
+                it.delegate.attachedSourceToken = sourceToken
                 it.delegate.onItemAttached()
             }
             it.delegate.onItemActivated()

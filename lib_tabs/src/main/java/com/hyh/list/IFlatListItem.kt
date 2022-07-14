@@ -68,6 +68,9 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
             }
         }
 
+    val attachedSourceToken: Any?
+        get() = delegate.attachedSourceToken
+
     /**
      * 自身在列表中的位置
      */
@@ -198,6 +201,9 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
         View.OnAttachStateChangeListener {
 
         override val lifecycleOwner: ChildLifecycleOwner = ChildLifecycleOwner()
+
+        @Volatile
+        var attachedSourceToken: Any? = null
 
         private var _attached = false
         override val attached
@@ -363,6 +369,7 @@ abstract class IFlatListItem<VH : RecyclerView.ViewHolder> : LifecycleOwner {
 
         @CallSuper
         override fun onItemDetached() {
+            attachedSourceToken = null
             displayedItems = null
             _attached = false
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED

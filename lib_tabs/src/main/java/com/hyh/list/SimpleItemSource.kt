@@ -27,6 +27,7 @@ abstract class SimpleItemSource<Param : Any> : ItemSource<Param, FlatListItem>()
     final override fun onItemsDisplayed(items: List<FlatListItem>) {
         items.forEach {
             if (!it.delegate.attached) {
+                it.delegate.attachedSourceToken = sourceToken
                 it.delegate.onItemAttached()
             }
             it.delegate.onItemActivated()

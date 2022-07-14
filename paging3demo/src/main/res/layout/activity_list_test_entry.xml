@@ -134,14 +134,14 @@
             android:layout_height="wrap_content"
             android:background="#FF0000"
             android:text="固定部分"
-            app:layout_behavior="com.hyh.paging3demo.widget.horizontal.FixedBehavior"
+            app:layout_behavior="com.hyh.paging3demo.widget.horizontal.internal.FixedBehavior"
             tools:layout_width="40dp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_behavior="com.hyh.paging3demo.widget.horizontal.ScrollableBehavior" />
+            app:layout_behavior="com.hyh.paging3demo.widget.horizontal.internal.ScrollableBehavior" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

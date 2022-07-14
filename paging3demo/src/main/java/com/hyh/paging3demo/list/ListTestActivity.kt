@@ -18,6 +18,7 @@ import android.view.WindowManager
 import java.lang.Exception
 
 import androidx.annotation.RequiresApi
+import com.hyh.list.decoration.FillBottomDecoration
 import com.hyh.sticky.MultiSourceStickyItemsAdapter
 import com.hyh.sticky.StickyItemsLayout
 
@@ -48,7 +49,8 @@ class ListTestActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
-        //recyclerView.itemAnimator = null
+        recyclerView.itemAnimator = null
+        recyclerView.addItemDecoration(FillBottomDecoration())
 
 
         val stickyItemsLayout = findViewById<StickyItemsLayout>(R.id.sticky_items_layout)

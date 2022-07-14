@@ -1,4 +1,4 @@
-package com.hyh.widget.sticky
+package com.hyh.sticky
 
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -44,11 +44,11 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
 
         return when (layoutManager) {
             is LinearLayoutManager -> {
-                layoutManager.findFirstVisibleItemPosition()
+                layoutManager.findFirstCompletelyVisibleItemPosition()
             }
             is StaggeredGridLayoutManager -> {
                 val into = obtainIntArray(layoutManager.spanCount)
-                layoutManager.findFirstVisibleItemPositions(into)
+                layoutManager.findFirstCompletelyVisibleItemPositions(into)
                 findMin(into)
             }
             else -> RecyclerView.NO_POSITION
@@ -76,11 +76,11 @@ class DefaultVisibleItemFinder : VisibleItemFinder {
 
         return when (layoutManager) {
             is LinearLayoutManager -> {
-                layoutManager.findLastVisibleItemPosition()
+                layoutManager.findLastCompletelyVisibleItemPosition()
             }
             is StaggeredGridLayoutManager -> {
                 val into = obtainIntArray(layoutManager.spanCount)
-                layoutManager.findLastVisibleItemPositions(into)
+                layoutManager.findLastCompletelyVisibleItemPositions(into)
                 findMax(into)
             }
             else -> RecyclerView.NO_POSITION
