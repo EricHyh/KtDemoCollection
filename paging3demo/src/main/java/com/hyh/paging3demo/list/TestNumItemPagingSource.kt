@@ -22,6 +22,8 @@ import kotlinx.coroutines.delay
 class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
     companion object {
 
+        var count = 0
+
         private const val TAG = "TestNumItemPagingSource"
     }
 
@@ -116,6 +118,19 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
 
         val wholeItemsMap: MutableMap<Int, List<Int>> = mutableMapOf()
 
+    }
+
+
+    override fun onAttached() {
+        super.onAttached()
+        count++
+        Log.d(TAG, "onAttached: $this - $count")
+    }
+
+    override fun onDetached() {
+        super.onDetached()
+        count--
+        Log.d(TAG, "onDetached: $this - $count")
     }
 
 }

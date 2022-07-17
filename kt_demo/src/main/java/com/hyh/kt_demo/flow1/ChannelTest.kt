@@ -28,7 +28,7 @@ fun main() {
     val lifecycleContext: CoroutineContext = dispatcher.asCoroutineDispatcher() + Job()
 
     runBlocking {
-        println("runBlocking start")
+        /*println("runBlocking start")
 
         println("receiveAsFlow1")
 
@@ -68,7 +68,45 @@ fun main() {
 
         }
         //delay(10000)
-        println("runBlocking end")
+        println("runBlocking end")*/
+
+
+
+
+        val channelFlow = channelFlow<Int> {
+            delay(100)
+            repeat(10){
+                send(it)
+            }
+        }
+
+
+        launch {
+            delay(500)
+            lifecycleContext.cancel()
+            println("cancel")
+
+        }
+
+
+        launch(lifecycleContext) {
+            channelFlow.collectLatest {
+                delay(100)
+                println("channelFlow1:$it")
+            }
+        }
+
+
+        launch {
+            delay(5000)
+            channelFlow.collectLatest {
+                delay(100)
+                println("channelFlow2:$it")
+            }
+        }
+
+        println("end")
+
 
     }
 

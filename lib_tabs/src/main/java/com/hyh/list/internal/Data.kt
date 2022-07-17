@@ -6,6 +6,7 @@ import com.hyh.list.FlatListItem
 import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.utils.ListOperate
 import kotlinx.coroutines.flow.Flow
+import java.io.Closeable
 
 data class RepoData<Param : Any>(
     val flow: Flow<RepoEvent>,
@@ -61,7 +62,14 @@ class RepoDisplayedData(
 
     @Volatile
     var resultExtra: Any? = null
-)
+) {
+    fun clear() {
+        lazySources = null
+        sources = null
+        sourcesMap = null
+        resultExtra = null
+    }
+}
 
 
 sealed class SourceEvent(val onReceived: (suspend () -> Unit)) {

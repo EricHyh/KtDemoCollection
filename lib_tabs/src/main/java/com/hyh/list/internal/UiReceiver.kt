@@ -14,11 +14,11 @@ import com.hyh.list.PagingSourceLoadState
  */
 interface UiReceiverForRepo<Param : Any> {
 
-    fun injectParentLifecycle(lifecycle: Lifecycle)
+    fun attach(lifecycle: Lifecycle)
 
     fun refresh(param: Param)
 
-    fun destroy()
+    fun detach()
 
 }
 

@@ -1,5 +1,6 @@
 package com.hyh.lifecycle
 
+import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -27,6 +28,10 @@ class ChildLifecycleOwner(lifecycle: Lifecycle? = null) : LifecycleOwner {
             field = value
             childLifecycle.parentLifecycle = value
         }
+        get() {
+            Log.d("ChildLifecycleOwner", "get: $field")
+            return field
+        }
 
     private val childLifecycle: ChildLifecycleRegistry = ChildLifecycleRegistry(this).apply {
         this.parentLifecycle = this@ChildLifecycleOwner.parentLifecycle
@@ -48,8 +53,12 @@ class ChildLifecycleRegistry(owner: LifecycleOwner) : LifecycleRegistry(owner) {
             if (oldValue != value) {
                 oldValue?.removeObserver(parentLifecycleEventObserver)
                 value?.addObserver(parentLifecycleEventObserver)
-                updateState()
+                updateState(value)
             }
+        }
+        get() {
+            Log.d("ChildLifecycleRegistry", "get parentLifecycle")
+            return field
         }
 
     private var _selfState = State.INITIALIZED
@@ -59,17 +68,24 @@ class ChildLifecycleRegistry(owner: LifecycleOwner) : LifecycleRegistry(owner) {
 
     override fun setCurrentState(state: State) {
         this._selfState = state
-        updateState()
+        updateState(parentLifecycle)
     }
 
-    private fun getParentCurrentState(): State {
-        return parentLifecycle?.currentState ?: State.RESUMED
-    }
 
-    private fun updateState() {
+    private fun updateState(parentLifecycle: Lifecycle?) {
+
+        Log.d("updateState", "$parentLifecycle")
+
+        fun getParentCurrentState(): State {
+            return parentLifecycle?.currentState ?: State.RESUMED
+        }
+
         val childState = currentState
         val resultState = _selfState.coerceAtMost(getParentCurrentState())
         if (childState == State.INITIALIZED && resultState == State.DESTROYED) {
+            return
+        }
+        if (resultState == State.INITIALIZED) {
             return
         }
         super.setCurrentState(resultState)
@@ -78,7 +94,7 @@ class ChildLifecycleRegistry(owner: LifecycleOwner) : LifecycleRegistry(owner) {
     inner class ParentLifecycleEventObserver : LifecycleEventObserver {
 
         override fun onStateChanged(source: LifecycleOwner, event: Event) {
-            updateState()
+            updateState(source.lifecycle)
         }
     }
 }

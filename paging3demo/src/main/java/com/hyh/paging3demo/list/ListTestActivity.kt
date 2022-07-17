@@ -27,6 +27,11 @@ class ListTestActivity : AppCompatActivity() {
 
     private val TAG = "ListTestActivity_"
 
+    companion object {
+        val repo = NumItemSourceRepo()
+    }
+
+
     val handler = Handler()
     val refreshRunnable = object : Runnable {
         override fun run() {
@@ -54,13 +59,15 @@ class ListTestActivity : AppCompatActivity() {
 
 
         val stickyItemsLayout = findViewById<StickyItemsLayout>(R.id.sticky_items_layout)
-        stickyItemsLayout.setup(recyclerView, MultiSourceStickyItemsAdapter(
-            multiSourceAdapter,
-            1
-        ))
+        stickyItemsLayout.setup(
+            recyclerView, MultiSourceStickyItemsAdapter(
+                multiSourceAdapter,
+                1
+            )
+        )
 
 
-        multiSourceAdapter.submitData(NumItemSourceRepo().flow)
+        multiSourceAdapter.submitData(repo.flow)
 
         val tvTypes = findViewById<TextView>(R.id.tv_types)
         ListConfig.typesLiveData.observe(this, Observer<List<String>> { list ->

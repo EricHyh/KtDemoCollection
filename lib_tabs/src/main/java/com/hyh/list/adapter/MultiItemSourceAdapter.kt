@@ -137,17 +137,19 @@ class MultiItemSourceAdapter<Param : Any>(
 
     inner class ListLifecycleEventObserver : LifecycleEventObserver {
 
+        @SuppressLint("NotifyDataSetChanged")
         override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
             if (event == Lifecycle.Event.ON_DESTROY) {
                 source.lifecycle.removeObserver(this)
                 wrapperMap.forEach {
                     it.value.destroy()
                 }
-                receiver?.destroy()
+                wrapperMap.clear()
+                notifyDataSetChanged()
+                receiver?.detach()
             }
         }
     }
-
 
     override fun getItemSourceLoadState(sourceToken: Any): SimpleStateFlow<ItemSourceLoadState>? {
         return wrapperMap[sourceToken]?.flatListItemAdapter?.loadStateFlow
@@ -329,10 +331,14 @@ class MultiItemSourceAdapter<Param : Any>(
             if (oldReceiver != newReceiver) {
                 Log.i(
                     TAG,
-                    "submitData: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver"
+                    "submitData1: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver"
                 )
-                newReceiver.injectParentLifecycle(lifecycleOwner.lifecycle)
-                oldReceiver?.destroy()
+                newReceiver.attach(lifecycleOwner.lifecycle)
+                Log.i(
+                    TAG,
+                    "submitData2: $this, oldReceiver = ${oldReceiver}, newReceiver = $newReceiver"
+                )
+                oldReceiver?.detach()
                 receiver = newReceiver
             }
             data.flow.collect { event ->

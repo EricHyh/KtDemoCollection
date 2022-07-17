@@ -46,7 +46,8 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 
         val flow = refreshEventHandler.flow
 
-        override fun injectParentLifecycle(lifecycle: Lifecycle) {
+        override fun attach(lifecycle: Lifecycle) {
+            Log.i(TAG, "uiReceiver:$this attach")
             bindParentLifecycle(lifecycle)
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.RESUMED
         }
@@ -60,20 +61,15 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
             refreshEventHandler.onRefreshComplete()
         }
 
-        override fun destroy() {
-            Log.i(TAG, "uiReceiver:$this destroy")
+        override fun detach() {
+            Log.i(TAG, "uiReceiver:$this detach")
             lifecycleOwner.lifecycle.currentState = Lifecycle.State.DESTROYED
-            refreshEventHandler.onDestroy()
+            //refreshEventHandler.onDestroy()
             this@ItemSourceFetcher.destroy()
         }
     }
 
-    //暂时不需要，后面再考虑添加
-    //private val coroutineScope = CloseableCoroutineScope(SupervisorJob() + Dispatchers.Default)
-
     val flow: Flow<RepoData<Param>> = simpleChannelFlow<RepoData<Param>> {
-        /*withContext(coroutineScope.coroutineContext) {
-        }*/
         uiReceiver
             .flow
             .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param? ->
@@ -115,12 +111,11 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     ): CoroutineDispatcher
 
     private fun destroy() {
-        //coroutineScope.cancel()
         repoDisplayedData.sources?.forEach {
             it.delegate.detach()
         }
+        repoDisplayedData.clear()
     }
-
 
     // region IFetcher
     override fun refreshRepo(param: Param) {
