@@ -1,4 +1,4 @@
-package com.hyh.coroutine
+package com.hyh.kt_demo.flow2
 
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.channels.ConflatedBroadcastChannel

@@ -1,25 +1,40 @@
 package com.hyh.kt_demo.flow2
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import java.math.BigDecimal
 
 suspend fun main() {
 
-    GlobalScope.launch {
+
+
+    val simpleMutableStateFlow = SimpleMutableStateFlow<Int?>(null)
+
+    runBlocking {
+
+
+        launch {
+            repeat(10){
+                delay(100)
+                simpleMutableStateFlow.value = it
+            }
+            simpleMutableStateFlow.value = null
+        }
+
+
+
+        launch {
+            simpleMutableStateFlow.asStateFlow().collect {
+                println("simpleMutableStateFlow:$it")
+            }
+        }
+
+
+
 
     }
 
-    flow<Int> {
 
-    }.map {
 
-    }.flowOn(Dispatchers.IO).collect {
-
-    }
 
 }

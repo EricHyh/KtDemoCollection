@@ -4,6 +4,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.lang.reflect.Proxy
 import java.math.BigDecimal
 import kotlin.concurrent.thread
 
@@ -13,7 +14,36 @@ data class Test(
 )
 
 
+
+
+interface ItemType
+
 fun main() {
+
+
+    val newProxyInstance1 = Proxy.newProxyInstance(
+        ItemType::class.java.classLoader, arrayOf(ItemType::class.java)
+    ) { proxy, method, args ->
+
+    }
+    val newProxyInstance2 = Proxy.newProxyInstance(
+        ItemType::class.java.classLoader, arrayOf(ItemType::class.java)
+    ) { proxy, method, args ->
+
+    }
+
+    val kClass1 = newProxyInstance1::class
+    val kClass2 = newProxyInstance2::class
+
+    if (kClass1 == kClass2) {
+        println("")
+    }
+
+    println("")
+
+
+
+
 
     val any = Any()
     val test1 = Test(1, any)

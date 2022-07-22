@@ -63,7 +63,7 @@ class RepoDisplayedData(
     @Volatile
     var resultExtra: Any? = null
 ) {
-    fun clear() {
+    internal fun clear() {
         lazySources = null
         sources = null
         sourcesMap = null

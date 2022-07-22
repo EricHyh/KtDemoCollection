@@ -28,11 +28,17 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param
 
     override val delegate: PagingSourceDelegate = PagingSourceDelegate()
 
+    /**
+     * 加载更多执行器
+     */
     private var _appendActuator: AppendActuator? = null
     val appendActuator: AppendActuator = {
         _appendActuator?.invoke(it)
     }
 
+    /**
+     * 数据重排执行器
+     */
     private var _rearrangeActuator: RearrangeActuator? = null
     val rearrangeActuator: RearrangeActuator = {
         _rearrangeActuator?.invoke(it)
@@ -46,10 +52,19 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param
 
         abstract val param: Param?
 
+        /**
+         * 刷新请求
+         */
         class Refresh<Param : Any>(override val param: Param?) : LoadParams<Param>()
 
+        /**
+         * 加载更多请求
+         */
         class Append<Param : Any>(override val param: Param?) : LoadParams<Param>()
 
+        /**
+         * 数据重排请求
+         */
         class Rearrange<Param : Any>(
             val displayedData: PagingSourceDisplayedData<Param>
         ) : LoadParams<Param>() {
@@ -59,20 +74,59 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param
 
     sealed class LoadResult<Param : Any, Item : Any> {
 
+        /**
+         * 请求失败时返回
+         */
         data class Error<Param : Any, Item : Any>(
+            /**
+             * 失败异常信息
+             */
             val throwable: Throwable
         ) : LoadResult<Param, Item>()
 
+
+        /**
+         * 请求成功[LoadParams.Refresh]、[LoadParams.Append]时返回
+         */
         data class Success<Param : Any, Item : Any>(
+            /**
+             * 请求成功的列表数据：
+             *
+             * 1.如果是刷新，则返回刷新数据
+             * 2.如果是加载更多，则返回加载更多那一部分数据（不是全量数据）
+             *
+             */
             val items: List<Item>,
+            /**
+             * 请求下一页的参数，在请求下一页时，会传递给[load]函数
+             */
             val nextParam: Param?,
+            /**
+             * 是否没有更多数据，如果为true，那么就不会在继续请求下一页数据
+             */
             val noMore: Boolean = false,
+            /**
+             * 额为数据，由业务自定义，会保存在[BaseItemSource.displayedData]中
+             */
             val resultExtra: Any? = null
         ) : LoadResult<Param, Item>()
 
+
+        /**
+         * 数据重排[LoadParams.Rearrange]时返回
+         */
         data class Rearranged<Param : Any, Item : Any>(
+            /**
+             * 是否忽略这次数据重排请求，不作任何操作
+             */
             val ignore: Boolean = true,
+            /**
+             * 数据重排后的全量数据
+             */
             val items: List<Item> = emptyList(),
+            /**
+             * 额为数据，由业务自定义，会保存在[BaseItemSource.displayedData]中
+             */
             val resultExtra: Any? = null
         ) : LoadResult<Param, Item>()
     }
