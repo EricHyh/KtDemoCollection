@@ -12,7 +12,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
-abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwner {
+abstract class ItemSourceRepo<Param>(initialParam: Param) : LifecycleOwner {
 
     private val itemSourceFetcher = object : ItemSourceFetcher<Param>(initialParam) {
 
@@ -25,7 +25,10 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwne
         override suspend fun load(params: LoadParams<Param>): LoadResult =
             this@ItemSourceRepo.load(params)
 
-        override fun getFetchDispatcher(param: Param, displayedData: RepoDisplayedData): CoroutineDispatcher =
+        override fun getFetchDispatcher(
+            param: Param,
+            displayedData: RepoDisplayedData
+        ): CoroutineDispatcher =
             this@ItemSourceRepo.getFetchDispatcher(param, displayedData)
 
     }
@@ -45,7 +48,10 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwne
 
     protected abstract suspend fun load(params: LoadParams<Param>): LoadResult
 
-    protected open fun getFetchDispatcher(param: Param, displayedData: RepoDisplayedData): CoroutineDispatcher = Dispatchers.Unconfined
+    protected open fun getFetchDispatcher(
+        param: Param,
+        displayedData: RepoDisplayedData
+    ): CoroutineDispatcher = Dispatchers.Unconfined
 
     sealed class CacheResult {
 
@@ -62,18 +68,18 @@ abstract class ItemSourceRepo<Param : Any>(initialParam: Param?) : LifecycleOwne
         class Error(val error: Throwable) : LoadResult()
 
         class Success(
-            val sources: List<BaseItemSource<out Any, out Any>>,
+            val sources: List<BaseItemSource<*, *>>,
             val resultExtra: Any? = null
 
         ) : LoadResult()
     }
 
-    class CacheParams<Param : Any>(
+    class CacheParams<Param>(
         val param: Param,
         val displayedData: RepoDisplayedData
     )
 
-    class LoadParams<Param : Any>(
+    class LoadParams<Param>(
         val param: Param,
         val displayedData: RepoDisplayedData
     )

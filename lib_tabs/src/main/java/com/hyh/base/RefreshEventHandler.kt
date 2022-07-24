@@ -12,7 +12,7 @@ import kotlin.math.abs
  * @author eriche
  * @data 2021/6/29
  */
-abstract class RefreshEventHandler<Param : Any>(initialParam: Param?) {
+abstract class RefreshEventHandler<Param>(initialParam: Param) {
 
 
     companion object {
@@ -21,7 +21,7 @@ abstract class RefreshEventHandler<Param : Any>(initialParam: Param?) {
     }
 
     //private val state = MutableStateFlow<Pair<Long, Param?>>(Pair(0, initialParam))
-    private val state = SimpleMutableStateFlow<Pair<Long, Param?>>(Pair(0, initialParam))
+    private val state = SimpleMutableStateFlow<Pair<Long, Param>>(Pair(0, initialParam))
 
     //private var cacheState: MutableStateFlow<Pair<Long, Param>>? = null
     private var cacheState: SimpleMutableStateFlow<Pair<Long, Param>>? = null

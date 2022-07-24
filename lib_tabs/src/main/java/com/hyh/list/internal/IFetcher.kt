@@ -5,7 +5,7 @@ package com.hyh.list.internal
  *
  * @author eriche 2022/7/4
  */
-interface IFetcher<Param : Any> {
+interface IFetcher<Param> {
 
 
     fun refreshRepo(param: Param)

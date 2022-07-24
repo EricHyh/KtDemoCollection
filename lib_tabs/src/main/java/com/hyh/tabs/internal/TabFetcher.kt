@@ -25,7 +25,7 @@ abstract class TabFetcher<Param : Any, Tab : ITab>(private val initialParam: Par
 
     private val uiReceiver = object : UiReceiver<Param> {
 
-        private val refreshEventHandler = object : RefreshEventHandler<Param>(initialParam) {
+        private val refreshEventHandler = object : RefreshEventHandler<Param?>(initialParam) {
 
             override fun getRefreshStrategy(): RefreshStrategy {
                 return this@TabFetcher.getRefreshStrategy()

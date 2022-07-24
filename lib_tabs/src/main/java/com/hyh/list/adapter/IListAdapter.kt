@@ -9,7 +9,7 @@ import com.hyh.list.internal.RepoData
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.abs
 
-interface IListAdapter<Param : Any> : IFetcher<Param> {
+interface IListAdapter<Param> : IFetcher<Param> {
 
     val repoLoadStateFlow: SimpleStateFlow<RepoLoadState>
 

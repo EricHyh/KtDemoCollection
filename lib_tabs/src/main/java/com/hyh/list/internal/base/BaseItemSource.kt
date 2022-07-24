@@ -22,7 +22,7 @@ import kotlinx.coroutines.Dispatchers
  * @param Param 参数泛型
  * @param Item 原始的 Item 数据泛型
  */
-abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
+abstract class BaseItemSource<Param, Item> : LifecycleOwner {
 
 
     open inner class DefaultDelegate : Delegate<Param, Item>() {
@@ -190,7 +190,7 @@ abstract class BaseItemSource<Param : Any, Item : Any> : LifecycleOwner {
 
     protected open fun onDetached() {}
 
-    abstract class Delegate<Param : Any, Item : Any> : IChildLifecycleOwner {
+    abstract class Delegate<Param, Item> : IChildLifecycleOwner {
 
         abstract val displayedData: SourceDisplayedData?
 

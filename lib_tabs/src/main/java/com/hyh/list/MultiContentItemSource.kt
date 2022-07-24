@@ -1,6 +1,6 @@
 package com.hyh.list
 
-abstract class MultiContentItemSource<Param : Any> : ItemsBucketSource<Param>() {
+abstract class MultiContentItemSource<Param> : ItemsBucketSource<Param>() {
 
     companion object {
         private const val TITLE_BUCKET_ID = 0

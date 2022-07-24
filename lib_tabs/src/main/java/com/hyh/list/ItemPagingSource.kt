@@ -12,7 +12,8 @@ import com.hyh.list.internal.PagingSourceDisplayedData
  * @param Item
  * @property initialParam
  */
-abstract class ItemPagingSource<Param : Any, Item : Any>(open var initialParam: Param?) : BaseItemSource<ItemPagingSource.LoadParams<Param>, Item>() {
+abstract class ItemPagingSource<Param, Item>(open var initialParam: Param?) :
+    BaseItemSource<ItemPagingSource.LoadParams<Param>, Item>() {
 
 
     inner class PagingSourceDelegate : DefaultDelegate() {
@@ -48,36 +49,36 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(open var initialParam: 
 
     abstract suspend fun getRefreshKey(): Param?
 
-    sealed class LoadParams<Param : Any> {
+    sealed class LoadParams<Param> {
 
         abstract val param: Param?
 
         /**
          * 刷新请求
          */
-        class Refresh<Param : Any>(override val param: Param?) : LoadParams<Param>()
+        class Refresh<Param>(override val param: Param?) : LoadParams<Param>()
 
         /**
          * 加载更多请求
          */
-        class Append<Param : Any>(override val param: Param?) : LoadParams<Param>()
+        class Append<Param>(override val param: Param?) : LoadParams<Param>()
 
         /**
          * 数据重排请求
          */
-        class Rearrange<Param : Any>(
+        class Rearrange<Param>(
             val displayedData: PagingSourceDisplayedData<Param>
         ) : LoadParams<Param>() {
             override val param: Param? = null
         }
     }
 
-    sealed class LoadResult<Param : Any, Item : Any> {
+    sealed class LoadResult<Param, Item> {
 
         /**
          * 请求失败时返回
          */
-        data class Error<Param : Any, Item : Any>(
+        data class Error<Param, Item>(
             /**
              * 失败异常信息
              */
@@ -88,7 +89,7 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(open var initialParam: 
         /**
          * 请求成功[LoadParams.Refresh]、[LoadParams.Append]时返回
          */
-        data class Success<Param : Any, Item : Any>(
+        data class Success<Param, Item>(
             /**
              * 请求成功的列表数据：
              *
@@ -115,7 +116,7 @@ abstract class ItemPagingSource<Param : Any, Item : Any>(open var initialParam: 
         /**
          * 数据重排[LoadParams.Rearrange]时返回
          */
-        data class Rearranged<Param : Any, Item : Any>(
+        data class Rearranged<Param, Item>(
             /**
              * 是否忽略这次数据重排请求，不作任何操作
              */

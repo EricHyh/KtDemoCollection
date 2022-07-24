@@ -5,7 +5,7 @@ package com.hyh.list
  *
  * @author eriche 2021/9/29
  */
-class SingleItemSource(override val sourceToken: Any, private val item: FlatListItem) : SimpleItemSource<Unit>() {
+class SingleItemSource(override val sourceToken: Any, private val item: FlatListItem) : SimpleItemSource<Unit>(Unit) {
 
     constructor(item: FlatListItem) : this(item.javaClass, item)
 

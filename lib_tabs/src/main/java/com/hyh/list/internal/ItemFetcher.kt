@@ -18,7 +18,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
 
 
-class ItemFetcher<Param : Any, Item : Any>(
+class ItemFetcher<Param, Item>(
     override val itemSource: ItemSource<Param, Item>
 ) : BaseItemFetcher<Param, Item>(itemSource) {
 
@@ -114,7 +114,7 @@ class ItemFetcher<Param : Any, Item : Any>(
 }
 
 
-class ItemFetcherSnapshot<Param : Any, Item : Any>(
+class ItemFetcherSnapshot<Param, Item>(
     private val displayedData: SourceDisplayedData,
     private val paramProvider: ParamProvider<Param>,
     private val preShowLoader: PreShowLoader<Param, Item>,
@@ -135,24 +135,25 @@ class ItemFetcherSnapshot<Param : Any, Item : Any>(
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
 
 
-    override val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
-        launch {
-            sourceEventCh.consumeAsFlow().collect {
-                try {
-                    if (closed) return@collect
-                    send(it)
-                } catch (e: ClosedSendChannelException) {
+    override val sourceEventFlow: Flow<SourceEvent> =
+        cancelableChannelFlow(sourceEventChannelFlowJob) {
+            launch {
+                sourceEventCh.consumeAsFlow().collect {
+                    try {
+                        if (closed) return@collect
+                        send(it)
+                    } catch (e: ClosedSendChannelException) {
+                    }
                 }
             }
+
+            sourceEventCh.send(SourceEvent.Loading())
+            val param = paramProvider.invoke()
+
+            val preShowing = handlePreShowStep(param)
+
+            handleLoadStep(param, preShowing)
         }
-
-        sourceEventCh.send(SourceEvent.Loading())
-        val param = paramProvider.invoke()
-
-        val preShowing = handlePreShowStep(param)
-
-        handleLoadStep(param, preShowing)
-    }
 
     private suspend fun handlePreShowStep(param: Param): Boolean {
         val preShowParams =

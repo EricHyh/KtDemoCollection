@@ -8,7 +8,7 @@ import com.hyh.list.internal.utils.IElementDiff
  *
  * @author eriche 2022/6/21
  */
-abstract class SimpleItemPagingSource<Param : Any>(initialParam: Param?) :
+abstract class SimpleItemPagingSource<Param>(initialParam: Param?) :
     ItemPagingSource<Param, FlatListItem>(initialParam) {
 
     override fun getElementDiff(): IElementDiff<FlatListItem> {

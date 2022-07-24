@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.*
 import kotlin.math.min
 
 
-abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) : IFetcher<Param>,
+abstract class ItemSourceFetcher<Param>(private val initialParam: Param) : IFetcher<Param>,
     IChildLifecycleOwner {
 
     companion object {
@@ -72,7 +72,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
     val flow: Flow<RepoData<Param>> = simpleChannelFlow<RepoData<Param>> {
         uiReceiver
             .flow
-            .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param? ->
+            .simpleScan(null) { previousSnapshot: ItemSourceFetcherSnapshot<Param>?, param: Param ->
                 previousSnapshot?.close()
                 ItemSourceFetcherSnapshot(
                     lifecycleOwner.lifecycle,
@@ -186,7 +186,7 @@ abstract class ItemSourceFetcher<Param : Any>(private val initialParam: Param?) 
 class RepoResultProcessorGenerator(
     private val repoLifecycle: Lifecycle,
     private val repoDisplayedData: RepoDisplayedData,
-    private val sources: List<BaseItemSource<out Any, out Any>>,
+    private val sources: List<BaseItemSource<*, *>>,
     private val resultExtra: Any?
 ) {
 
@@ -219,8 +219,8 @@ class RepoResultProcessorGenerator(
         val sourceIndexMap: MutableMap<Any, Int> = mutableMapOf()
 
         val lazySources = mutableListOf<LazySourceData>()
-        val sources = mutableListOf<BaseItemSource<out Any, out Any>>()
-        val sourcesMap = mutableMapOf<Any, BaseItemSource<out Any, out Any>>()
+        val sources = mutableListOf<BaseItemSource<*, *>>()
+        val sourcesMap = mutableMapOf<Any, BaseItemSource<*, *>>()
 
         updateResult.resultList.forEachIndexed { index, itemSourceWrapper ->
             lazySources.add(itemSourceWrapper.lazySourceData)
@@ -252,13 +252,13 @@ class RepoResultProcessorGenerator(
                     sourceIndexMap[oldWrapper.sourceToken] ?: -1
 
                 @Suppress("UNCHECKED_CAST")
-                (oldWrapper.itemSource.delegate as BaseItemSource.Delegate<Any, Any>)
-                    .updateItemSource((newWrapper.itemSource as ItemSource<Any, Any>))
+                (oldWrapper.itemSource.delegate as BaseItemSource.Delegate<Any?, Any?>)
+                    .updateItemSource((newWrapper.itemSource as BaseItemSource<Any?, Any?>))
             }
         }
     }
 
-    private fun createItemFetcher(itemSource: BaseItemSource<out Any, out Any>): BaseItemFetcher<*, *> {
+    private fun createItemFetcher(itemSource: BaseItemSource<*, *>): BaseItemFetcher<*, *> {
         return when (itemSource) {
             is ItemPagingSource<*, *> -> PagingSourceItemFetcher(itemSource).apply {
                 itemSource.delegate.bindParentLifecycle(repoLifecycle)
@@ -290,7 +290,7 @@ class RepoResultProcessorGenerator(
 
     private class ItemSourceWrapper(
         val sourceToken: Any,
-        val itemSource: BaseItemSource<out Any, out Any>,
+        val itemSource: BaseItemSource<*, *>,
         val lazySourceData: LazySourceData
     ) {
         override fun equals(other: Any?): Boolean {
@@ -334,9 +334,9 @@ class RepoResultProcessorGenerator(
     }
 }
 
-class ItemSourceFetcherSnapshot<Param : Any>(
+class ItemSourceFetcherSnapshot<Param>(
     private val repoLifecycle: Lifecycle,
-    private val param: Param?,
+    private val param: Param,
     private val displayedData: RepoDisplayedData,
     private val cacheLoader: SourceCacheLoader<Param>,
     private val loader: SourceLoader<Param>,
@@ -366,7 +366,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
 
         repoEventCh.send(RepoEvent.Loading())
 
-        val cacheParams = ItemSourceRepo.CacheParams(param, displayedData)
+        val cacheParams = ItemSourceRepo.CacheParams<Param>(param, displayedData)
         val cacheResult = cacheLoader.invoke(cacheParams)
         var usingCache = false
         if (cacheResult is ItemSourceRepo.CacheResult.Success) {
@@ -382,7 +382,7 @@ class ItemSourceFetcherSnapshot<Param : Any>(
             repoEventCh.send(event)
         }
 
-        val loadParams = ItemSourceRepo.LoadParams(param, displayedData)
+        val loadParams = ItemSourceRepo.LoadParams<Param>(param, displayedData)
         val loadResult: ItemSourceRepo.LoadResult = if (fetchDispatcher == null) {
             loader.invoke(loadParams)
         } else {

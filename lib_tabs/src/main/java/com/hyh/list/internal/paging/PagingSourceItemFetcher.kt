@@ -12,7 +12,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
 
-class PagingSourceItemFetcher<Param : Any, Item : Any>(
+class PagingSourceItemFetcher<Param, Item>(
     private val pagingSource: ItemPagingSource<Param, Item>
 ) : BaseItemFetcher<ItemPagingSource.LoadParams<Param>, Item>(pagingSource) {
 

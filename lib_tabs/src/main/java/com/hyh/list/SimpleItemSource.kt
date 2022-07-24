@@ -10,7 +10,7 @@ import com.hyh.list.internal.utils.IElementDiff
  * @author eriche
  * @data 2021/6/17
  */
-abstract class SimpleItemSource<Param : Any>(protected var initialParam: Param) :
+abstract class SimpleItemSource<Param>(protected var initialParam: Param) :
     ItemSource<Param, FlatListItem>() {
 
     final override fun getElementDiff(): IElementDiff<FlatListItem> {

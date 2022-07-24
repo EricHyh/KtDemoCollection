@@ -13,7 +13,7 @@ import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.*
 
 
-abstract class BaseItemFetcher<Param : Any, Item : Any>(
+abstract class BaseItemFetcher<Param, Item>(
     open val itemSource: BaseItemSource<Param, Item>
 ) {
 

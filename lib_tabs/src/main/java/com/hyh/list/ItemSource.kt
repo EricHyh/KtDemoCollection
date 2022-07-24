@@ -11,7 +11,7 @@ import com.hyh.list.internal.SourceDisplayedData
  * @param Param 参数泛型
  * @param Item 原始的 Item 数据泛型
  */
-abstract class ItemSource<Param : Any, Item : Any> : BaseItemSource<Param, Item>(), LifecycleOwner {
+abstract class ItemSource<Param, Item> : BaseItemSource<Param, Item>(), LifecycleOwner {
 
 
     protected open fun areSourceTheSame(newItemSource: ItemSource<Param, Item>): Boolean {
@@ -26,11 +26,11 @@ abstract class ItemSource<Param : Any, Item : Any> : BaseItemSource<Param, Item>
     abstract suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult<Item>
     abstract suspend fun load(params: LoadParams<Param>): LoadResult<Item>
 
-    sealed class PreShowResult<Item : Any> {
+    sealed class PreShowResult<Item> {
 
-        class Unused<Item : Any> : PreShowResult<Item>()
+        class Unused<Item> : PreShowResult<Item>()
 
-        class Success<Item : Any> private constructor() : PreShowResult<Item>() {
+        class Success<Item> private constructor() : PreShowResult<Item>() {
 
             private lateinit var _items: List<Item>
             val items: List<Item>
@@ -48,13 +48,13 @@ abstract class ItemSource<Param : Any, Item : Any> : BaseItemSource<Param, Item>
         }
     }
 
-    sealed class LoadResult<Item : Any> {
+    sealed class LoadResult<Item> {
 
-        class Error<Item : Any>(
+        class Error<Item>(
             val error: Throwable
         ) : LoadResult<Item>()
 
-        class Success<Item : Any> private constructor() : LoadResult<Item>() {
+        class Success<Item> private constructor() : LoadResult<Item>() {
 
             private lateinit var _items: List<Item>
             val items: List<Item>
@@ -71,12 +71,12 @@ abstract class ItemSource<Param : Any, Item : Any> : BaseItemSource<Param, Item>
         }
     }
 
-    class PreShowParams<Param : Any>(
+    class PreShowParams<Param>(
         val param: Param,
         val displayedData: SourceDisplayedData
     )
 
-    class LoadParams<Param : Any>(
+    class LoadParams<Param>(
         val param: Param,
         val displayedData: SourceDisplayedData
     )

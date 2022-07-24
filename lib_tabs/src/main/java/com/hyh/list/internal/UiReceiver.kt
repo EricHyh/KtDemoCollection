@@ -12,7 +12,7 @@ import com.hyh.list.PagingSourceLoadState
  * @author eriche
  * @data 2021/5/20
  */
-interface UiReceiverForRepo<Param : Any> {
+interface UiReceiverForRepo<Param> {
 
     fun attach(lifecycle: Lifecycle)
 

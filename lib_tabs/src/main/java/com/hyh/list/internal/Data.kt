@@ -8,7 +8,7 @@ import com.hyh.list.internal.utils.ListOperate
 import kotlinx.coroutines.flow.Flow
 import java.io.Closeable
 
-data class RepoData<Param : Any>(
+data class RepoData<Param>(
     val flow: Flow<RepoEvent>,
     val receiver: UiReceiverForRepo<Param>
 )
@@ -55,10 +55,10 @@ class RepoDisplayedData(
     var lazySources: List<LazySourceData>? = null,
 
     @Volatile
-    var sources: List<BaseItemSource<out Any, out Any>>? = null,
+    var sources: List<BaseItemSource<*, *>>? = null,
 
     @Volatile
-    var sourcesMap: Map<Any, BaseItemSource<out Any, out Any>>? = null,
+    var sourcesMap: Map<Any, BaseItemSource<*, *>>? = null,
 
     @Volatile
     var resultExtra: Any? = null
@@ -170,7 +170,7 @@ open class SourceDisplayedData(
 )
 
 
-class PagingSourceDisplayedData<Param : Any> : SourceDisplayedData() {
+class PagingSourceDisplayedData<Param> : SourceDisplayedData() {
 
     @Volatile
     var pagingList: List<Paging<Param>> = emptyList()
@@ -189,7 +189,7 @@ class PagingSourceDisplayedData<Param : Any> : SourceDisplayedData() {
 }
 
 
-class Paging<Param : Any> constructor(
+class Paging<Param> constructor(
 
     /**
      * 将原始数据转换成[FlatListItem]之后的数据

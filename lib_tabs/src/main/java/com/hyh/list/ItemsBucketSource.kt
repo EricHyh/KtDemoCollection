@@ -7,7 +7,7 @@ import com.hyh.list.internal.utils.ListUpdate
 import java.util.*
 import kotlin.collections.LinkedHashMap
 
-abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrapper>() {
+abstract class ItemsBucketSource<Param> : ItemSource<Param, ListItemWrapper>() {
 
     companion object {
         const val DEFAULT_ITEMS_BUCKET_ID = -1
@@ -83,8 +83,15 @@ abstract class ItemsBucketSource<Param : Any> : ItemSource<Param, ListItemWrappe
         }
     }
 
-    protected abstract suspend fun getPreShow(param: Param, displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?): BucketPreShowResult
-    protected abstract suspend fun load(param: Param, displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?): BucketLoadResult
+    protected abstract suspend fun getPreShow(
+        param: Param,
+        displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?
+    ): BucketPreShowResult
+
+    protected abstract suspend fun load(
+        param: Param,
+        displayedItemsBucketMap: LinkedHashMap<Int, ItemsBucket>?
+    ): BucketLoadResult
 
     override fun onProcessResult(
         resultItems: List<FlatListItem>,

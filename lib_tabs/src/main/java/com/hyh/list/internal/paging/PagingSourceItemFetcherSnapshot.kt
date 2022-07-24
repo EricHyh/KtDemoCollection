@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
+class PagingSourceItemFetcherSnapshot<Param, Item> constructor(
     private val displayedData: PagingSourceDisplayedData<Param>,
     private val refreshKeyProvider: RefreshKeyProvider<Param>,
     private val appendKeyProvider: AppendKeyProvider<Param>,
@@ -43,82 +43,87 @@ class PagingSourceItemFetcherSnapshot<Param : Any, Item : Any> constructor(
     @Volatile
     var isRefresh = false
 
-    override val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
-        val isRefresh = displayedData.lastPaging == null || forceRefresh
-        this@PagingSourceItemFetcherSnapshot.isRefresh = isRefresh
-        if (displayedData.noMore && !isRefresh) {
-            onAppendComplete()
-            return@cancelableChannelFlow
-        }
+    override val sourceEventFlow: Flow<SourceEvent> =
+        cancelableChannelFlow(sourceEventChannelFlowJob) {
+            val isRefresh = displayedData.lastPaging == null || forceRefresh
+            this@PagingSourceItemFetcherSnapshot.isRefresh = isRefresh
+            if (displayedData.noMore && !isRefresh) {
+                onAppendComplete()
+                return@cancelableChannelFlow
+            }
 
-        launch {
-            sourceEventCh.consumeAsFlow().collect {
-                try {
-                    if (closed) return@collect
-                    send(it)
-                } catch (e: ClosedSendChannelException) {
+            launch {
+                sourceEventCh.consumeAsFlow().collect {
+                    try {
+                        if (closed) return@collect
+                        send(it)
+                    } catch (e: ClosedSendChannelException) {
+                    }
                 }
             }
-        }
 
 
-        val param = if (isRefresh) {
-            sourceEventCh.send(SourceEvent.PagingRefreshing())
-            ItemPagingSource.LoadParams.Refresh(refreshKeyProvider.invoke())
-        } else {
-            sourceEventCh.send(SourceEvent.PagingAppending())
-            ItemPagingSource.LoadParams.Append(appendKeyProvider.invoke())
-        }
-
-        val fetchDispatcher = fetchDispatcherProvider.invoke(param, displayedData)
-
-        val loadResult: ItemPagingSource.LoadResult<Param, Item> = if (fetchDispatcher == null) {
-            loader.invoke(param)
-        } else {
-            withContext(fetchDispatcher) {
-                loader.invoke(param)
+            val param = if (isRefresh) {
+                sourceEventCh.send(SourceEvent.PagingRefreshing())
+                ItemPagingSource.LoadParams.Refresh(refreshKeyProvider.invoke())
+            } else {
+                sourceEventCh.send(SourceEvent.PagingAppending())
+                ItemPagingSource.LoadParams.Append(appendKeyProvider.invoke())
             }
-        }
 
-        when (loadResult) {
-            is ItemPagingSource.LoadResult.Error -> {
-                if (isRefresh) {
-                    SourceEvent.PagingRefreshError(loadResult.throwable) {
-                        onRefreshComplete()
-                    }
+            val fetchDispatcher = fetchDispatcherProvider.invoke(param, displayedData)
+
+            val loadResult: ItemPagingSource.LoadResult<Param, Item> =
+                if (fetchDispatcher == null) {
+                    loader.invoke(param)
                 } else {
-                    SourceEvent.PagingAppendError(loadResult.throwable, displayedData.pagingSize) {
-                        onAppendComplete()
+                    withContext(fetchDispatcher) {
+                        loader.invoke(param)
                     }
-                }.apply {
-                    sourceEventCh.send(this)
                 }
-            }
-            is ItemPagingSource.LoadResult.Success -> {
-                if (isRefresh) {
-                    SourceEvent.PagingRefreshSuccess(
-                        refreshProcessor(param, loadResult),
-                        loadResult.noMore
-                    ) {
-                        onRefreshComplete()
+
+            when (loadResult) {
+                is ItemPagingSource.LoadResult.Error -> {
+                    if (isRefresh) {
+                        SourceEvent.PagingRefreshError(loadResult.throwable) {
+                            onRefreshComplete()
+                        }
+                    } else {
+                        SourceEvent.PagingAppendError(
+                            loadResult.throwable,
+                            displayedData.pagingSize
+                        ) {
+                            onAppendComplete()
+                        }
+                    }.apply {
+                        sourceEventCh.send(this)
                     }
-                } else {
-                    SourceEvent.PagingAppendSuccess(
-                        appendProcessor(param, loadResult),
-                        displayedData.pagingSize,
-                        loadResult.noMore
-                    ) {
-                        onAppendComplete()
-                    }
-                }.apply {
-                    sourceEventCh.send(this)
                 }
-            }
-            else -> {
-                throw IllegalArgumentException("loadResult shouldn't be $loadResult")
+                is ItemPagingSource.LoadResult.Success -> {
+                    if (isRefresh) {
+                        SourceEvent.PagingRefreshSuccess(
+                            refreshProcessor(param, loadResult),
+                            loadResult.noMore
+                        ) {
+                            onRefreshComplete()
+                        }
+                    } else {
+                        SourceEvent.PagingAppendSuccess(
+                            appendProcessor(param, loadResult),
+                            displayedData.pagingSize,
+                            loadResult.noMore
+                        ) {
+                            onAppendComplete()
+                        }
+                    }.apply {
+                        sourceEventCh.send(this)
+                    }
+                }
+                else -> {
+                    throw IllegalArgumentException("loadResult shouldn't be $loadResult")
+                }
             }
         }
-    }
 
     override fun close() {
         closed = true

@@ -30,7 +30,7 @@ import kotlin.collections.LinkedHashMap
  * @author eriche
  * @data 2021/6/7
  */
-class MultiItemSourceAdapter<Param : Any>(
+class MultiItemSourceAdapter<Param>(
     private val lifecycleOwner: LifecycleOwner
 ) : MultiSourceAdapter(), IListAdapter<Param> {
 

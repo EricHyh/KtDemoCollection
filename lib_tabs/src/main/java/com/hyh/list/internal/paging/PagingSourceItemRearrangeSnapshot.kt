@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PagingSourceItemRearrangeSnapshot<Param : Any, Item : Any>(
+class PagingSourceItemRearrangeSnapshot<Param, Item>(
     private val displayedData: PagingSourceDisplayedData<Param>,
     private val loader: PagingSourceLoader<Param, Item>,
     private val onRearrangeComplete: Invoke,
@@ -32,51 +32,53 @@ class PagingSourceItemRearrangeSnapshot<Param : Any, Item : Any>(
     private val sourceEventCh = Channel<SourceEvent>(Channel.BUFFERED)
 
 
-    override val sourceEventFlow: Flow<SourceEvent> = cancelableChannelFlow(sourceEventChannelFlowJob) {
-        launch {
-            sourceEventCh.consumeAsFlow().collect {
-                try {
-                    if (closed) return@collect
-                    send(it)
-                } catch (e: ClosedSendChannelException) {
-                }
-            }
-        }
-
-        val param = ItemPagingSource.LoadParams.Rearrange(displayedData)
-        val fetchDispatcher = fetchDispatcherProvider.invoke(param, displayedData)
-
-        val loadResult: ItemPagingSource.LoadResult<Param, Item> = if (fetchDispatcher == null) {
-            loader.invoke(param)
-        } else {
-            withContext(fetchDispatcher) {
-                loader.invoke(param)
-            }
-        }
-
-        when (loadResult) {
-            is ItemPagingSource.LoadResult.Error -> {
-                onRearrangeComplete()
-            }
-            is ItemPagingSource.LoadResult.Rearranged -> {
-                if (loadResult.ignore) {
-                    onRearrangeComplete()
-                } else {
-                    SourceEvent.PagingRearrangeSuccess(
-                        rearrangeProcessor(param, loadResult),
-                    ) {
-                        onRearrangeComplete()
-                    }.apply {
-                        sourceEventCh.send(this)
+    override val sourceEventFlow: Flow<SourceEvent> =
+        cancelableChannelFlow(sourceEventChannelFlowJob) {
+            launch {
+                sourceEventCh.consumeAsFlow().collect {
+                    try {
+                        if (closed) return@collect
+                        send(it)
+                    } catch (e: ClosedSendChannelException) {
                     }
                 }
             }
-            else -> {
-                throw IllegalArgumentException("loadResult shouldn't be $loadResult")
-            }
-        }
 
-    }
+            val param = ItemPagingSource.LoadParams.Rearrange(displayedData)
+            val fetchDispatcher = fetchDispatcherProvider.invoke(param, displayedData)
+
+            val loadResult: ItemPagingSource.LoadResult<Param, Item> =
+                if (fetchDispatcher == null) {
+                    loader.invoke(param)
+                } else {
+                    withContext(fetchDispatcher) {
+                        loader.invoke(param)
+                    }
+                }
+
+            when (loadResult) {
+                is ItemPagingSource.LoadResult.Error -> {
+                    onRearrangeComplete()
+                }
+                is ItemPagingSource.LoadResult.Rearranged -> {
+                    if (loadResult.ignore) {
+                        onRearrangeComplete()
+                    } else {
+                        SourceEvent.PagingRearrangeSuccess(
+                            rearrangeProcessor(param, loadResult),
+                        ) {
+                            onRearrangeComplete()
+                        }.apply {
+                            sourceEventCh.send(this)
+                        }
+                    }
+                }
+                else -> {
+                    throw IllegalArgumentException("loadResult shouldn't be $loadResult")
+                }
+            }
+
+        }
 
     override fun close() {
         closed = true

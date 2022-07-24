@@ -143,7 +143,7 @@ class TradeTabItemSourceRepo : SimpleItemSourceRepo<Unit>(Unit) {
 }
 
 
-class AccountCardItemSource(private val accountName: String) : SimpleItemSource<Unit>() {
+class AccountCardItemSource(private val accountName: String) : SimpleItemSource<Unit?>(Unit) {
 
     private val TAG = "AccountCardItemSource"
 
@@ -152,11 +152,11 @@ class AccountCardItemSource(private val accountName: String) : SimpleItemSource<
     override val sourceToken: Any
         get() = accountName
 
-    override suspend fun getPreShow(param: Unit): PreShowResult<FlatListItem> {
+    override suspend fun getPreShow(param: Unit?): PreShowResult<FlatListItem> {
         return PreShowResult.Unused()
     }
 
-    override suspend fun load(param: Unit): LoadResult<FlatListItem> {
+    override suspend fun load(param: Unit?): LoadResult<FlatListItem> {
         if (!accountSettingInfo.expandPosition) {
             val accountTitleItemData = AccountTitleFlatListItem(accountName, emptyList(), accountSettingInfo, refreshActuator)
             return LoadResult.Success(listOf(accountTitleItemData))
@@ -178,7 +178,9 @@ class AccountCardItemSource(private val accountName: String) : SimpleItemSource<
         }
     }
 
-    override suspend fun getParam() {}
+    override suspend fun getParam(): Unit? {
+        return super.getParam()
+    }
 
     companion object {
         var num = 0

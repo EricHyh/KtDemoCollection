@@ -6,7 +6,7 @@ package com.hyh.list
  * @author eriche
  * @data 2021/6/17
  */
-abstract class SimpleItemSourceRepo<Param : Any>(initialParam: Param?) : ItemSourceRepo<Param>(initialParam) {
+abstract class SimpleItemSourceRepo<Param : Any>(initialParam: Param) : ItemSourceRepo<Param>(initialParam) {
 
     final override suspend fun getCache(params: CacheParams<Param>): CacheResult {
         if (params.displayedData.lazySources == null) {

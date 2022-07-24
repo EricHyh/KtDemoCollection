@@ -16,7 +16,7 @@ import kotlinx.coroutines.delay
 import java.util.*
 import kotlin.random.Random
 
-class NumItemSource(private var type: String) : SimpleItemSource<Unit>() {
+class NumItemSource(private var type: String) : SimpleItemSource<Unit>(Unit) {
 
 
     companion object {

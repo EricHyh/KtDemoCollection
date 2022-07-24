@@ -5,7 +5,7 @@ import com.hyh.list.internal.utils.ListUpdate
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
-class SourceResultProcessorGenerator<Param : Any, Item : Any>(
+class SourceResultProcessorGenerator<Param, Item>(
     private val sourceDisplayedData: SourceDisplayedData,
     private val items: List<Item>,
     private val resultExtra: Any?,
