@@ -1,5 +1,6 @@
 package com.hyh.list
 
+import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.utils.IElementDiff
 
 /**
@@ -7,7 +8,8 @@ import com.hyh.list.internal.utils.IElementDiff
  *
  * @author eriche 2022/6/21
  */
-abstract class SimpleItemPagingSource<Param : Any>(initialParam: Param?) : ItemPagingSource<Param, FlatListItem>(initialParam) {
+abstract class SimpleItemPagingSource<Param : Any>(initialParam: Param?) :
+    ItemPagingSource<Param, FlatListItem>(initialParam) {
 
     override fun getElementDiff(): IElementDiff<FlatListItem> {
         return IElementDiff.ItemDataDiff()
@@ -40,5 +42,20 @@ abstract class SimpleItemPagingSource<Param : Any>(initialParam: Param?) : ItemP
                 it.delegate.onItemDetached()
             }
         }
+    }
+
+    override fun areSourceContentsTheSame(newItemSource: BaseItemSource<LoadParams<Param>, FlatListItem>): Boolean {
+        return false
+    }
+
+    override fun onUpdateItemSource(newItemSource: BaseItemSource<LoadParams<Param>, FlatListItem>) {
+        super.onUpdateItemSource(newItemSource)
+        if (newItemSource is SimpleItemPagingSource) {
+            initialParam = newItemSource.initialParam
+        }
+    }
+
+    override suspend fun getRefreshKey(): Param? {
+        return initialParam
     }
 }

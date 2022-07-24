@@ -2,6 +2,7 @@ package com.hyh.paging3demo.list
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
@@ -12,7 +13,15 @@ import com.hyh.list.*
 import com.hyh.list.adapter.getFlatListManager
 import com.hyh.list.internal.SourceDisplayedData
 import com.hyh.sticky.IStickyHeader
+import io.reactivex.rxjava3.core.Observable
+import io.reactivex.rxjava3.core.Scheduler
+import io.reactivex.rxjava3.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.rx3.asCoroutineDispatcher
+import kotlinx.coroutines.rx3.awaitFirst
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 /**
  * TODO: Add Description
@@ -40,6 +49,13 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
         rearrangeActuator(true)
     }
 
+    /*override fun getFetchDispatcher(
+        param: LoadParams<Int>,
+        displayedData: SourceDisplayedData
+    ): CoroutineDispatcher {
+
+        return Schedulers.io().asCoroutineDispatcher()
+    }*/
 
     val wholeItemsMap: MutableMap<Int, List<Int>> = mutableMapOf()
 
@@ -47,8 +63,154 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, FlatListItem> {
         Log.d(TAG, "load: ")
-        if (loadNum++ % 10 != 0) return LoadResult.Error(NullPointerException())
+        //if (loadNum++ % 10 != 0) return LoadResult.Error(NullPointerException())
+
+        /*return suspendCancellableCoroutine<LoadResult<Int, FlatListItem>> { cont ->
+
+            cont.invokeOnCancellation {
+                Log.d(TAG, "load: suspendCancellableCoroutine $it")
+            }
+
+            when (params) {
+                is LoadParams.Refresh -> {
+                    SystemClock.sleep(2000)
+                    val items = mutableListOf<FlatListItem>()
+                    items.add(GroupTitleListItem(0, isExpand(0), invoke))
+                    if (isExpand(0)) {
+                        for (index in 0..20) {
+                            items.add(NumFlatListItem(params.param?.toString() ?: "", index, index))
+                        }
+                    }
+                    val resultExtra = ResultExtra()
+                    resultExtra.wholeItemsMap[0] = (0..20).toList()
+
+                    cont.resume(LoadResult.Success(items, 1, resultExtra = resultExtra))
+                }
+                is LoadParams.Append -> {
+                    SystemClock.sleep(2000)
+                    val items = mutableListOf<FlatListItem>()
+                    val param = params.param ?: 1
+                    items.add(GroupTitleListItem(param, isExpand(param), invoke))
+                    if (isExpand(param)) {
+                        for (index in 0..20) {
+                            items.add(NumFlatListItem(param.toString(), index, index))
+                        }
+                    }
+
+                    val resultExtra = displayedData?.resultExtra as? ResultExtra
+                    resultExtra?.wholeItemsMap?.put(param, (0..20).toList())
+
+                    cont.resume(LoadResult.Success(items, param + 1, param == 20, resultExtra))
+                }
+                is LoadParams.Rearrange -> {
+                    val resultExtra = params.displayedData.resultExtra as? ResultExtra
+                    val items = mutableListOf<FlatListItem>()
+                    resultExtra?.wholeItemsMap?.forEach {
+                        val expand = isExpand(it.key)
+                        items.add(GroupTitleListItem(it.key, expand, invoke))
+                        if (expand) {
+                            it.value.forEach { num ->
+                                items.add(NumFlatListItem(it.key.toString(), num, num))
+                            }
+                        }
+                    }
+                    Log.d(TAG, "load: ")
+
+                    cont.resume(
+                        LoadResult.Rearranged(
+                            ignore = false,
+                            items,
+                            resultExtra
+                        )
+                    )
+
+                }
+            }
+
+        }*/
+
         when (params) {
+            is LoadParams.Refresh -> {
+                return Observable
+                    .just(1)
+                    .subscribeOn(Schedulers.io())
+                    .map {
+                        Log.d(TAG, "load: Refresh ${Thread.currentThread()}")
+                        SystemClock.sleep(6000)
+                        val items = mutableListOf<FlatListItem>()
+                        items.add(GroupTitleListItem(0, isExpand(0), invoke))
+                        if (isExpand(0)) {
+                            for (index in 0..20) {
+                                items.add(
+                                    NumFlatListItem(
+                                        params.param?.toString() ?: "",
+                                        index,
+                                        index
+                                    )
+                                )
+                            }
+                        }
+                        val resultExtra = ResultExtra()
+                        resultExtra.wholeItemsMap[0] = (0..20).toList()
+                        LoadResult.Success(items, 1, resultExtra = resultExtra)
+
+                    }
+                    .doOnDispose {
+                        Log.d(TAG, "load: Refresh doOnDispose")
+                    }
+                    .awaitFirst()
+            }
+            is LoadParams.Append -> {
+
+                return Observable
+                    .just(1)
+                    .subscribeOn(Schedulers.io())
+                    .map {
+                        Log.d(TAG, "load: Append ${Thread.currentThread()}")
+                        SystemClock.sleep(2000)
+                        val items = mutableListOf<FlatListItem>()
+                        val param = params.param ?: 1
+                        items.add(GroupTitleListItem(param, isExpand(param), invoke))
+                        if (isExpand(param)) {
+                            for (index in 0..20) {
+                                items.add(NumFlatListItem(param.toString(), index, index))
+                            }
+                        }
+
+                        val resultExtra = displayedData?.resultExtra as? ResultExtra
+                        resultExtra?.wholeItemsMap?.put(param, (0..20).toList())
+
+                        LoadResult.Success(items, param + 1, param == 20, resultExtra)
+
+                    }
+                    .doOnDispose {
+                        Log.d(TAG, "load: Append doOnDispose")
+                    }
+                    .awaitFirst()
+
+            }
+            is LoadParams.Rearrange -> {
+                val resultExtra = params.displayedData.resultExtra as? ResultExtra
+                val items = mutableListOf<FlatListItem>()
+                resultExtra?.wholeItemsMap?.forEach {
+                    val expand = isExpand(it.key)
+                    items.add(GroupTitleListItem(it.key, expand, invoke))
+                    if (expand) {
+                        it.value.forEach { num ->
+                            items.add(NumFlatListItem(it.key.toString(), num, num))
+                        }
+                    }
+                }
+                Log.d(TAG, "load: ")
+                return LoadResult.Rearranged(
+                    ignore = false,
+                    items,
+                    resultExtra
+                )
+            }
+        }
+
+        /*when (params) {
             is LoadParams.Refresh -> {
                 delay(2000)
                 val items = mutableListOf<FlatListItem>()
@@ -60,6 +222,13 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                 }
                 val resultExtra = ResultExtra()
                 resultExtra.wholeItemsMap[0] = (0..20).toList()
+
+                Observable
+                    .just(1)
+                    .map {
+
+                    }
+
                 return LoadResult.Success(items, 1, resultExtra = resultExtra)
             }
             is LoadParams.Append -> {
@@ -97,7 +266,7 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                     resultExtra
                 )
             }
-        }
+        }*/
     }
 
 

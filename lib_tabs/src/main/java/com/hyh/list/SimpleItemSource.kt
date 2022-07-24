@@ -1,6 +1,7 @@
 package com.hyh.list
 
 import com.hyh.base.RefreshStrategy
+import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.utils.IElementDiff
 
 /**
@@ -9,7 +10,8 @@ import com.hyh.list.internal.utils.IElementDiff
  * @author eriche
  * @data 2021/6/17
  */
-abstract class SimpleItemSource<Param : Any> : ItemSource<Param, FlatListItem>() {
+abstract class SimpleItemSource<Param : Any>(protected var initialParam: Param) :
+    ItemSource<Param, FlatListItem>() {
 
     final override fun getElementDiff(): IElementDiff<FlatListItem> {
         return IElementDiff.ItemDataDiff()
@@ -47,6 +49,22 @@ abstract class SimpleItemSource<Param : Any> : ItemSource<Param, FlatListItem>()
                 it.delegate.onItemDetached()
             }
         }
+    }
+
+
+    override fun areSourceContentsTheSame(newItemSource: BaseItemSource<Param, FlatListItem>): Boolean {
+        return false
+    }
+
+    override fun onUpdateItemSource(newItemSource: BaseItemSource<Param, FlatListItem>) {
+        super.onUpdateItemSource(newItemSource)
+        if (newItemSource is SimpleItemSource) {
+            initialParam = newItemSource.initialParam
+        }
+    }
+
+    override suspend fun getParam(): Param {
+        return initialParam
     }
 
     override suspend fun getPreShow(params: PreShowParams<Param>): PreShowResult<FlatListItem> {

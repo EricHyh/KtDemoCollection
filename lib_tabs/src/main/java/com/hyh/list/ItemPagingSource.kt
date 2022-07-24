@@ -12,7 +12,7 @@ import com.hyh.list.internal.PagingSourceDisplayedData
  * @param Item
  * @property initialParam
  */
-abstract class ItemPagingSource<Param : Any, Item : Any>(val initialParam: Param?) : BaseItemSource<ItemPagingSource.LoadParams<Param>, Item>() {
+abstract class ItemPagingSource<Param : Any, Item : Any>(open var initialParam: Param?) : BaseItemSource<ItemPagingSource.LoadParams<Param>, Item>() {
 
 
     inner class PagingSourceDelegate : DefaultDelegate() {
