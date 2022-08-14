@@ -31,7 +31,7 @@ class SimpleMutableStateFlow<T>(initialValue: T) {
             if (oldValue == newValue) return
             if (!channel.isClosedForSend) {
                 channel.runCatching {
-                    channel.offer(newValue)
+                    channel.trySend(newValue)
                     valueRef.set(newValue)
                 }
             }

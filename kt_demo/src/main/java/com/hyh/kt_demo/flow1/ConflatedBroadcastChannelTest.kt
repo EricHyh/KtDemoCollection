@@ -15,11 +15,9 @@ import kotlinx.coroutines.runBlocking
  * @author eriche
  * @data 2021/6/22
  */
-
 fun main() {
     val channel = ConflatedBroadcastChannel(0)
 
-    @ExperimentalCoroutinesApi
     val simpleMutableStateFlow = SimpleMutableStateFlow(0)
 
     runBlocking {

@@ -37,7 +37,7 @@ internal class SimpleMutableStateFlow<T : Any>(initialValue: T) {
         synchronized(valueRef) {
             if (oldValue == newValue) return
             if (!channel.isClosedForSend) {
-                channel.offer(newValue)
+                channel.trySend(newValue)
                 valueRef.set(newValue)
             }
             //valueRef.compareAndSet()

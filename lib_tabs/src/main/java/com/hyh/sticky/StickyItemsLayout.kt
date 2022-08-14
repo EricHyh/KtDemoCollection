@@ -866,7 +866,8 @@ class StickyItemsLayout : ViewGroup {
             this.cacheLastVisibleItemPosition = lastVisibleItemPosition
 
 
-            val cacheFirstCompletelyVisibleItemPosition = this.cacheFirstCompletelyVisibleItemPosition
+            val cacheFirstCompletelyVisibleItemPosition =
+                this.cacheFirstCompletelyVisibleItemPosition
             this.cacheFirstCompletelyVisibleItemPosition = firstCompletelyVisibleItemPosition
 
             val cacheLastCompletelyVisibleItemPosition = this.cacheLastCompletelyVisibleItemPosition
@@ -908,7 +909,7 @@ class StickyItemsLayout : ViewGroup {
                     }
                     if (cacheFixedPositions.size < maxFixedStickyHeaders) {
                         var position = cacheFirstVisibleItemPosition
-                            ?: cacheFixedPositions.last() + 1
+                            ?: (cacheFixedPositions.last() + 1)
                         while (position < firstVisibleItemPosition
                             && cacheFixedPositions.size < maxFixedStickyHeaders
                         ) {
@@ -1978,28 +1979,16 @@ class StickyItemsLayout : ViewGroup {
 
         override fun updateOffsetY(itemsOffsetY: Float): Float {
             val isFixedStickyItem = isFixedStickyItem
+            val prevBottom = (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor?.toFloat() ?: 0.0F)
             var consumed = 0.0F
-            if (prev != null) {
-                if (prev?.isFixedStickyItem == true) {
-                    if (isFixedStickyItem) {
-                        itemView.translationY =
-                            (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor?.toFloat() ?: 0.0F)
-                    } else {
-                        val offsetY =
-                            (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor ?: 0) + itemsOffsetY
-                        itemView.translationY = offsetY
-                        consumed = itemsOffsetY
-                    }
-                } else {
-                    val offsetY = (prev?.offsetY ?: 0.0F) + (prev?.heightWithDecor ?: 0)
-                    itemView.translationY = offsetY
-                }
+            if (isFixedStickyItem) {
+                itemView.translationY = prevBottom
             } else {
-                if (isFixedStickyItem) {
-                    itemView.translationY = 0.0F
+                if (prev == null || prev?.isFixedStickyItem == true) {
+                    consumed = max(-heightWithDecor.toFloat(), itemsOffsetY)
+                    itemView.translationY = prevBottom + consumed
                 } else {
-                    itemView.translationY = itemsOffsetY
-                    consumed = itemsOffsetY
+                    itemView.translationY = prevBottom
                 }
             }
             return itemsOffsetY - consumed
@@ -2018,28 +2007,16 @@ class StickyItemsLayout : ViewGroup {
 
         override fun updateOffsetY(itemsOffsetY: Float): Float {
             val isFixedStickyItem = isFixedStickyItem
+            val prevTop = (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor?.toFloat() ?: 0.0F)
             var consumed = 0.0F
-            if (prev != null) {
-                if (prev?.isFixedStickyItem == true) {
-                    if (isFixedStickyItem) {
-                        itemView.translationY =
-                            (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor?.toFloat() ?: 0.0F)
-                    } else {
-                        val offsetY =
-                            (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor ?: 0) + itemsOffsetY
-                        itemView.translationY = offsetY
-                        consumed = itemsOffsetY
-                    }
-                } else {
-                    val offsetY = (prev?.offsetY ?: 0.0F) - (prev?.heightWithDecor ?: 0)
-                    itemView.translationY = offsetY
-                }
+            if (isFixedStickyItem) {
+                itemView.translationY = prevTop
             } else {
-                if (isFixedStickyItem) {
-                    itemView.translationY = 0.0F
+                if (prev == null || prev?.isFixedStickyItem == true) {
+                    consumed = min(heightWithDecor.toFloat(), itemsOffsetY)
+                    itemView.translationY = prevTop + consumed
                 } else {
-                    itemView.translationY = itemsOffsetY
-                    consumed = itemsOffsetY
+                    itemView.translationY = prevTop
                 }
             }
             return itemsOffsetY - consumed

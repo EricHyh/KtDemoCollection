@@ -2,6 +2,10 @@ package com.hyh.kt_demo.flow1
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import java.lang.Runnable
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 import kotlin.coroutines.EmptyCoroutineContext
 
 /**
@@ -13,6 +17,28 @@ import kotlin.coroutines.EmptyCoroutineContext
 
 fun main() {
 
+
+    val dispatcher1 =
+        Executors.newCachedThreadPool { Thread("dispatcher1") }.asCoroutineDispatcher()
+    val dispatcher2 =
+        Executors.newCachedThreadPool { Thread("dispatcher2") }.asCoroutineDispatcher()
+
+
+    val coroutineScope = CoroutineScope(Dispatchers.Main)
+    runBlocking {
+        val flow = flow<Int> {
+            emit(0)
+            emit(1)
+        }
+        coroutineScope.launch {
+            flow
+                .flowOn(dispatcher1)
+                .flowOn(dispatcher2)
+                .collect {
+                    println(Thread.currentThread().name)
+                }
+        }
+    }
 
 
     //collect(action) -> collect(FlowCollector) -> FlowCollector.block() ->

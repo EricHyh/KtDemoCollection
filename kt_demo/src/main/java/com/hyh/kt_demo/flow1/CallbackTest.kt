@@ -35,7 +35,7 @@ fun getDataFlow(): Flow<String> {
     return callbackFlow {
         getData(
             {
-                offer(it)
+                trySend(it)
                 //close(IllegalStateException("error"))
                 close()
                 //offer(it)
