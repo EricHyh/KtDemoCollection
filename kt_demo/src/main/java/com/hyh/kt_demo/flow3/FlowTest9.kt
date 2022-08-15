@@ -18,7 +18,7 @@ fun main() {
 
     val sharedFlow = MutableSharedFlow<Int>(
         replay = 0,
-        extraBufferCapacity = 0,
+        extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_LATEST
     )
 
@@ -34,19 +34,24 @@ fun main() {
         }
 
         launch {
+            delay(120)
             sharedFlow.collect {
+                println("collect1: $it")
                 delay(500)
-                println("collect: $it")
             }
         }
 
-        /*launch {
-            sharedFlow.collect {
-                println("collect2 start: $it")
-                delay(150)
-                println("collect2 end: $it")
-            }
-        }*/
+        launch {
+            sharedFlow
+                .shareIn(this, SharingStarted.WhileSubscribed(), 0)
+                .onStart {
+                    delay(120)
+                }
+                .collect {
+                    println("collect2: $it")
+                    delay(150)
+                }
+        }
 
         delay(1100)
         job.cancel()
