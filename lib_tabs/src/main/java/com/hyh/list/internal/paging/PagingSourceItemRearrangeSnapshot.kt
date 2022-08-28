@@ -93,6 +93,7 @@ class PagingSourceItemRearrangeSnapshot<Param, Item>(
             sourceDisplayedData = displayedData,
             items = rearranged.items,
             resultExtra = rearranged.resultExtra,
+            onResultDisplayed = rearranged.onResultDisplayed,
             dispatcher = processDataDispatcherProvider.invoke(param, displayedData),
             delegate = delegate
         ).processor

@@ -18,6 +18,8 @@ import android.view.WindowManager
 import java.lang.Exception
 
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.hyh.list.decoration.FillBottomDecoration
 import com.hyh.sticky.MultiSourceStickyItemsAdapter
 import com.hyh.sticky.StickyItemsLayout
@@ -86,7 +88,6 @@ class ListTestActivity : AppCompatActivity() {
             }
             lastTvTypes.text = str
         })
-
 
         /*ListConfig.aliveItems.observeForever {
             Log.d(TAG, "aliveItems: $it")

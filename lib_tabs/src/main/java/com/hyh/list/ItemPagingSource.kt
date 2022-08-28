@@ -1,6 +1,7 @@
 package com.hyh.list
 
 import com.hyh.AppendActuator
+import com.hyh.Invoke
 import com.hyh.RearrangeActuator
 import com.hyh.list.internal.base.BaseItemSource
 import com.hyh.list.internal.PagingSourceDisplayedData
@@ -109,7 +110,11 @@ abstract class ItemPagingSource<Param, Item>(open var initialParam: Param?) :
             /**
              * 额为数据，由业务自定义，会保存在[BaseItemSource.displayedData]中
              */
-            val resultExtra: Any? = null
+            val resultExtra: Any? = null,
+            /**
+             * 当结果被使用时回调
+             */
+            val onResultDisplayed: Invoke? = null
         ) : LoadResult<Param, Item>()
 
 
@@ -128,7 +133,11 @@ abstract class ItemPagingSource<Param, Item>(open var initialParam: Param?) :
             /**
              * 额为数据，由业务自定义，会保存在[BaseItemSource.displayedData]中
              */
-            val resultExtra: Any? = null
+            val resultExtra: Any? = null,
+            /**
+             * 当结果被使用时回调
+             */
+            val onResultDisplayed: Invoke? = null
         ) : LoadResult<Param, Item>()
     }
 }

@@ -1,14 +1,16 @@
 package com.hyh.list.internal.base
 
+import com.hyh.Invoke
 import com.hyh.list.internal.*
 import com.hyh.list.internal.utils.ListUpdate
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
-class SourceResultProcessorGenerator<Param, Item>(
+class SourceResultProcessorGenerator<Param, Item> constructor(
     private val sourceDisplayedData: SourceDisplayedData,
     private val items: List<Item>,
     private val resultExtra: Any?,
+    private val onResultDisplayed: Invoke?,
     private val dispatcher: CoroutineDispatcher?,
     private val delegate: BaseItemSource.Delegate<Param, Item>
 ) {
@@ -63,6 +65,8 @@ class SourceResultProcessorGenerator<Param, Item>(
             }
 
             delegate.onResultDisplayed(sourceDisplayedData)
+
+            onResultDisplayed?.invoke()
         }
     }
 }

@@ -15,13 +15,11 @@ import kotlinx.coroutines.flow.*
 
 fun main() {
 
-
     val sharedFlow = MutableSharedFlow<Int>(
         replay = 0,
-        extraBufferCapacity = 0,
-        onBufferOverflow = BufferOverflow.DROP_LATEST
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.SUSPEND
     )
-
 
     runBlocking {
 
@@ -33,22 +31,22 @@ fun main() {
             }
         }
 
-        launch {
+        val launch1 = launch {
             sharedFlow.collect {
-                delay(500)
-                println("collect: $it")
+                println("collect1: $it")
+                delay(100)
             }
         }
 
-        /*launch {
+        val launch2 = launch {
             sharedFlow.collect {
-                println("collect2 start: $it")
-                delay(150)
-                println("collect2 end: $it")
+                println("collect2: $it")
+                delay(800)
             }
-        }*/
+        }
 
-        delay(1100)
-        job.cancel()
+        delay(11000)
+        launch1.cancel()
+        launch2.cancel()
     }
 }

@@ -143,6 +143,7 @@ class PagingSourceItemFetcherSnapshot<Param, Item> constructor(
             val flatListItems = delegate.mapItems(items)
             val nextParam = success.nextParam
             val noMore = success.noMore
+            val onResultDisplayed = success.onResultDisplayed
 
             delegate.onProcessResult(
                 flatListItems,
@@ -175,8 +176,9 @@ class PagingSourceItemFetcherSnapshot<Param, Item> constructor(
                 }
 
                 delegate.onResultDisplayed(displayedData)
-            }
 
+                onResultDisplayed?.invoke()
+            }
         }
 
         return run@{
@@ -203,6 +205,7 @@ class PagingSourceItemFetcherSnapshot<Param, Item> constructor(
             val flatListItems = delegate.mapItems(items)
             val nextParam = success.nextParam
             val noMore = success.noMore
+            val onResultDisplayed = success.onResultDisplayed
 
             val oldFlatListItems = displayedData.flatListItems ?: emptyList()
 
@@ -240,6 +243,8 @@ class PagingSourceItemFetcherSnapshot<Param, Item> constructor(
                 }
 
                 delegate.onResultDisplayed(displayedData)
+
+                onResultDisplayed?.invoke()
             }
         }
 

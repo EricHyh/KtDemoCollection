@@ -171,6 +171,7 @@ class ItemFetcherSnapshot<Param, Item>(
                     displayedData,
                     preShowResult.items,
                     preShowResult.resultExtra,
+                    null,
                     processDataDispatcherProvider.invoke(param, displayedData),
                     delegate
                 ).processor
@@ -202,6 +203,7 @@ class ItemFetcherSnapshot<Param, Item>(
                         displayedData,
                         loadResult.items,
                         loadResult.resultExtra,
+                        null,
                         processDataDispatcherProvider.invoke(param, displayedData),
                         delegate
                     ).processor

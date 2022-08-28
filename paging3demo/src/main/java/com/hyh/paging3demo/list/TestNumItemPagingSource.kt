@@ -152,7 +152,7 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                         }
                         val resultExtra = ResultExtra()
                         resultExtra.wholeItemsMap[0] = (0..20).toList()
-                        LoadResult.Success(items, 1, resultExtra = resultExtra)
+                        LoadResult.Success(items, 0, resultExtra = resultExtra)
 
                     }
                     .doOnDispose {
@@ -169,18 +169,37 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                         Log.d(TAG, "load: Append ${Thread.currentThread()}")
                         SystemClock.sleep(2000)
                         val items = mutableListOf<FlatListItem>()
-                        val param = params.param ?: 1
-                        items.add(GroupTitleListItem(param, isExpand(param), invoke))
-                        if (isExpand(param)) {
-                            for (index in 0..20) {
-                                items.add(NumFlatListItem(param.toString(), index, index))
-                            }
-                        }
+                        val param = params.param ?: 0
 
                         val resultExtra = displayedData?.resultExtra as? ResultExtra
-                        resultExtra?.wholeItemsMap?.put(param, (0..20).toList())
+                        val wholeItemsMap = resultExtra?.wholeItemsMap
+                        val list = wholeItemsMap?.get(param)
 
-                        LoadResult.Success(items, param + 1, param == 20, resultExtra)
+                        var next = 0
+
+                        if (list == null || list.isEmpty()) {
+                            items.add(GroupTitleListItem(param, isExpand(param), invoke))
+                            if (isExpand(param)) {
+                                for (index in 0..20) {
+                                    items.add(NumFlatListItem(param.toString(), index, index))
+                                }
+                            }
+                            wholeItemsMap?.put(param, (0..20).toList())
+                        } else {
+                            if (isExpand(param)) {
+                                for (index in 21..40) {
+                                    items.add(NumFlatListItem(param.toString(), index, index))
+                                }
+                            }
+                            wholeItemsMap[param] = (0..40).toList()
+                            next = 1
+                        }
+
+                        LoadResult.Success(items, param + next, param == 20, resultExtra) {
+                            if (items.isEmpty() && param < 20) {
+                                appendActuator.invoke(true)
+                            }
+                        }
 
                     }
                     .doOnDispose {

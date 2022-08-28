@@ -26,15 +26,15 @@ class PagingSourceItemFetcher<Param, Item>(
         val flow = loadEventHandler.flow
 
         override fun refresh(important: Boolean) {
-            loadEventHandler.onReceiveLoadEvent(LoadEvent.Refresh)
+            loadEventHandler.onReceiveLoadEvent(LoadEvent.Refresh, important)
         }
 
         override fun append(important: Boolean) {
-            loadEventHandler.onReceiveLoadEvent(LoadEvent.Append)
+            loadEventHandler.onReceiveLoadEvent(LoadEvent.Append, important)
         }
 
         override fun rearrange(important: Boolean) {
-            loadEventHandler.onReceiveLoadEvent(LoadEvent.Rearrange)
+            loadEventHandler.onReceiveLoadEvent(LoadEvent.Rearrange, important)
         }
 
         override fun accessItem(position: Int) {
