@@ -17,11 +17,28 @@ fun main() {
 
     println("start")
 
+    Observable.create<Int> {
+        it.onNext(1)
+    }.subscribe()
+
     runBlocking {
         Observable.create<Int> {
             it.onNext(1)
         }.awaitFirst()
     }
+
+
+    val subscribe = Observable.create<Int> {
+        it.onNext(1)
+        it.onError(NullPointerException("xxx"))
+    }.subscribe(
+        {},
+        {
+            println("${it.message}")
+        }
+    )
+
+
 
 
     Thread.sleep(1000000)
