@@ -1,6 +1,7 @@
 package com.hyh.paging3demo.widget.horizontal.internal
 
 import android.animation.ValueAnimator
+import android.util.Log
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat

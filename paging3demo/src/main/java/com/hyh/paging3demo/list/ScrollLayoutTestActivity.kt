@@ -50,7 +50,7 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScrollLayoutTestHolder {
         return ScrollLayoutTestHolder(
-            HorizontalScrollLayout(parent.context).apply {
+            RecyclerViewScrollLayout(parent.context).apply {
                 fixedMinWidth = 200
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -94,7 +94,7 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 }
 
 
-class ScrollLayoutTestHolder(val recyclerViewScrollLayout: HorizontalScrollLayout) :
+class ScrollLayoutTestHolder(val recyclerViewScrollLayout: RecyclerViewScrollLayout) :
     RecyclerView.ViewHolder(recyclerViewScrollLayout) {
 }
 
