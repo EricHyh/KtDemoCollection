@@ -48,7 +48,6 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
             || recyclerView.childCount > visibleItemCount
         ) {
             Log.d(TAG, "scrollToPositionWithOffset1: ")
-            Log.d(TAG, "scrollToPositionWithOffset1: ")
             linearLayoutManager.scrollToPositionWithOffset(newPosition, newPositionOffset)
             return
         }
