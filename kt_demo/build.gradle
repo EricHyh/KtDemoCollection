@@ -17,7 +17,7 @@ dependencies {
 
 
 
-    runtimeClasspath files(compileKotlin.destinationDir)
+    //runtimeClasspath files(compileKotlin.destinationDir)
 }
 
 sourceCompatibility = 1.8

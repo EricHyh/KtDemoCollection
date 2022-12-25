@@ -21,7 +21,7 @@ buildscript {
         // in the individual module build.gradle files
 
         classpath deps.android_gradle_plugin
-        classpath deps.kotlin.plugin
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10"
         classpath deps.benchmark_gradle
     }
 }
