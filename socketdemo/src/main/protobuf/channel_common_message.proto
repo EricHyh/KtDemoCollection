@@ -1,0 +1,9 @@
+package channel_common_message;
+option java_package = "channel_common_message";
+
+
+message ChannelCommonInfo
+{
+  required int32 cmd = 1;
+  required bytes data = 2;
+}

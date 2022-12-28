@@ -1,13 +1,11 @@
-package com.hyh.kt_demo
+package lang
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.lang.RuntimeException
 import java.lang.reflect.Proxy
 import java.math.BigDecimal
-import java.math.RoundingMode
 import kotlin.concurrent.thread
 
 
@@ -18,27 +16,14 @@ data class Test(
 
 interface ItemType
 
-class NoMoneyException(msg: kotlin.String) : RuntimeException(msg)
+internal class NoMoneyException(message: String?) : RuntimeException(message)
 
 
 fun tryJoinCrazyThursday() {
-    throw NoMoneyException("KFC.kt Crazy Thursday whoever gives me \$50, I will thank him.")
+    throw NoMoneyException("KFC Crazy Thursday whoever gives me \$50, I will thank him.")
 }
 
 fun main() {
-
-    val zero = BigDecimal.ZERO
-    val toBigDecimal = "-1.00005500".toBigDecimal()
-
-    println(zero.toPlainString())
-    println(zero.negate().toPlainString())
-    println(zero.negate().toPlainString())
-
-    println(toBigDecimal.toPlainString())
-    println(toBigDecimal.negate().toPlainString())
-
-    println(zero.divide(BigDecimal(100), 5, RoundingMode.DOWN).stripTrailingZeros().toPlainString())
-    println(toBigDecimal.divide(BigDecimal(100), 5, RoundingMode.DOWN).stripTrailingZeros().toPlainString())
 
     //tryJoinCrazyThursday()
 

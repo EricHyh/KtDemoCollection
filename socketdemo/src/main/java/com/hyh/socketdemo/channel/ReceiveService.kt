@@ -1,64 +1,102 @@
 package com.hyh.socketdemo.channel
 
-import android.util.Log
-import java.io.ByteArrayOutputStream
-import java.net.Inet4Address
-import java.net.InetAddress
-import java.net.InetSocketAddress
+import channel_common_message.ChannelCommonMessage
+import com.hyh.socketdemo.channel.StreamUtils.closeSafety
+import java.io.InputStream
 import java.net.ServerSocket
+import java.net.Socket
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * TODO
+ * 数据接收服务
  *
  * @author eriche 2022/12/25
  */
 class ReceiveService {
 
     companion object {
+
         private const val TAG = "ReceiveService"
+
+        init {
+            GetIpAddress.initLocalIpAddress()
+        }
     }
 
+    var receiveListener: ReceiveListener? = null
+
+    private var executor: ThreadPoolExecutor? = null
+
     private var started: AtomicBoolean = AtomicBoolean(false)
+
+    private var serverSocket: ServerSocket? = null
 
     fun startService() {
         if (!started.compareAndSet(false, true)) return
 
-        //val address = InetSocketAddress("192.168.31.166", 8888)
-        val address = Inet4Address.getByName("127.0.0.1")
-        val serverSocket = ServerSocket( ChannelConstants.CHANNEL_PORT,50, address)
+        val executor = ThreadPoolExecutor(
+            1, Int.MAX_VALUE, 120, TimeUnit.SECONDS,
+            SynchronousQueue(), createThreadFactory()
+        ).also { executor = it }
 
-
-
-//        val addr: InetAddress = Inet4Address.getByAddress(byteArrayOf(127, 0, 0, 1))
-//        val serverSocket = ServerSocket(8080, 50, addr)
-
-
-        GetIpAddress.getLocalIpAddress(serverSocket)
-        Thread {
-            while (started.get()) {
+        executor.execute {
+            val serverSocket = ServerSocket(ChannelConstants.CHANNEL_PORT).also { serverSocket = it }
+            while (started.get() && !executor.isShutdown) {
                 val accept = serverSocket.accept()
-                val inputStream = accept.getInputStream()
-                val baos = ByteArrayOutputStream()
-                var readLen: Int
-                val buffer = ByteArray(1024)
-
-                while ((inputStream.read(buffer).also { readLen = it }) != -1) {
-                    baos.write(buffer, 0, readLen)
-                }
-
-                baos.close()
-                inputStream.close()
-
-                val byteArray = baos.toByteArray()
-                Log.d(TAG, "startService: ${byteArray.decodeToString()}")
-
+                val receiveTask = ReceiveTask(accept, receiveListener)
+                executor.execute(receiveTask)
             }
-        }.start()
+        }
     }
-
 
     fun stopService() {
-        started.set(false)
+        if (!started.compareAndSet(true, false)) return
+
+        serverSocket?.closeSafety()
+        serverSocket = null
+        executor?.shutdownNow()
+        executor = null
     }
+
+    private fun createThreadFactory(): ThreadFactory {
+        return ThreadFactory { runnable ->
+            val result = Thread(runnable, TAG)
+            result.isDaemon = true
+            result
+        }
+    }
+
+    private class ReceiveTask(
+        private val accept: Socket?,
+        private val receiveListener: ReceiveListener?
+    ) : Runnable {
+
+        override fun run() {
+            if (accept == null) {
+                receiveListener?.onError(NullPointerException("accept is null"))
+                return
+            }
+            var inputStream: InputStream? = null
+            try {
+                inputStream = accept.getInputStream()
+                val commonInfo = ChannelCommonMessage.ChannelCommonInfo.parseFrom(inputStream)
+                closeSafety(inputStream, accept)
+                receiveListener?.onReceived(commonInfo)
+            } catch (e: Throwable) {
+                receiveListener?.onError(e)
+            } finally {
+                closeSafety(inputStream, accept)
+            }
+        }
+    }
+}
+
+
+interface ReceiveListener {
+
+    fun onReceived(commonInfo: ChannelCommonMessage.ChannelCommonInfo)
+
+    fun onError(throwable: Throwable)
+
 }

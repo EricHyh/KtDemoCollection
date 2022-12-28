@@ -1,39 +1,34 @@
 package com.hyh.socketdemo.channel
 
-import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import java.net.InetAddress
 import java.net.NetworkInterface
-import java.net.ServerSocket
 import java.net.SocketException
 import java.util.*
 
 /**
- * TODO
+ * 读取设备本地IP
  *
  * @author eriche 2022/12/25
  */
 object GetIpAddress {
 
-    var IP: String? = null
-    var PORT = 0
+    private val mutableLocalIP: MutableLiveData<String?> = MutableLiveData()
+    val localIP: LiveData<String?>
+        get() = mutableLocalIP
 
-    val port: Int
-        get() = PORT
-
-    fun getLocalIpAddress(serverSocket: ServerSocket) {
+    fun initLocalIpAddress() {
         try {
             val en: Enumeration<NetworkInterface> = NetworkInterface.getNetworkInterfaces()
             while (en.hasMoreElements()) {
-                val intf: NetworkInterface = en.nextElement()
-                val enumIpAddr: Enumeration<InetAddress> = intf.inetAddresses
-                while (enumIpAddr.hasMoreElements()) {
-                    val inetAddress: InetAddress = enumIpAddr.nextElement()
-                    val mIP: String = inetAddress.hostAddress?.substring(0, 3) ?: ""
-                    if (mIP == "192") {
-                        IP = inetAddress.hostAddress //获取本地IP
-                        PORT = serverSocket.localPort //获取本地的PORT
-                        Log.e("ReceiveService", "" + IP)
-                        Log.e("ReceiveService", "" + PORT)
+                val element: NetworkInterface = en.nextElement()
+                val inetAddresses: Enumeration<InetAddress> = element.inetAddresses
+                while (inetAddresses.hasMoreElements()) {
+                    val inetAddress: InetAddress = inetAddresses.nextElement()
+                    val ip: String = inetAddress.hostAddress?.substring(0, 3) ?: ""
+                    if (ip == "192") {
+                        mutableLocalIP.postValue(ip)
                     }
                 }
             }

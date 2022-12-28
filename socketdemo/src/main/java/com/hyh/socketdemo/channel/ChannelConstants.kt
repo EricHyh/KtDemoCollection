@@ -1,7 +1,7 @@
 package com.hyh.socketdemo.channel
 
 /**
- * TODO
+ * 常量定义
  *
  * @author eriche 2022/12/25
  */

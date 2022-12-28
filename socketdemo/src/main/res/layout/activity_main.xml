@@ -13,6 +13,12 @@
         android:text="开启接收服务" />
 
     <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_start_sender"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="开启发送服务" />
+
+    <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btn_send"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
