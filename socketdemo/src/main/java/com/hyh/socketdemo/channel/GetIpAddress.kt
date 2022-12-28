@@ -1,5 +1,6 @@
 package com.hyh.socketdemo.channel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import java.net.InetAddress
@@ -14,6 +15,8 @@ import java.util.*
  */
 object GetIpAddress {
 
+    private const val TAG = "GetIpAddress"
+
     private val mutableLocalIP: MutableLiveData<String?> = MutableLiveData()
     val localIP: LiveData<String?>
         get() = mutableLocalIP
@@ -27,8 +30,9 @@ object GetIpAddress {
                 while (inetAddresses.hasMoreElements()) {
                     val inetAddress: InetAddress = inetAddresses.nextElement()
                     val ip: String = inetAddress.hostAddress?.substring(0, 3) ?: ""
-                    if (ip == "192") {
+                    if (inetAddress.isSiteLocalAddress) {
                         mutableLocalIP.postValue(ip)
+                        return
                     }
                 }
             }
