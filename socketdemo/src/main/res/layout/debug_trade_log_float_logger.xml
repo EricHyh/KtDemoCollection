@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/debug_btn_float_setting"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:background="#553EB17A"
+        android:padding="5dp"
+        android:src="@mipmap/icon_set_20_h1"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageView
+        android:id="@+id/debug_btn_float_clear"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="#553EB17A"
+        android:padding="10dp"
+        android:src="@mipmap/icon_delete"
+        app:layout_constraintStart_toEndOf="@+id/debug_recycler_logger"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageView
+        android:id="@+id/debug_btn_float_zoom"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="#553EB17A"
+        android:padding="10dp"
+        android:src="@mipmap/icon_full_screen"
+        app:layout_constraintBottom_toBottomOf="@+id/debug_recycler_logger"
+        app:layout_constraintStart_toEndOf="@+id/debug_recycler_logger" />
+
+    <View
+        android:id="@+id/placeholder_view"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#553EB17A"
+        app:layout_constraintBottom_toTopOf="@id/debug_btn_float_zoom"
+        app:layout_constraintLeft_toRightOf="@id/debug_recycler_logger"
+        app:layout_constraintRight_toRightOf="@id/debug_btn_float_clear"
+        app:layout_constraintTop_toBottomOf="@id/debug_btn_float_clear" />
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/debug_recycler_logger"
+        android:layout_width="300dp"
+        android:layout_height="500dp"
+        android:background="#553EB17A"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

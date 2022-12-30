@@ -27,6 +27,9 @@ fun tryJoinCrazyThursday() {
 
 fun main() {
 
+
+    println("-".toBigDecimalOrNull())
+
     val zero = BigDecimal.ZERO
     val toBigDecimal = "-1.00005500".toBigDecimal()
 
