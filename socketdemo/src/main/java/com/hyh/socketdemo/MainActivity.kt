@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import channel_common_message.ChannelCommonMessage
+import com.hyh.socketdemo.channel.message.ChannelCommonMessage
 import com.google.protobuf.ByteString
 import com.hyh.socketdemo.channel.ReceiveListener
 import com.hyh.socketdemo.channel.ReceiveService
@@ -51,6 +51,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        Log.d(TAG, "onCreate: ")
+        
         findViewById<View>(R.id.btn_start_receiver).setOnClickListener {
             receiveService.startService()
         }
