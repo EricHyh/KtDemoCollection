@@ -4,12 +4,14 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.hyh.socketdemo.channel.message.ChannelCommonMessage
 import com.google.protobuf.ByteString
 import com.hyh.socketdemo.channel.ReceiveListener
 import com.hyh.socketdemo.channel.ReceiveService
 import com.hyh.socketdemo.channel.SendService
+import com.hyh.socketdemo.logview.TradeProtocolLogHomeView
 import test_message.TestMessage
 
 /**
@@ -52,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         Log.d(TAG, "onCreate: ")
-        
+
         findViewById<View>(R.id.btn_start_receiver).setOnClickListener {
             receiveService.startService()
         }
@@ -76,6 +78,10 @@ class MainActivity : AppCompatActivity() {
                     .build()
             )
         }
+
+        val logHomeView = TradeProtocolLogHomeView(this)
+
+        getCurrentRoot()?.addView(logHomeView)
     }
 
     override fun onDestroy() {
@@ -84,4 +90,22 @@ class MainActivity : AppCompatActivity() {
         sendService.stopService()
     }
 
+
+    private fun getCurrentRoot(): FrameLayout? {
+        this.let {
+            var root: View? = it.findViewById(androidx.appcompat.R.id.action_bar_root)
+            if (root != null) {
+                val parent = root.parent
+                if (parent != null && parent is FrameLayout) {
+                    return parent
+                }
+            } else {
+                root = it.findViewById(android.R.id.content)
+                if (root is FrameLayout) {
+                    return root
+                }
+            }
+        }
+        return null
+    }
 }
