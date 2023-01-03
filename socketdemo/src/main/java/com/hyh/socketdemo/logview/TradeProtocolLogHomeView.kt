@@ -39,6 +39,8 @@ class TradeProtocolLogHomeView @JvmOverloads constructor(context: Context, attrs
         minFloatContainerHeight = resources.displayMetrics.density * 80
 
         initFloatZoom()
+
+
     }
 
     @SuppressLint("ClickableViewAccessibility")
