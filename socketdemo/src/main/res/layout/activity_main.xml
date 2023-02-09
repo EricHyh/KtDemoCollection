@@ -24,4 +24,11 @@
         android:layout_height="wrap_content"
         android:text="发送数据" />
 
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_pull_file"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="导出文件" />
+
 </LinearLayout>

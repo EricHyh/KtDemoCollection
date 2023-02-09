@@ -6,12 +6,14 @@ import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.distinctUntilChanged
+import androidx.lifecycle.map
 import com.hyh.socketdemo.channel.message.ChannelCommonMessage
 import com.google.protobuf.ByteString
 import com.hyh.socketdemo.channel.ReceiveListener
 import com.hyh.socketdemo.channel.ReceiveService
 import com.hyh.socketdemo.channel.SendService
-import com.hyh.socketdemo.logview.TradeProtocolLogHomeView
 import test_message.TestMessage
 
 /**
@@ -78,10 +80,6 @@ class MainActivity : AppCompatActivity() {
                     .build()
             )
         }
-
-        val logHomeView = TradeProtocolLogHomeView(this)
-
-        getCurrentRoot()?.addView(logHomeView)
     }
 
     override fun onDestroy() {

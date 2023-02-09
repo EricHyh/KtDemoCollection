@@ -27,6 +27,9 @@ fun tryJoinCrazyThursday() {
 
 fun main() {
 
+    listOf(1,2,3).onEach {
+        println("onEach: $it")
+    }
 
     println("-".toBigDecimalOrNull())
 
