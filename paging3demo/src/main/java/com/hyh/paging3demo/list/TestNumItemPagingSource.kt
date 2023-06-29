@@ -136,7 +136,7 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                     .subscribeOn(Schedulers.io())
                     .map {
                         Log.d(TAG, "load: Refresh ${Thread.currentThread()}")
-                        SystemClock.sleep(6000)
+                        //SystemClock.sleep(6000)
                         val items = mutableListOf<FlatListItem>()
                         items.add(GroupTitleListItem(0, isExpand(0), invoke))
                         if (isExpand(0)) {
@@ -167,7 +167,7 @@ class TestNumItemPagingSource : SimpleItemPagingSource<Int>(0) {
                     .subscribeOn(Schedulers.io())
                     .map {
                         Log.d(TAG, "load: Append ${Thread.currentThread()}")
-                        SystemClock.sleep(2000)
+                        //SystemClock.sleep(2000)
                         val items = mutableListOf<FlatListItem>()
                         val param = params.param ?: 0
 
@@ -375,18 +375,17 @@ class GroupTitleListItem constructor(
         (viewHolder.itemView as TextView).text = "第${group}组 - $expandStr"
         viewHolder.itemView.setOnClickListener {
 
-            val attachedSourceToken = attachedSourceToken!!
-            val localPosition = localPosition
-
+//            val attachedSourceToken = attachedSourceToken!!
+//            val localPosition = localPosition
 
 
 
             clickInvoke(group)
 
 
-            viewHolder.runWithListItem<GroupTitleListItem> {
-                viewHolder.getFlatListManager()?.scrollItem2Top(attachedSourceToken, localPosition)
-            }
+//            viewHolder.runWithListItem<GroupTitleListItem> {
+//                viewHolder.getFlatListManager()?.scrollItem2Top(attachedSourceToken, localPosition)
+//            }
         }
     }
 

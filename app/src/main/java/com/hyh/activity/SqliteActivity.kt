@@ -25,14 +25,15 @@ class SqliteActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val passphrase: ByteArray = SQLiteDatabase.getBytes("userEnteredPassphrase".toCharArray())
         val factory = SupportFactory(passphrase)
-        val room: SomeDatabase = Room.databaseBuilder(this, SomeDatabase::class.java, "DB_NAME")
+        /*val room: SomeDatabase = Room.databaseBuilder(this, SomeDatabase::class.java, "DB_NAME")
             .openHelperFactory(factory)
-            .build()
+            .build()*/
     }
 
 }
 
 
+/*
 class SomeDatabase : RoomDatabase() {
 
     override fun createOpenHelper(config: DatabaseConfiguration?): SupportSQLiteOpenHelper {
@@ -47,4 +48,4 @@ class SomeDatabase : RoomDatabase() {
         TODO("Not yet implemented")
     }
 
-}
+}*/

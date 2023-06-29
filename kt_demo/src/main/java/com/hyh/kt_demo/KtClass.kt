@@ -8,6 +8,9 @@ import java.lang.RuntimeException
 import java.lang.reflect.Proxy
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
+import java.util.*
 import kotlin.concurrent.thread
 
 
@@ -27,7 +30,52 @@ fun tryJoinCrazyThursday() {
 
 fun main() {
 
-    listOf(1,2,3).onEach {
+    val any1 = listOf(0, 1, 2, 3).any {
+        println("any $it")
+        if (it == 1) return@any true
+        if (it == 3) return@any true
+        false
+    }
+    println("any1 $any1")
+
+
+    val bigDecimal = BigDecimal("0.0000000000000")
+    val toString = bigDecimal.toString()
+    val toBigDecimalOrNull = toString.toBigDecimalOrNull()
+
+
+
+    val instance = Calendar.getInstance()
+    instance.timeInMillis = System.currentTimeMillis()
+    instance.timeZone = TimeZone.getTimeZone("America/New_York")
+    //instance.set(Calendar.HOUR_OF_DAY, 25)
+    //instance.set(Calendar.MINUTE, 60)
+
+    val hour = instance.get(Calendar.HOUR_OF_DAY)
+    val minute = instance.get(Calendar.MINUTE)
+    val WEDNESDAY = instance.get(Calendar.WEDNESDAY)
+    val DAY_OF_WEEK = instance.get(Calendar.DAY_OF_WEEK)
+    val DAY_OF_WEEK_IN_MONTH = instance.get(Calendar.DAY_OF_WEEK_IN_MONTH)
+
+
+    val quantity = "124300".toBigDecimal()
+
+    val countFormat = DecimalFormat("###,###,###.#########", DecimalFormatSymbols(Locale.CHINA))
+    val format = countFormat.format(quantity.stripTrailingZeros())
+
+    println(format)
+
+
+    val decimalFormat = DecimalFormat()
+    decimalFormat.decimalFormatSymbols = DecimalFormatSymbols(Locale.CHINA)
+    decimalFormat.isGroupingUsed = true
+    val format1 = decimalFormat.format(1000)
+    println(format1)
+
+
+
+
+    listOf(1, 2, 3).onEach {
         println("onEach: $it")
     }
 

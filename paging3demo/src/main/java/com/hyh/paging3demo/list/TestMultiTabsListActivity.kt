@@ -11,6 +11,7 @@ import com.hyh.list.SingleItemSourceRepo
 import com.hyh.list.adapter.MultiItemSourceAdapter
 import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
+import com.hyh.paging3demo.list.animator.TestSimpleItemAnimator
 
 class TestMultiTabsListActivity : AppCompatActivity() {
 
@@ -23,7 +24,7 @@ class TestMultiTabsListActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
-        recyclerView.itemAnimator = null
+        recyclerView.itemAnimator = TestSimpleItemAnimator()
 
 
 

@@ -3,6 +3,7 @@ package com.hyh.paging3demo.widget.horizontal
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -21,15 +22,41 @@ import java.lang.ref.WeakReference
  *
  * @author eriche 2021/12/29
  */
-class RecyclerViewScrollLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyle: Int = 0) :
-    BaseHorizontalScrollLayout(context, attrs, defStyle) {
+class RecyclerViewScrollLayout @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyle: Int = 0
+) : BaseHorizontalScrollLayout(context, attrs, defStyle) {
 
     companion object {
         private const val TAG = "HorizontalScrollLayout"
     }
 
     private val fixedViewContainer: FrameLayout = FrameLayout(context)
-    private val recyclerView: RecyclerView = RecyclerView(context)
+    private val recyclerView: RecyclerView = object : RecyclerView(context) {
+
+        val onScrollListener = object : OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                Log.d(TAG, "onScrolled: ${recyclerView.hashCode()}, $dx")
+            }
+        }
+
+        override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    addOnScrollListener(onScrollListener)
+                }
+                MotionEvent.ACTION_UP -> {
+                    removeOnScrollListener(onScrollListener)
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    removeOnScrollListener(onScrollListener)
+                }
+            }
+            return super.dispatchTouchEvent(ev)
+        }
+    }
     private val gridAdapter: GridAdapter = GridAdapter()
 
     init {

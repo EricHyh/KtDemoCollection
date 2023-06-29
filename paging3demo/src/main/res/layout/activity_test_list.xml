@@ -228,6 +228,20 @@
     </com.hyh.paging3demo.widget.horizontal.internal.NestedHorizontalScrollView>
 
 
+    <FrameLayout
+        android:id="@+id/cb_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <com.hyh.paging3demo.widget.TestCheckBox
+            android:id="@+id/cb"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+    </FrameLayout>
+
+
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

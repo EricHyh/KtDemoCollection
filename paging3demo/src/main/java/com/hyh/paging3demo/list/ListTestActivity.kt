@@ -15,12 +15,16 @@ import com.hyh.page.pageContext
 import com.hyh.paging3demo.R
 import android.os.Build
 import android.view.WindowManager
+import android.widget.CheckBox
+import android.widget.FrameLayout
+import android.widget.Toast
 import java.lang.Exception
 
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.hyh.list.decoration.FillBottomDecoration
+import com.hyh.paging3demo.list.animator.TestSimpleItemAnimator
 import com.hyh.sticky.MultiSourceStickyItemsAdapter
 import com.hyh.sticky.StickyItemsLayout
 
@@ -30,8 +34,10 @@ class ListTestActivity : AppCompatActivity() {
     private val TAG = "ListTestActivity_"
 
     companion object {
-        val repo = NumItemSourceRepo()
+
     }
+
+    val repo = NumItemSourceRepo()
 
 
     val handler = Handler()
@@ -56,7 +62,7 @@ class ListTestActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recycler_view)
         recyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         recyclerView.adapter = multiSourceAdapter
-        recyclerView.itemAnimator = null
+        recyclerView.itemAnimator = TestSimpleItemAnimator()
         recyclerView.addItemDecoration(FillBottomDecoration())
 
 
@@ -92,6 +98,17 @@ class ListTestActivity : AppCompatActivity() {
         /*ListConfig.aliveItems.observeForever {
             Log.d(TAG, "aliveItems: $it")
         }*/
+
+        //findViewById<CheckBox>(R.id.cb)
+        val checkBox = findViewById<CheckBox>(R.id.cb)
+        checkBox.isClickable = false
+        findViewById<FrameLayout>(R.id.cb_container).setOnClickListener {
+            Toast.makeText(this, "点击", Toast.LENGTH_SHORT).show()
+            checkBox.isChecked = !checkBox.isChecked
+        }
+
+
+
     }
 
     fun refresh(v: View) {

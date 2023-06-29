@@ -85,6 +85,7 @@ dependencies {
     implementation deps.room.runtime
     implementation deps.room.ktx
     implementation deps.room.paging
+
     implementation deps.lifecycle.livedata_ktx
     implementation deps.lifecycle.runtime
     implementation deps.paging_runtime
