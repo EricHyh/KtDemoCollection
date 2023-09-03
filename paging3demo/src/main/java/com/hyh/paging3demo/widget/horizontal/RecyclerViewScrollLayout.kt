@@ -15,6 +15,7 @@ import com.hyh.paging3demo.BuildConfig
 import com.hyh.paging3demo.widget.horizontal.internal.BaseHorizontalScrollLayout
 import com.hyh.paging3demo.widget.horizontal.internal.RecyclerViewScrollable
 import com.hyh.paging3demo.widget.horizontal.internal.Scrollable
+import com.hyh.paging3demo.widget.horizontal.internal.SyncHorizontalScrollRecyclerView
 import java.lang.ref.WeakReference
 
 /**
@@ -33,38 +34,46 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(
     }
 
     private val fixedViewContainer: FrameLayout = FrameLayout(context)
-    private val recyclerView: RecyclerView = object : RecyclerView(context) {
+    private val recyclerView: SyncHorizontalScrollRecyclerView =
+        SyncHorizontalScrollRecyclerView(context)
 
-        val onScrollListener = object : OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                Log.d(TAG, "onScrolled: ${recyclerView.hashCode()}, $dx")
-            }
-        }
+    private val recyclerViewScrollable: RecyclerViewScrollable
 
-        override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-            when (ev.actionMasked) {
-                MotionEvent.ACTION_DOWN -> {
-                    addOnScrollListener(onScrollListener)
-                }
-                MotionEvent.ACTION_UP -> {
-                    removeOnScrollListener(onScrollListener)
-                }
-                MotionEvent.ACTION_CANCEL -> {
-                    removeOnScrollListener(onScrollListener)
-                }
-            }
-            return super.dispatchTouchEvent(ev)
-        }
-    }
     private val gridAdapter: GridAdapter = GridAdapter()
 
     init {
-        addView(fixedViewContainer, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        addView(
+            fixedViewContainer,
+            LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        )
         addView(recyclerView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        recyclerView.layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+        recyclerView.layoutManager =
+            LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         recyclerView.adapter = gridAdapter
+        recyclerViewScrollable = RecyclerViewScrollable(recyclerView)
         initView()
+
+        recyclerView.scrollListener = { data ->
+            val scrollState = data.recyclerView.scrollState.let { scrollState ->
+                when (scrollState) {
+                    RecyclerView.SCROLL_STATE_IDLE -> {
+                        ScrollState.IDLE
+                    }
+                    RecyclerView.SCROLL_STATE_DRAGGING -> {
+                        ScrollState.SCROLL
+                    }
+                    RecyclerView.SCROLL_STATE_SETTLING -> {
+                        ScrollState.SETTLING
+                    }
+                    else -> ScrollState.IDLE
+                }
+            }
+            Log.d(TAG, "scrollListener: scrollState = $scrollState")
+            notifyScrollEvent(
+                scrollState,
+                recyclerViewScrollable.getScrollData(data.dx)
+            )
+        }
     }
 
     override fun findFixedView(): View = fixedViewContainer
@@ -72,7 +81,7 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(
     override fun findScrollableView(): View = recyclerView
 
     override fun asScrollable(scrollableView: View): Scrollable<*> {
-        return RecyclerViewScrollable(recyclerView)
+        return recyclerViewScrollable
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -169,15 +178,24 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
     private val differ: AsyncListDiffer<IGrid<GridHolder>> =
         AsyncListDiffer(this, object : DiffUtil.ItemCallback<IGrid<GridHolder>>() {
 
-            override fun areItemsTheSame(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Boolean {
+            override fun areItemsTheSame(
+                oldItem: IGrid<GridHolder>,
+                newItem: IGrid<GridHolder>
+            ): Boolean {
                 return oldItem.gridId == newItem.gridId
             }
 
-            override fun areContentsTheSame(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Boolean {
+            override fun areContentsTheSame(
+                oldItem: IGrid<GridHolder>,
+                newItem: IGrid<GridHolder>
+            ): Boolean {
                 return oldItem.areContentsTheSame(newItem)
             }
 
-            override fun getChangePayload(oldItem: IGrid<GridHolder>, newItem: IGrid<GridHolder>): Any? {
+            override fun getChangePayload(
+                oldItem: IGrid<GridHolder>,
+                newItem: IGrid<GridHolder>
+            ): Any? {
                 return null
             }
         })
@@ -206,10 +224,14 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
             if (BuildConfig.DEBUG) {
                 throw IllegalStateException("GridAdapter.onCreateViewHolder: gridHolderFactory can't be null, viewType = $viewType")
             } else {
-                Log.e(TAG, "GridAdapter.onCreateViewHolder: gridHolderFactory can't be null, viewType = $viewType")
+                Log.e(
+                    TAG,
+                    "GridAdapter.onCreateViewHolder: gridHolderFactory can't be null, viewType = $viewType"
+                )
             }
         }
-        val holder = gridHolderFactory?.invoke(parent) ?: object : GridHolder(ErrorItemView(parent.context)) {}
+        val holder = gridHolderFactory?.invoke(parent) ?: object :
+            GridHolder(ErrorItemView(parent.context)) {}
         return GridViewHolder(holder)
     }
 
@@ -223,7 +245,11 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
         }
     }
 
-    override fun onBindViewHolder(holder: GridViewHolder, position: Int, payloads: MutableList<Any>) {
+    override fun onBindViewHolder(
+        holder: GridViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
         val currentList = differ.currentList
         if (position in currentList.indices) {
             val grid = differ.currentList[position]
@@ -271,7 +297,7 @@ class GridAdapter : RecyclerView.Adapter<GridViewHolder>() {
 
         private fun findViewItemData(viewType: Int): IGrid<*>? {
             val items = differ.currentList
-            if (items.isNullOrEmpty()) return null
+            if (items.isEmpty()) return null
             val obtainGridsSnapshot = obtainGridsSnapshot()
             obtainGridsSnapshot.grids.addAll(items)
             var grid: IGrid<*>? = null

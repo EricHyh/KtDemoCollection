@@ -1,5 +1,7 @@
 package com.hyh.paging3demo.widget.horizontal.internal
 
+import com.hyh.paging3demo.widget.horizontal.ScrollState
+
 /**
  * 可滑动控件接口描述
  *
@@ -9,7 +11,7 @@ interface Scrollable<T : IScrollData> {
 
     fun getScrollData(): T
 
-    fun scrollTo(t: T)
+    fun scrollTo(scrollState: ScrollState, t: T)
 
     fun resetScroll()
 
@@ -22,7 +24,7 @@ interface IScrollData : Cloneable {
 
     public override fun clone(): Any
 
-    fun copy(other: IScrollData)
+    fun copy(other: IScrollData): Boolean
 
 }
 

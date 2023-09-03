@@ -3,6 +3,7 @@ package com.hyh.paging3demo.widget.horizontal.internal
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -57,7 +58,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
         }
 
     private lateinit var fixedView: View
-    private lateinit var scrollableView: View
+    lateinit var scrollableView: View
     private lateinit var scrollable: Scrollable<IScrollData>
 
     private lateinit var fixedBehavior: FixedBehavior
@@ -124,6 +125,12 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
         requestLayout()
     }
 
+    protected fun notifyScrollEvent(
+        scrollState: ScrollState,
+        data: Any
+    ) {
+        helper?.notifyScrollEvent(scrollState, data)
+    }
 
     fun bindHorizontalScrollSyncHelper(helper: HorizontalScrollSyncHelper) {
         val oldHelper = this.helper
@@ -162,6 +169,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
     }
 
     override fun onScroll(scrollState: ScrollState, data: Any) {
+        Log.d(TAG, "onScroll: ${this.hashCode()}, $isAttachedToWindow, $initialized, $scrollState")
         if (!isAttachedToWindow) return
         if (initialized) {
             when (scrollState) {
@@ -170,7 +178,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
                     fixedBehavior.currentDragWith = 0
                 }
                 ScrollState.IDLE -> {
-                    scrollable.scrollTo(data as IScrollData)
+                    scrollable.scrollTo(scrollState, data as IScrollData)
 
                     val pendingIdleScrollData = this.pendingIdleScrollData
                     this.pendingIdleScrollData = null
@@ -181,7 +189,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
                     fixedBehavior.currentDragWith = 0
                 }
                 ScrollState.SCROLL -> {
-                    scrollable.scrollTo(data as IScrollData)
+                    scrollable.scrollTo(scrollState, data as IScrollData)
                     fixedBehavior.currentDragWith = 0
                 }
                 ScrollState.DRAG -> {
@@ -193,7 +201,7 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout, ScrollSyncObserve
                     fixedBehavior.currentDragWith = data as Int
                 }
                 ScrollState.SETTLING -> {
-                    scrollable.scrollTo(data as IScrollData)
+                    scrollable.scrollTo(scrollState, data as IScrollData)
                     fixedBehavior.currentDragWith = 0
                 }
             }
