@@ -4,13 +4,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import java.lang.RuntimeException
 import java.lang.reflect.Proxy
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.*
+import java.util.regex.Pattern
 import kotlin.concurrent.thread
 
 
@@ -28,21 +28,86 @@ fun tryJoinCrazyThursday() {
     throw NoMoneyException("KFC.kt Crazy Thursday whoever gives me \$50, I will thank him.")
 }
 
+fun formatValueWithPlaces(
+    value: BigDecimal,
+    minDecimalPlaces: Int,
+    maxDecimalPlaces: Int = minDecimalPlaces
+): String {
+
+    fun createPattern(): String {
+        if (maxDecimalPlaces <= 0) {
+            return "##,###,##0"
+        }
+        val diff = if (maxDecimalPlaces < minDecimalPlaces) {
+            0
+        } else {
+            maxDecimalPlaces - minDecimalPlaces
+        }
+        return "##,###,##0.${("0".repeat(minDecimalPlaces))}${("#".repeat(diff))}"
+    }
+
+    val decimalFormat = DecimalFormat(createPattern(), DecimalFormatSymbols(Locale.CHINA))
+    decimalFormat.roundingMode = RoundingMode.FLOOR
+    return decimalFormat.format(value)
+}
+
 fun main() {
 
-    val any1 = listOf(0, 1, 2, 3).any {
-        println("any $it")
-        if (it == 1) return@any true
-        if (it == 3) return@any true
-        false
+    val str = "xxx{{t11p}}} good"
+    val regex = "\\{\\{.*}}"
+    val compile = Pattern.compile(regex)
+    val matcher = compile.matcher(str)
+    var start = -1
+    var end = -1
+    while (matcher.find()) {
+        //需要找到最后一个
+        start = matcher.start()
+        end = matcher.end()
+        break
     }
-    println("any1 $any1")
+    val substring = str.substring(start + 2, end - 3)
+    println("index = $start, $end, $substring")
+
+
+
+    val formatValue1 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 0, 0
+    )
+    val formatValue2 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 1, 1
+    )
+    val formatValue3 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 1, 2
+    )
+    val formatValue4 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 1, 3
+    )
+    val formatValue5 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 2, 2
+    )
+    val formatValue6 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 2, 3
+    )
+    val formatValue7 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 3, 3
+    )
+    val formatValue8 = formatValueWithPlaces(
+        BigDecimal("111111111230.116"), 3, 4
+    )
+
+    println("formatValue1 $formatValue1")
+    println("formatValue2 $formatValue2")
+    println("formatValue3 $formatValue3")
+    println("formatValue4 $formatValue4")
+    println("formatValue5 $formatValue5")
+    println("formatValue6 $formatValue6")
+    println("formatValue7 $formatValue7")
+    println("formatValue8 $formatValue8")
 
 
     val bigDecimal = BigDecimal("0.0000000000000")
     val toString = bigDecimal.toString()
     val toBigDecimalOrNull = toString.toBigDecimalOrNull()
-
 
 
     val instance = Calendar.getInstance()

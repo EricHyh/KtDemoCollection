@@ -126,7 +126,7 @@ class ReceiveService {
         return serverSocket
     }
 
-    private fun releaseServerSocket(serverSocket: ServerSocket) {
+    private fun releaseServerSocket(serverSocket: ServerSocket?) {
         synchronized(serverSocketLock) {
             if (this.serverSocket === serverSocket) {
                 this.serverSocket = null
@@ -144,23 +144,23 @@ class ReceiveService {
 
     private fun createAndRunService(executor: ThreadPoolExecutor): Runnable {
         return Runnable {
-            val serverSocket = createServerSocket()
-            while (started.get() && !executor.isShutdown) {
-                var accept: Socket?
-                try {
-                    accept = serverSocket.accept()
+            var serverSocket: ServerSocket? = null
+            try {
+                serverSocket = createServerSocket()
+                while (started.get() && !executor.isShutdown) {
+                    val accept: Socket? = serverSocket.accept()
                     val receiveTask = ReceiveTask(accept, receiveListener)
                     executor.execute(receiveTask)
                     retryCount.set(0)
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                } finally {
-                    releaseServerSocket(serverSocket)
-                    kotlin.runCatching {
-                        Thread.sleep((500 * retryCount.incrementAndGet()).toLong())
-                    }
-                    retryService()
                 }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            } finally {
+                releaseServerSocket(serverSocket)
+                kotlin.runCatching {
+                    Thread.sleep((500 * retryCount.incrementAndGet()).toLong())
+                }
+                retryService()
             }
         }
     }

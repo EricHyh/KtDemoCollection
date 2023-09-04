@@ -3,6 +3,9 @@ package com.hyh.paging3demo.list
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -26,6 +29,10 @@ class ScrollLayoutTestActivity : AppCompatActivity() {
         private const val TAG = "ScrollLayoutTestActivity"
     }
 
+    private val action = Runnable{
+        Log.d("XXXXX", "onCreate: ")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         RecyclerView(this).apply {
@@ -38,8 +45,41 @@ class ScrollLayoutTestActivity : AppCompatActivity() {
         }.apply {
             setContentView(this)
         }
+
+        val handler = Handler(Looper.getMainLooper())
+        handler.post(action)
+        handler.removeCallbacks(action)
+
+        val testKt = TestJava()
+        //testKt.add(action)
+        //testKt.remove(action)
     }
 }
+
+
+//interface TextInterface {
+//
+//    fun test()
+//
+//}
+//
+//
+//class TestKt() {
+//
+//    val list: MutableList<TextInterface> = mutableListOf()
+//
+//    fun add(test: TextInterface) {
+//        Log.d("TestKt", "add: $test")
+//        list.add(test)
+//    }
+//
+//    fun remove(test: TextInterface) {
+//        Log.d("TestKt", "remove: $test")
+//        list.remove(test)
+//        Log.d("TestKt", "remove: ${list.size}")
+//    }
+//
+//}
 
 
 class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {

@@ -3,7 +3,6 @@ package com.hyh.paging3demo.widget.horizontal
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -30,7 +29,7 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(
 ) : BaseHorizontalScrollLayout(context, attrs, defStyle) {
 
     companion object {
-        private const val TAG = "HorizontalScrollLayout"
+        private const val TAG = "RecyclerViewScrollLayout"
     }
 
     private val fixedViewContainer: FrameLayout = FrameLayout(context)
@@ -68,7 +67,6 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(
                     else -> ScrollState.IDLE
                 }
             }
-            Log.d(TAG, "scrollListener: scrollState = $scrollState")
             notifyScrollEvent(
                 scrollState,
                 recyclerViewScrollable.getScrollData(data.dx)

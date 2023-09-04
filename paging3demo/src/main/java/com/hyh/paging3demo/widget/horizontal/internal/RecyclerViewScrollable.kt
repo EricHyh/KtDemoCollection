@@ -1,16 +1,11 @@
 package com.hyh.paging3demo.widget.horizontal.internal
 
-import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.widget.horizontal.ScrollState
 
 class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
     Scrollable<RecyclerViewScrollable.RecyclerViewScrollData> {
-
-    companion object {
-        private const val TAG = "RecyclerViewScrollable"
-    }
 
     private val linearLayoutManager: LinearLayoutManager =
         recyclerView.layoutManager as LinearLayoutManager
@@ -29,7 +24,6 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
         return calculateScrollData.apply {
             this.position = position
             this.positionOffset = holder?.itemView?.left
-            //this.globalOffset = if (position >= 0 && holder?.itemView?.left != null) -1 else recyclerView.computeHorizontalScrollOffset()
             this.globalOffset = recyclerView.computeHorizontalScrollOffset()
         }
     }
@@ -37,11 +31,6 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
     fun getScrollData(
         scrollDx: Int,
     ): RecyclerViewScrollData.ScrolledData {
-//        return RecyclerViewScrollData.ScrolledData(
-//            recyclerView,
-//            scrollDx,
-//            version++
-//        )
         return scrollData.also {
             it.scrollDx = scrollDx
             it.version = it.version + 1
@@ -52,17 +41,14 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
         if (inScrolling) return
         when (t) {
             is RecyclerViewScrollData.ScrolledData -> {
-                Log.d(TAG, "scrollTo1: ${recyclerView.hashCode()}, ${t.scrollDx}")
                 if (t.targetRecyclerView === recyclerView) {
                     return
                 }
-                Log.d(TAG, "scrollTo2: ${recyclerView.hashCode()}, ${t.scrollDx}")
                 inScrolling = true
                 recyclerView.scrollBy(t.scrollDx, 0)
                 inScrolling = false
             }
             is RecyclerViewScrollData.CalculateScrollData -> {
-                Log.d(TAG, "scrollTo3: ")
                 if (scrollState == ScrollState.SCROLL || scrollState == ScrollState.SETTLING) {
                     return
                 }
@@ -136,7 +122,6 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
     }
 
     override fun stopScroll() {
-        Log.d(TAG, "stopScroll: ")
         recyclerView.stopScroll()
     }
 }

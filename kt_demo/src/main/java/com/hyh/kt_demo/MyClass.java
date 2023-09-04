@@ -14,6 +14,8 @@ public class MyClass {
 
     public static void main(String[] args) {
 
+        String s5 = testSwitch(1);
+        String s4 = testSwitch(2);
 
         String numStr1 = "0";
         String numStr2 = "-0.00000000000";
@@ -30,7 +32,6 @@ public class MyClass {
         int colorFromThree1 = getColorFromThree(num1, 0.0);
         int colorFromThree2 = getColorFromThree(num2, 0.0);
         int colorFromThree3 = getColorFromThree(num3, 0.0);
-
 
         String signum1 = getSignum(num1);
         String signum2 = getSignum(num2);
@@ -91,6 +92,21 @@ public class MyClass {
         }
 
 
+    }
+
+
+    private static String testSwitch(int value)
+    {
+        String result = "default";
+        switch (value)
+        {
+            case 1:
+            {
+                result = "1";
+                break;
+            }
+        }
+        return result;
     }
 
 

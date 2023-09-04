@@ -1,8 +1,6 @@
 package com.hyh.paging3demo.widget.horizontal
 
-import android.util.Log
 import com.hyh.paging3demo.widget.horizontal.internal.IScrollData
-import com.hyh.paging3demo.widget.horizontal.internal.RecyclerViewScrollable
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -14,8 +12,6 @@ import kotlin.collections.HashSet
 class HorizontalScrollSyncHelper {
 
     private var scrollDataWrapper: ScrollDataWrapper = ScrollDataWrapper(ScrollState.INITIAL, Unit)
-
-    private var scrollDataWrapperPool = ScrollDataWrapperPool()
 
     private val scrollSyncObservable = ScrollSyncObservable()
 
@@ -46,32 +42,25 @@ class HorizontalScrollSyncHelper {
         data: Any
     ) {
         if (scrollState == scrollDataWrapper.scrollState && data == scrollDataWrapper.data) return
-
-        if (scrollDataWrapper.notifying) {
-            val obtain = scrollDataWrapperPool.obtain(scrollState, data)
-            scrollSyncObservable.setScrollData(obtain)
-            scrollDataWrapperPool.release(obtain)
-        } else {
-            scrollDataWrapper.notifying = true
-            scrollDataWrapper.scrollState = scrollState
-            scrollDataWrapper.data = when (scrollState) {
-                ScrollState.IDLE, ScrollState.SCROLL, ScrollState.SETTLING -> {
-                    val newScrollData = data as IScrollData
-                    val oldScrollData = scrollDataWrapper.data
-                    if (oldScrollData is IScrollData && oldScrollData.copy(newScrollData)) {
-                        oldScrollData
-                    } else {
-                        newScrollData.clone()
-                    }
-                }
-                else -> {
-                    data
+        if (scrollDataWrapper.notifying) return
+        scrollDataWrapper.notifying = true
+        scrollDataWrapper.scrollState = scrollState
+        scrollDataWrapper.data = when (scrollState) {
+            ScrollState.IDLE, ScrollState.SCROLL, ScrollState.SETTLING -> {
+                val newScrollData = data as IScrollData
+                val oldScrollData = scrollDataWrapper.data
+                if (oldScrollData is IScrollData && oldScrollData.copy(newScrollData)) {
+                    oldScrollData
+                } else {
+                    newScrollData.clone()
                 }
             }
-            scrollSyncObservable.setScrollData(scrollDataWrapper)
-            scrollDataWrapper.notifying = false
+            else -> {
+                data
+            }
         }
-
+        scrollSyncObservable.setScrollData(scrollDataWrapper)
+        scrollDataWrapper.notifying = false
     }
 
     internal fun notifyActionDown(publisher: ScrollSyncObserver) {
@@ -83,32 +72,7 @@ class HorizontalScrollSyncHelper {
         actionDownPublishers.remove(publisher)
     }
 
-    private class ScrollDataWrapperPool {
-
-        private val pool: MutableList<ScrollDataWrapper> = mutableListOf()
-
-        fun obtain(
-            scrollState: ScrollState,
-            data: Any
-        ): ScrollDataWrapper {
-            return pool.removeFirstOrNull()?.also {
-                it.scrollState = scrollState
-                it.data = data
-            } ?: ScrollDataWrapper(scrollState, data)
-        }
-
-        fun release(scrollDataWrapper: ScrollDataWrapper) {
-            pool.add(scrollDataWrapper.also {
-                it.scrollState = ScrollState.INITIAL
-                it.data = Unit
-            })
-        }
-
-    }
-
     internal inner class ScrollSyncObservable {
-
-        private val TAG = "SyncObservable"
 
         private val observers: MutableCollection<ScrollSyncObserver> = Vector()
 
@@ -130,21 +94,8 @@ class HorizontalScrollSyncHelper {
         }
 
         private fun notifyObservers(arg: Any?) {
-            val log =
-                arg is ScrollDataWrapper && arg.data is RecyclerViewScrollable.RecyclerViewScrollData.ScrolledData
-
-            if (log) {
-                Log.d(TAG, "notifyObservers start: ${observers.size}")
-            }
-
             observers.forEach {
                 it.update(arg)
-                if (log) {
-                    Log.d(TAG, "notifyObserver: ${(it as RecyclerViewScrollLayout).scrollableView}")
-                }
-            }
-            if (log) {
-                Log.d(TAG, "notifyObservers end: ${observers.size}")
             }
         }
     }

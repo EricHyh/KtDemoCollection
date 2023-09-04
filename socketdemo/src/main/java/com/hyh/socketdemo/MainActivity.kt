@@ -33,9 +33,9 @@ class MainActivity : AppCompatActivity() {
             override fun onReceived(commonInfo: ChannelCommonMessage.ChannelCommonInfo) {
 
                 val toByteArray = commonInfo.data.toByteArray()
-                val info = TestMessage.TestMessageInfo.parseFrom(toByteArray)
+                val info = TestMessage.XXXTestMessageInfo2.parseFrom(toByteArray)
 
-                Log.d(TAG, "onReceived: ${commonInfo.cmd} - ${info.str}")
+                Log.d(TAG, "onReceived: ${commonInfo.cmd} - ${info.str2}")
             }
 
             override fun onError(throwable: Throwable) {
@@ -74,6 +74,14 @@ class MainActivity : AppCompatActivity() {
                                 .setFlag(true)
                                 .setNum(10)
                                 .setStr("哈哈12as")
+                                .setSubMessageInfo(
+                                    TestMessage
+                                        .TestSubMessageInfo
+                                        .newBuilder()
+                                        .setSubFlag(true)
+                                        .setSubNum(100)
+                                        .setSubStr("setSubStr")
+                                )
                                 .build().toByteArray()
                         )
                     )
