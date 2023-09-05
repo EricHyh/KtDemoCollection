@@ -5,55 +5,65 @@ import androidx.recyclerview.widget.RecyclerView
 import com.hyh.paging3demo.widget.horizontal.ScrollState
 
 class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
-    Scrollable<RecyclerViewScrollable.RecyclerViewScrollData> {
+    Scrollable<RecyclerViewScrollable.ScrollingData, RecyclerViewScrollable.ScrolledData> {
 
     private val linearLayoutManager: LinearLayoutManager =
         recyclerView.layoutManager as LinearLayoutManager
 
-    private val calculateScrollData: RecyclerViewScrollData.CalculateScrollData =
-        RecyclerViewScrollData.CalculateScrollData(recyclerView)
+    private val diffSize: ScrollingData.DiffSize = ScrollingData.DiffSize(recyclerView)
 
-    private val scrollData: RecyclerViewScrollData.ScrolledData =
-        RecyclerViewScrollData.ScrolledData(recyclerView)
+    private val targetPosition: ScrollingData.TargetPosition = ScrollingData.TargetPosition(recyclerView)
+
+    private val scrolledData: ScrolledData = ScrolledData(recyclerView)
 
     private var inScrolling = false
 
-    override fun getScrollData(): RecyclerViewScrollData {
+    override fun getScrollingData(): ScrollingData {
         val position = linearLayoutManager.findFirstVisibleItemPosition()
         val holder = recyclerView.findViewHolderForAdapterPosition(position)
-        return calculateScrollData.apply {
+        return targetPosition.apply {
             this.position = position
             this.positionOffset = holder?.itemView?.left
             this.globalOffset = recyclerView.computeHorizontalScrollOffset()
         }
     }
 
-    fun getScrollData(
+    fun getScrollingData(
         scrollDx: Int,
-    ): RecyclerViewScrollData.ScrolledData {
-        return scrollData.also {
+    ): ScrollingData {
+        return diffSize.also {
             it.scrollDx = scrollDx
             it.version = it.version + 1
         }
     }
 
-    override fun scrollTo(scrollState: ScrollState, t: RecyclerViewScrollData) {
+    override fun getScrolledData(): ScrolledData {
+        val position = linearLayoutManager.findFirstVisibleItemPosition()
+        val holder = recyclerView.findViewHolderForAdapterPosition(position)
+        return scrolledData.apply {
+            this.position = position
+            this.positionOffset = holder?.itemView?.left
+            this.globalOffset = recyclerView.computeHorizontalScrollOffset()
+        }
+    }
+
+    override fun scroll(scrollState: ScrollState, scrollingData: ScrollingData) {
         if (inScrolling) return
-        when (t) {
-            is RecyclerViewScrollData.ScrolledData -> {
-                if (t.targetRecyclerView === recyclerView) {
+        when (scrollingData) {
+            is ScrollingData.DiffSize -> {
+                if (scrollingData.targetRecyclerView === recyclerView) {
                     return
                 }
                 inScrolling = true
-                recyclerView.scrollBy(t.scrollDx, 0)
+                recyclerView.scrollBy(scrollingData.scrollDx, 0)
                 inScrolling = false
             }
-            is RecyclerViewScrollData.CalculateScrollData -> {
+            is ScrollingData.TargetPosition -> {
                 if (scrollState == ScrollState.SCROLL || scrollState == ScrollState.SETTLING) {
                     return
                 }
-                val position = t.position
-                val positionOffset = t.positionOffset
+                val position = scrollingData.position
+                val positionOffset = scrollingData.positionOffset
                 if (position >= 0 && positionOffset != null) {
                     inScrolling = true
                     linearLayoutManager.scrollToPositionWithOffset(position, positionOffset)
@@ -61,7 +71,7 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
                 } else {
                     inScrolling = true
                     recyclerView.scrollBy(
-                        t.globalOffset - recyclerView.computeHorizontalScrollOffset(),
+                        scrollingData.globalOffset - recyclerView.computeHorizontalScrollOffset(),
                         0
                     )
                     inScrolling = false
@@ -70,24 +80,46 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
         }
     }
 
+    override fun scrollTo(scrolledData: ScrolledData) {
+        if (inScrolling) return
+        val position = scrolledData.position
+        val positionOffset = scrolledData.positionOffset
+        if (position >= 0 && positionOffset != null) {
+            inScrolling = true
+            linearLayoutManager.scrollToPositionWithOffset(position, positionOffset)
+            inScrolling = false
+        } else {
+            inScrolling = true
+            recyclerView.scrollBy(
+                scrolledData.globalOffset - recyclerView.computeHorizontalScrollOffset(),
+                0
+            )
+            inScrolling = false
+        }
+    }
+
     override fun resetScroll() {
         linearLayoutManager.scrollToPositionWithOffset(0, 0)
     }
 
-    sealed interface RecyclerViewScrollData : IScrollData {
+    override fun stopScroll() {
+        recyclerView.stopScroll()
+    }
 
-        data class ScrolledData constructor(
+    sealed interface ScrollingData : IScrollingData {
+
+        data class DiffSize constructor(
             var targetRecyclerView: RecyclerView,
             var scrollDx: Int = 0,
             var version: Int = 0
-        ) : RecyclerViewScrollData {
+        ) : ScrollingData {
 
-            override fun clone(): Any {
-                return ScrolledData(targetRecyclerView, scrollDx, version)
+            override fun clone(): DiffSize {
+                return DiffSize(targetRecyclerView, scrollDx, version)
             }
 
-            override fun copy(other: IScrollData): Boolean {
-                if (other !is ScrolledData) return false
+            override fun copy(other: Any): Boolean {
+                if (other !is DiffSize) return false
                 if (this.targetRecyclerView !== other.targetRecyclerView) return false
                 this.scrollDx = other.scrollDx
                 this.version = other.version
@@ -95,14 +127,14 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
             }
         }
 
-        data class CalculateScrollData constructor(
+        data class TargetPosition constructor(
             val targetRecyclerView: RecyclerView,
             var position: Int = -1,
             var positionOffset: Int? = null,
             var globalOffset: Int = -1
-        ) : RecyclerViewScrollData {
-            override fun clone(): Any {
-                return CalculateScrollData(
+        ) : ScrollingData {
+            override fun clone(): TargetPosition {
+                return TargetPosition(
                     targetRecyclerView,
                     position,
                     positionOffset,
@@ -110,8 +142,8 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
                 )
             }
 
-            override fun copy(other: IScrollData): Boolean {
-                if (other !is CalculateScrollData) return false
+            override fun copy(other: Any): Boolean {
+                if (other !is TargetPosition) return false
                 if (this.targetRecyclerView !== other.targetRecyclerView) return false
                 this.position = other.position
                 this.positionOffset = other.positionOffset
@@ -121,7 +153,28 @@ class RecyclerViewScrollable(private val recyclerView: RecyclerView) :
         }
     }
 
-    override fun stopScroll() {
-        recyclerView.stopScroll()
+    data class ScrolledData constructor(
+        val targetRecyclerView: RecyclerView,
+        var position: Int = -1,
+        var positionOffset: Int? = null,
+        var globalOffset: Int = -1
+    ) : IScrolledData {
+        override fun clone(): ScrolledData {
+            return ScrolledData(
+                targetRecyclerView,
+                position,
+                positionOffset,
+                globalOffset
+            )
+        }
+
+        override fun copy(other: Any): Boolean {
+            if (other !is ScrolledData) return false
+            if (this.targetRecyclerView !== other.targetRecyclerView) return false
+            this.position = other.position
+            this.positionOffset = other.positionOffset
+            this.globalOffset = other.globalOffset
+            return true
+        }
     }
 }

@@ -4,15 +4,14 @@ import android.animation.ValueAnimator
 import android.view.View
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
-import com.hyh.paging3demo.widget.horizontal.ScrollState
 import kotlin.math.max
 
 internal class FixedBehavior constructor(
     var fixedMinWidth: Int,
     var fixedMaxWidth: Int = Int.MAX_VALUE,
     private val scrollableView: View,
-    private val scrollable: Scrollable<out IScrollData>,
-    private val onScrollChanged: (scrollState: ScrollState, data: Any) -> Unit,
+    private val scrollable: Scrollable<out IScrollingData, out IScrolledData>,
+    private val onScrollableScrollListener: OnScrollableScrollListener,
     private val isAllowReleaseDrag: () -> Boolean,
 ) : CoordinatorLayout.Behavior<View>() {
 
@@ -160,17 +159,21 @@ internal class FixedBehavior constructor(
     ) {
         when (type) {
             ViewCompat.TYPE_TOUCH -> {
-
                 releaseDragHelper.stop()
-
                 if (currentDragWith != 0) {
-                    onScrollChanged(ScrollState.DRAG, currentDragWith)
+                    onScrollableScrollListener.onDragging(currentDragWith)
                 } else {
-                    onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
+                    onScrollableScrollListener.onScrolling(
+                        scrollable.getScrollingData(),
+                        scrollable.getScrolledData()
+                    )
                 }
             }
             ViewCompat.TYPE_NON_TOUCH -> {
-                onScrollChanged(ScrollState.SETTLING, scrollable.getScrollData())
+                onScrollableScrollListener.onSettling(
+                    scrollable.getScrollingData(),
+                    scrollable.getScrolledData()
+                )
             }
         }
     }
@@ -203,7 +206,7 @@ internal class FixedBehavior constructor(
             }
         }
         if (currentDragWith != 0) {
-            onScrollChanged(ScrollState.DRAG, currentDragWith)
+            onScrollableScrollListener.onDragging(currentDragWith)
         }
     }
 
@@ -231,12 +234,18 @@ internal class FixedBehavior constructor(
             }
         }
         if (currentDragWith != 0) {
-            onScrollChanged(ScrollState.DRAG, currentDragWith)
+            onScrollableScrollListener.onDragging(currentDragWith)
         } else {
             if (type == ViewCompat.TYPE_TOUCH) {
-                onScrollChanged(ScrollState.SCROLL, scrollable.getScrollData())
+                onScrollableScrollListener.onScrolling(
+                    scrollable.getScrollingData(),
+                    scrollable.getScrolledData()
+                )
             } else {
-                onScrollChanged(ScrollState.SETTLING, scrollable.getScrollData())
+                onScrollableScrollListener.onSettling(
+                    scrollable.getScrollingData(),
+                    scrollable.getScrolledData()
+                )
             }
         }
     }
@@ -250,11 +259,13 @@ internal class FixedBehavior constructor(
         if (type == ViewCompat.TYPE_TOUCH) {
             if (currentDragWith != 0 && isAllowReleaseDrag()) {
                 releaseDragHelper.start()
-                onScrollChanged(ScrollState.REBOUND, currentDragWith)
+                onScrollableScrollListener.onRebounding(currentDragWith)
             }
         }
         if (currentDragWith == 0) {
-            onScrollChanged(ScrollState.IDLE, scrollable.getScrollData())
+            onScrollableScrollListener.onIdle(
+                scrollable.getScrolledData()
+            )
         }
     }
 
@@ -294,8 +305,10 @@ internal class FixedBehavior constructor(
         override fun onAnimationUpdate(animation: ValueAnimator) {
             if (animator === animation) {
                 currentDragWith = animation.animatedValue as Int
-                onScrollChanged(ScrollState.REBOUND, currentDragWith)
+                onScrollableScrollListener.onRebounding(currentDragWith)
             }
         }
     }
 }
+
+interface OnScrollableScrollListener : OnScrollEventListener

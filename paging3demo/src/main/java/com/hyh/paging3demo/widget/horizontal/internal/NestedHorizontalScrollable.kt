@@ -3,16 +3,26 @@ package com.hyh.paging3demo.widget.horizontal.internal
 import com.hyh.paging3demo.widget.horizontal.ScrollState
 
 internal class NestedHorizontalScrollable(private val nestedScrollView: NestedHorizontalScrollView) :
-    Scrollable<NestedHorizontalScrollable.ScrollData> {
+    Scrollable<NestedHorizontalScrollable.ScrollData, NestedHorizontalScrollable.ScrollData> {
 
-    override fun getScrollData(): ScrollData {
+    override fun getScrollingData(): ScrollData {
         return ScrollData(
             nestedScrollView.scrollX
         )
     }
 
-    override fun scrollTo(scrollState: ScrollState, t: ScrollData) {
-        nestedScrollView.scrollTo(t.scrollX, 0)
+    override fun getScrolledData(): ScrollData {
+        return ScrollData(
+            nestedScrollView.scrollX
+        )
+    }
+
+    override fun scroll(scrollState: ScrollState, scrollingData: ScrollData) {
+        nestedScrollView.scrollTo(scrollingData.scrollX, 0)
+    }
+
+    override fun scrollTo(scrolledData: ScrollData) {
+        nestedScrollView.scrollTo(scrolledData.scrollX, 0)
     }
 
     override fun resetScroll() {
@@ -23,19 +33,19 @@ internal class NestedHorizontalScrollable(private val nestedScrollView: NestedHo
         nestedScrollView.stopScroll()
     }
 
-    data class ScrollData(
+    data class ScrollData constructor(
         var scrollX: Int = 0
-    ) : IScrollData {
+    ) : IScrollingData, IScrolledData {
 
         override fun toString(): String {
             return "ScrollData(scrollX=$scrollX)"
         }
 
-        override fun clone(): Any {
+        override fun clone(): ScrollData {
             return ScrollData(scrollX)
         }
 
-        override fun copy(other: IScrollData): Boolean {
+        override fun copy(other: Any): Boolean {
             if (other !is ScrollData) return false
             this.scrollX = other.scrollX
             return true

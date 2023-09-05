@@ -53,24 +53,23 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(
         initView()
 
         recyclerView.scrollListener = { data ->
-            val scrollState = data.recyclerView.scrollState.let { scrollState ->
+            data.recyclerView.scrollState.let { scrollState ->
                 when (scrollState) {
-                    RecyclerView.SCROLL_STATE_IDLE -> {
-                        ScrollState.IDLE
-                    }
                     RecyclerView.SCROLL_STATE_DRAGGING -> {
-                        ScrollState.SCROLL
+                        notifyScrollingEvent(
+                            recyclerViewScrollable.getScrollingData(data.dx),
+                            recyclerViewScrollable.getScrolledData()
+                        )
                     }
                     RecyclerView.SCROLL_STATE_SETTLING -> {
-                        ScrollState.SETTLING
+                        notifySettlingEvent(
+                            recyclerViewScrollable.getScrollingData(data.dx),
+                            recyclerViewScrollable.getScrolledData()
+                        )
                     }
-                    else -> ScrollState.IDLE
+                    else -> {}
                 }
             }
-            notifyScrollEvent(
-                scrollState,
-                recyclerViewScrollable.getScrollData(data.dx)
-            )
         }
     }
 
@@ -78,7 +77,7 @@ class RecyclerViewScrollLayout @JvmOverloads constructor(
 
     override fun findScrollableView(): View = recyclerView
 
-    override fun asScrollable(scrollableView: View): Scrollable<*> {
+    override fun asScrollable(scrollableView: View): Scrollable<*, *> {
         return recyclerViewScrollable
     }
 

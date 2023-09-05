@@ -16,7 +16,11 @@ import com.hyh.paging3demo.widget.horizontal.internal.Scrollable
  *
  * @author eriche 2022/7/11
  */
-class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyle: Int = 0) :
+class HorizontalScrollLayout @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyle: Int = 0
+) :
     BaseHorizontalScrollLayout(context, attrs, defStyle) {
 
     companion object {
@@ -42,7 +46,7 @@ class HorizontalScrollLayout @JvmOverloads constructor(context: Context, attrs: 
         return nestedHorizontalScrollView
     }
 
-    override fun asScrollable(scrollableView: View): Scrollable<*> {
+    override fun asScrollable(scrollableView: View): Scrollable<*, *> {
         return NestedHorizontalScrollable(nestedHorizontalScrollView)
     }
 

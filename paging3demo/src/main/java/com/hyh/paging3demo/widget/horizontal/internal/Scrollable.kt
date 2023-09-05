@@ -7,11 +7,15 @@ import com.hyh.paging3demo.widget.horizontal.ScrollState
  *
  * @author eriche 2021/12/28
  */
-interface Scrollable<T : IScrollData> {
+interface Scrollable<ScrollingData : IScrollingData, ScrolledData : IScrolledData> {
 
-    fun getScrollData(): T
+    fun getScrollingData(): ScrollingData
 
-    fun scrollTo(scrollState: ScrollState, t: T)
+    fun getScrolledData(): ScrolledData
+
+    fun scroll(scrollState: ScrollState, scrollingData: ScrollingData)
+
+    fun scrollTo(scrolledData: ScrolledData)
 
     fun resetScroll()
 
@@ -20,11 +24,19 @@ interface Scrollable<T : IScrollData> {
 }
 
 
-interface IScrollData : Cloneable {
+interface IScrollingData : Cloneable {
 
-    public override fun clone(): Any
+    public override fun clone(): IScrollingData
 
-    fun copy(other: IScrollData): Boolean
+    fun copy(other: Any): Boolean
+
+}
+
+interface IScrolledData : Cloneable {
+
+    public override fun clone(): IScrolledData
+
+    fun copy(other: Any): Boolean
 
 }
 

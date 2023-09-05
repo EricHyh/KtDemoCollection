@@ -1,6 +1,8 @@
 package com.hyh.paging3demo.widget.horizontal
 
-import com.hyh.paging3demo.widget.horizontal.internal.IScrollData
+import com.hyh.paging3demo.widget.horizontal.internal.IScrolledData
+import com.hyh.paging3demo.widget.horizontal.internal.IScrollingData
+import com.hyh.paging3demo.widget.horizontal.internal.OnScrollEventListener
 import java.util.*
 import kotlin.collections.HashSet
 
@@ -17,9 +19,11 @@ class HorizontalScrollSyncHelper {
 
     private val actionDownPublishers: MutableSet<ScrollSyncObserver> = HashSet()
 
+    private var notifying: Boolean = false
+
     internal fun addObserver(observer: ScrollSyncObserver) {
         scrollSyncObservable.addObserver(observer)
-        observer.onScroll(scrollDataWrapper.scrollState, scrollDataWrapper.data)
+        sync(observer)
     }
 
     internal fun removeObserver(observer: ScrollSyncObserver) {
@@ -28,7 +32,24 @@ class HorizontalScrollSyncHelper {
     }
 
     internal fun sync(observer: ScrollSyncObserver) {
-        observer.onScroll(scrollDataWrapper.scrollState, scrollDataWrapper.data)
+        when (scrollDataWrapper.scrollState) {
+            ScrollState.INITIAL -> {}
+            ScrollState.IDLE -> {
+                observer.dispatchIdle(scrollDataWrapper.data as IScrolledData)
+            }
+            ScrollState.SCROLL -> {
+                observer.dispatchScrolled(scrollDataWrapper.scrollState, scrollDataWrapper.data as IScrolledData)
+            }
+            ScrollState.DRAG -> {
+                observer.dispatchDragging(scrollDataWrapper.data as Int)
+            }
+            ScrollState.REBOUND -> {
+                observer.dispatchRebounding(scrollDataWrapper.data as Int)
+            }
+            ScrollState.SETTLING -> {
+                observer.dispatchScrolled(scrollDataWrapper.scrollState, scrollDataWrapper.data as IScrolledData)
+            }
+        }
     }
 
     internal fun isAllowReleaseDrag(observer: ScrollSyncObserver): Boolean {
@@ -37,39 +58,93 @@ class HorizontalScrollSyncHelper {
         return false
     }
 
-    internal fun notifyScrollEvent(
-        scrollState: ScrollState,
-        data: Any
-    ) {
-        if (scrollState == scrollDataWrapper.scrollState && data == scrollDataWrapper.data) return
-        if (scrollDataWrapper.notifying) return
-        scrollDataWrapper.notifying = true
-        scrollDataWrapper.scrollState = scrollState
-        scrollDataWrapper.data = when (scrollState) {
-            ScrollState.IDLE, ScrollState.SCROLL, ScrollState.SETTLING -> {
-                val newScrollData = data as IScrollData
-                val oldScrollData = scrollDataWrapper.data
-                if (oldScrollData is IScrollData && oldScrollData.copy(newScrollData)) {
-                    oldScrollData
-                } else {
-                    newScrollData.clone()
-                }
-            }
-            else -> {
-                data
-            }
+
+    internal fun notifyDragging(currentDragWith: Int) {
+        executeNotify {
+            if (ScrollState.DRAG == scrollDataWrapper.scrollState && currentDragWith == scrollDataWrapper.data) return@executeNotify
+            scrollDataWrapper.scrollState = ScrollState.DRAG
+            scrollDataWrapper.data = currentDragWith
+            scrollSyncObservable.notifyDragging(currentDragWith)
         }
-        scrollSyncObservable.setScrollData(scrollDataWrapper)
-        scrollDataWrapper.notifying = false
+    }
+
+    internal fun notifyRebounding(currentDragWith: Int) {
+        executeNotify {
+            if (ScrollState.DRAG == scrollDataWrapper.scrollState && currentDragWith == scrollDataWrapper.data) return@executeNotify
+            scrollDataWrapper.scrollState = ScrollState.REBOUND
+            scrollDataWrapper.data = currentDragWith
+            scrollSyncObservable.notifyRebounding(currentDragWith)
+        }
+    }
+
+    internal fun notifyScrolling(scrollingData: IScrollingData, scrolledData: IScrolledData) {
+        executeNotify {
+            scrollDataWrapper.scrollState = ScrollState.SCROLL
+            val oldScrollData = scrollDataWrapper.data
+            scrollDataWrapper.data = if (oldScrollData is IScrolledData && oldScrollData.copy(scrolledData)) {
+                oldScrollData
+            } else {
+                scrolledData.clone()
+            }
+            scrollSyncObservable.notifyScrolling(scrollingData, scrolledData)
+        }
+    }
+
+    internal fun notifySettling(scrollingData: IScrollingData, scrolledData: IScrolledData) {
+        executeNotify {
+            scrollDataWrapper.scrollState = ScrollState.SETTLING
+            val oldScrollData = scrollDataWrapper.data
+            scrollDataWrapper.data = if (oldScrollData is IScrolledData && oldScrollData.copy(scrolledData)) {
+                oldScrollData
+            } else {
+                scrolledData.clone()
+            }
+            scrollSyncObservable.notifySettling(scrollingData, scrolledData)
+        }
+    }
+
+    internal fun notifyScrolled(scrollState: ScrollState, scrolledData: IScrolledData) {
+        executeNotify {
+            scrollDataWrapper.scrollState = scrollState
+            val oldScrollData = scrollDataWrapper.data
+            scrollDataWrapper.data = if (oldScrollData is IScrolledData && oldScrollData.copy(scrolledData)) {
+                oldScrollData
+            } else {
+                scrolledData.clone()
+            }
+            scrollSyncObservable.notifyScrolled(scrollState, scrolledData)
+        }
+    }
+
+    internal fun notifyIdle(scrolledData: IScrolledData) {
+        executeNotify {
+            scrollDataWrapper.scrollState = ScrollState.IDLE
+            val oldScrollData = scrollDataWrapper.data
+            scrollDataWrapper.data = if (oldScrollData is IScrolledData && oldScrollData.copy(scrolledData)) {
+                oldScrollData
+            } else {
+                scrolledData.clone()
+            }
+            scrollSyncObservable.notifyIdle(scrolledData)
+        }
     }
 
     internal fun notifyActionDown(publisher: ScrollSyncObserver) {
         actionDownPublishers.add(publisher)
-        scrollSyncObservable.stopScroll()
+        executeNotify {
+            scrollSyncObservable.notifyStopScroll()
+        }
     }
 
     internal fun notifyActionCancel(publisher: ScrollSyncObserver) {
         actionDownPublishers.remove(publisher)
+    }
+
+    private fun executeNotify(notify: () -> Unit) {
+        if (notifying) return
+        notifying = true
+        notify.invoke()
+        notifying = false
     }
 
     internal inner class ScrollSyncObservable {
@@ -85,48 +160,111 @@ class HorizontalScrollSyncHelper {
             observers.remove(o)
         }
 
-        fun setScrollData(scrollDataWrapper: ScrollDataWrapper) {
-            notifyObservers(scrollDataWrapper)
-        }
-
-        fun stopScroll() {
-            notifyObservers(StopScroll)
-        }
-
-        private fun notifyObservers(arg: Any?) {
+        fun notifyDragging(currentDragWith: Int) {
             observers.forEach {
-                it.update(arg)
+                it.dispatchDragging(currentDragWith)
+            }
+        }
+
+        fun notifyRebounding(currentDragWith: Int) {
+            observers.forEach {
+                it.dispatchRebounding(currentDragWith)
+            }
+        }
+
+        fun notifyScrolling(scrollingData: IScrollingData, scrolledData: IScrolledData) {
+            observers.forEach {
+                it.dispatchScrolling(scrollingData, scrolledData)
+            }
+        }
+
+        fun notifySettling(scrollingData: IScrollingData, scrolledData: IScrolledData) {
+            observers.forEach {
+                it.dispatchSettling(scrollingData, scrolledData)
+            }
+        }
+
+        fun notifyScrolled(scrollState: ScrollState, scrolledData: IScrolledData) {
+            observers.forEach {
+                it.dispatchScrolled(scrollState, scrolledData)
+            }
+        }
+
+        fun notifyIdle(scrolledData: IScrolledData) {
+            observers.forEach {
+                it.dispatchIdle(scrolledData)
+            }
+        }
+
+        fun notifyStopScroll() {
+            observers.forEach {
+                it.dispatchStopScroll()
             }
         }
     }
 }
 
-interface ScrollSyncObserver {
+abstract class ScrollSyncObserver : OnScrollEventListener {
 
-    @Suppress("UNCHECKED_CAST")
-    fun update(arg: Any?) {
-        when (arg) {
-            is ScrollDataWrapper -> {
-                val data = arg.data
-                onScroll(arg.scrollState, data)
-            }
-            is StopScroll -> {
-                onStopScroll()
-            }
+    private var dispatching: Boolean = false
+
+    fun dispatchDragging(currentDragWith: Int) {
+        executeDispatch {
+            onDragging(currentDragWith)
         }
     }
 
-    fun onScroll(scrollState: ScrollState, data: Any)
+    fun dispatchRebounding(currentDragWith: Int) {
+        executeDispatch {
+            onRebounding(currentDragWith)
+        }
+    }
 
-    fun onStopScroll()
+    fun dispatchScrolling(scrollingData: IScrollingData, scrolledData: IScrolledData) {
+        executeDispatch {
+            onScrolling(scrollingData, scrolledData)
+        }
+    }
+
+    fun dispatchScrolled(scrollState: ScrollState, scrolledData: IScrolledData) {
+        executeDispatch {
+            onScrolled(scrollState, scrolledData)
+        }
+    }
+
+    fun dispatchSettling(scrollingData: IScrollingData, scrolledData: IScrolledData) {
+        executeDispatch {
+            onSettling(scrollingData, scrolledData)
+        }
+    }
+
+    fun dispatchIdle(scrolledData: IScrolledData) {
+        executeDispatch {
+            onIdle(scrolledData)
+        }
+    }
+
+    fun dispatchStopScroll() {
+        executeDispatch {
+            onStopScroll()
+        }
+    }
+
+    abstract fun onScrolled(scrollState: ScrollState, scrolledData: IScrolledData)
+
+    abstract fun onStopScroll()
+
+
+    private fun executeDispatch(dispatch: () -> Unit) {
+        if (dispatching) return
+        dispatching = true
+        dispatch.invoke()
+        dispatching = false
+    }
 
 }
 
 internal data class ScrollDataWrapper(
     var scrollState: ScrollState,
     var data: Any
-) {
-    var notifying: Boolean = false
-}
-
-internal object StopScroll
+)
