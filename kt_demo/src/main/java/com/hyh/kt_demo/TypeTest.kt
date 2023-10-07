@@ -4,6 +4,7 @@ import java.lang.Exception
 import java.lang.String
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import kotlin.math.max
 
 /**
  * TODO: Add Description
@@ -12,6 +13,46 @@ import java.lang.reflect.Type
  */
 
 fun main() {
+
+    //    c  b  c  d  e  f
+    // a  0  0  0  0  0  0
+    // e  0  0  0  0  1  1
+    // f  0  0  0  0  1  2
+    // b  0  1  1  1  1  2
+    // c  1  1  2  2  2  2
+    // e  1  1  1  1  3  3
+
+    //    c  b  c  d  e  f
+    // a  0  0  0  0  0  0
+    // e  0  0  0  0  1  0
+    // f  0  0  0  0  0  1
+    // b  0  1  0  0  0  0
+    // c  1  0  1  0  0  0
+    // e  0  0  0  0  1  0
+
+    //bce
+
+    //7 6 2 4 5 1 3
+    val max = 0
+    // 6 - 7 = -1
+    // 1 - 7 = -6
+    // 1 - 6 = -5
+    // 2 - 7 = -5
+    // 2 - 6 = -4
+    // 2 - 1 = 1
+    // 1
+
+    // 7 6 2 4 5 -1 1 3
+    // 7 6 2 4 5 -5 1 3
+    // f(0 ,0) = arr[0]
+    // f(0, 1) = max(arr[0], arr[0] + arr[1])
+    // f(1, 1) = arr[1]
+    // f(a, b) = max(f(a - 1, b), f(a - 1, b) + arr[a - 1])
+    // f(a, b) = max(f(a, b - 1), f(a, b - 1) + arr[b])
+    //
+
+
+    // f(b) = max(f(b - 1), f(b - 1) + aar[b])
 
 
     /*val xx =
@@ -40,6 +81,36 @@ fun main() {
 
 }
 
+
+fun maxNum(nums: IntArray): Int {
+    if (nums.isEmpty()) return 0
+    // f(b) = max(f(b - 1), f(b - 1) + aar[b])
+    var max = 0
+    val maxArray = IntArray(nums.size)
+    maxArray[0] = max(max, nums[0])
+    for (index in 1 until nums.size) {
+        maxArray[index] = max(maxArray[index - 1], maxArray[index - 1] + nums[index])
+        max = max(max, maxArray[index])
+    }
+    return max
+}
+
+
+fun maxProfit(prices: IntArray): Int {
+    if (prices.size <= 1) return 0
+    var max = 0
+    var left: Int = prices[0]
+    for (index in 1 until prices.size) {
+        val price = prices[index]
+        val diff = price - left
+        if (diff < 0) {
+            left = price
+        } else {
+            max = max(max, diff)
+        }
+    }
+    return max
+}
 
 abstract class A {
 
