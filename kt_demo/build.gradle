@@ -15,6 +15,7 @@ dependencies {
     implementation "io.reactivex.rxjava3:rxjava:3.0.9"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-rx3:1.6.4"
 
+    implementation deps.retrofit.gson
 
 
     //runtimeClasspath files(compileKotlin.destinationDir)

@@ -108,8 +108,8 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
 
     override fun onBindViewHolder(holder: ScrollLayoutTestHolder, position: Int) {
         val horizontalScrollSyncHelper = horizontalScrollSyncHelperMap.getOrPut(position / 10) {
-//            HorizontalScrollSyncHelper()
-            xx
+            HorizontalScrollSyncHelper()
+            //xx
         }
         holder.recyclerViewScrollLayout.bindHorizontalScrollSyncHelper(horizontalScrollSyncHelper)
         holder.recyclerViewScrollLayout.setGrid(
@@ -119,30 +119,31 @@ class ScrollLayoutTestAdapter : RecyclerView.Adapter<ScrollLayoutTestHolder>() {
                 TextGrid(3),
                 TextGrid(4),
                 TextGrid(5),
+                TextGrid(6),
                 TextGrid(7),
-                TextGrid(8),
-                TextGrid(9),
-                TextGrid(10),
-                TextGrid(11),
-                TextGrid(12),
-                TextGrid(13),
-                TextGrid(14),
-                TextGrid(15),
-                TextGrid(16),
-                TextGrid(17),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
-                TextGrid(18),
+//                TextGrid(8),
+//                TextGrid(9),
+//                TextGrid(10),
+//                TextGrid(11),
+//                TextGrid(12),
+//                TextGrid(13),
+//                TextGrid(14),
+//                TextGrid(15),
+//                TextGrid(16),
+//                TextGrid(17),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
+//                TextGrid(18),
             )
         )
     }

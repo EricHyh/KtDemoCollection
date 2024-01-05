@@ -2,6 +2,7 @@ package com.hyh.paging3demo.widget.horizontal.internal
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.Configuration
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -95,6 +96,10 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout {
         override fun onIdle(scrolledData: IScrolledData) {
             helper?.notifyIdle(scrolledData)
         }
+
+        override fun onInitial() {
+            helper?.notifyInitial()
+        }
     }
 
     private val scrollSyncObserver = object : ScrollSyncObserver() {
@@ -134,6 +139,12 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout {
 
             fixedBehavior.currentDragWith = 0
             _scrollState = ScrollState.IDLE
+        }
+
+        override fun onInitial() {
+            scrollable.resetScroll()
+            fixedBehavior.currentDragWith = 0
+            _scrollState = ScrollState.INITIAL
         }
 
         override fun onScrolled(scrollState: ScrollState, scrolledData: IScrolledData) {
@@ -254,6 +265,14 @@ abstract class BaseHorizontalScrollLayout : CoordinatorLayout {
         super.onDetachedFromWindow()
         this.helper?.removeObserver(scrollSyncObserver)
         scrollable.stopScroll()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+        newConfig ?: return
+        newConfig.orientation
+        newConfig.screenLayout
+        newConfig.screenWidthDp
     }
 
     protected abstract fun findFixedView(): View

@@ -3,6 +3,7 @@ package com.hyh.toast.utils
 import android.content.Context
 import android.util.DisplayMetrics
 import android.view.WindowManager
+import com.example.kapt_annotation.TestAnnotation
 
 /**
  * TODO: Add Description
@@ -10,6 +11,7 @@ import android.view.WindowManager
  * @author eriche
  * @data 2021/3/24
  */
+@TestAnnotation
 object DisplayUtil {
     private var windowManager: WindowManager? = null
 

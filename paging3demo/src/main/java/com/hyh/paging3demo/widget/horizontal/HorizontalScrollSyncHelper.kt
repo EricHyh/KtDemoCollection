@@ -33,7 +33,9 @@ class HorizontalScrollSyncHelper {
 
     internal fun sync(observer: ScrollSyncObserver) {
         when (scrollDataWrapper.scrollState) {
-            ScrollState.INITIAL -> {}
+            ScrollState.INITIAL -> {
+                observer.dispatchInitial()
+            }
             ScrollState.IDLE -> {
                 observer.dispatchIdle(scrollDataWrapper.data as IScrolledData)
             }
@@ -129,6 +131,14 @@ class HorizontalScrollSyncHelper {
         }
     }
 
+    internal fun notifyInitial() {
+        executeNotify {
+            scrollDataWrapper.scrollState = ScrollState.INITIAL
+            scrollDataWrapper.data = Unit
+            scrollSyncObservable.notifyInitial()
+        }
+    }
+
     internal fun notifyActionDown(publisher: ScrollSyncObserver) {
         actionDownPublishers.add(publisher)
         executeNotify {
@@ -196,6 +206,12 @@ class HorizontalScrollSyncHelper {
             }
         }
 
+        fun notifyInitial() {
+            observers.forEach {
+                it.dispatchInitial()
+            }
+        }
+
         fun notifyStopScroll() {
             observers.forEach {
                 it.dispatchStopScroll()
@@ -241,6 +257,12 @@ abstract class ScrollSyncObserver : OnScrollEventListener {
     fun dispatchIdle(scrolledData: IScrolledData) {
         executeDispatch {
             onIdle(scrolledData)
+        }
+    }
+
+    fun dispatchInitial() {
+        executeDispatch {
+            onInitial()
         }
     }
 

@@ -46,6 +46,9 @@ fun xxx(vararg brokerId: Int?) {
 
 fun main() {
 
+    val lowercase = "Marché".lowercase()
+
+    println("")
 
     val transform: (Int) -> Iterable<String> = {
         listOf("$it:1", "$it:2", "$it:3")

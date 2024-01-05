@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+
+    implementation project(':kapt_annotation')
+    //用于自动为 JAVA Processor 生成 META-INF 信息。
+    implementation 'com.google.auto.service:auto-service:1.0.1'
+    annotationProcessor 'com.google.auto.service:auto-service:1.0.1'
+    //快速生成.java文件的库
+    implementation 'com.squareup:javapoet:1.13.0'
+    implementation 'com.squareup:kotlinpoet:1.13.0'
+}

@@ -3,8 +3,6 @@ package com.hyh.kt_demo.coroutine_demo1
 import com.hyh.kt_demo.coroutine.SingleRunner
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.setMain
 import java.io.Closeable

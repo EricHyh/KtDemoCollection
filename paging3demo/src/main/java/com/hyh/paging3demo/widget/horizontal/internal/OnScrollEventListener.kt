@@ -16,4 +16,6 @@ interface OnScrollEventListener {
     fun onSettling(scrollingData: IScrollingData, scrolledData: IScrolledData)
 
     fun onIdle(scrolledData: IScrolledData)
+
+    fun onInitial()
 }

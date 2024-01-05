@@ -32,7 +32,8 @@
             </intent-filter>
         </activity>-->
 
-        <activity android:name="com.hyh.paging3demo.list.ScrollLayoutTestActivity">
+        <activity android:name="com.hyh.paging3demo.list.ScrollLayoutTestActivity"
+            android:configChanges="orientation|screenLayout|screenSize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

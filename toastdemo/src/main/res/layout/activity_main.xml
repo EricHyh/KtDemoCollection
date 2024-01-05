@@ -8,37 +8,51 @@
     tools:context=".MainActivity">
 
 
-    <FrameLayout
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:background="#00FF00">
+<!--    <FrameLayout-->
+<!--        android:layout_width="200dp"-->
+<!--        android:layout_height="200dp"-->
+<!--        android:background="#00FF00">-->
 
 
-        <View
-            android:id="@+id/text_view"
-            android:background="#FF0000"
-            android:layout_marginLeft="-20dp"
-            android:layout_width="40dp"
-            android:layout_height="40dp" />
+<!--        <View-->
+<!--            android:id="@+id/text_view"-->
+<!--            android:background="#FF0000"-->
+<!--            android:layout_marginLeft="-20dp"-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp" />-->
 
 
-    </FrameLayout>
+<!--    </FrameLayout>-->
 
 
-    <TextView
-        android:layout_width="wrap_content"
+<!--    <TextView-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="showToast"-->
+<!--        android:onClick="showToast"-->
+<!--        android:gravity="center"-->
+<!--        android:layout_centerInParent="true"-->
+<!--        android:background="@color/black"-->
+<!--        app:layout_constraintBottom_toBottomOf="parent"-->
+<!--        app:layout_constraintLeft_toLeftOf="parent"-->
+<!--        app:layout_constraintRight_toRightOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="parent" />-->
+
+
+    <Button
+        android:id="@+id/btn_set_text"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="showToast"
-        android:onClick="showToast"
-        android:gravity="center"
-        android:layout_centerInParent="true"
-        android:background="@color/black"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:text="设置文字"/>
+
 
     <EditText
+        android:layout_below="@+id/btn_set_text"
+        android:layout_marginTop="10dp"
+        android:id="@+id/edt"
+        android:textColor="#000"
+        android:textColorHint="@android:color/darker_gray"
+        android:hint="请输入文字"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
@@ -131,73 +145,73 @@
     </FrameLayout>-->
 
 
-    <FrameLayout
-        android:layout_alignParentBottom="true"
-        android:layout_width="match_parent"
-        android:background="#FFF"
-        android:layout_height="wrap_content">
+<!--    <FrameLayout-->
+<!--        android:layout_alignParentBottom="true"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:background="#FFF"-->
+<!--        android:layout_height="wrap_content">-->
 
-        <TextView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="start"
-            android:gravity="center"
-            android:background="@android:color/black"
-            android:textColor="@android:color/black"
-            android:textSize="12dp" />
+<!--        <TextView-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:layout_gravity="start"-->
+<!--            android:gravity="center"-->
+<!--            android:background="@android:color/black"-->
+<!--            android:textColor="@android:color/black"-->
+<!--            android:textSize="12dp" />-->
 
-        <TextView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="end"
-            android:gravity="center"
-            android:background="@android:color/black"
-            android:textColor="@android:color/black"
-            android:textSize="12dp" />
+<!--        <TextView-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:layout_gravity="end"-->
+<!--            android:gravity="center"-->
+<!--            android:background="@android:color/black"-->
+<!--            android:textColor="@android:color/black"-->
+<!--            android:textSize="12dp" />-->
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginStart="60dp"
-            android:layout_marginEnd="60dp">
+<!--        <androidx.constraintlayout.widget.ConstraintLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:layout_marginStart="60dp"-->
+<!--            android:layout_marginEnd="60dp">-->
 
-            <TextView
-                android:id="@+id/btn_one"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="不知道不知道："
-                android:textColor="#000"
-                app:layout_constraintHorizontal_chainStyle="packed"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toLeftOf="@+id/btn_two"
-                app:layout_constraintTop_toTopOf="parent" />
+<!--            <TextView-->
+<!--                android:id="@+id/btn_one"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="40dp"-->
+<!--                android:text="不知道不知道："-->
+<!--                android:textColor="#000"-->
+<!--                app:layout_constraintHorizontal_chainStyle="packed"-->
+<!--                app:layout_constraintLeft_toLeftOf="parent"-->
+<!--                app:layout_constraintRight_toLeftOf="@+id/btn_two"-->
+<!--                app:layout_constraintTop_toTopOf="parent" />-->
 
-            <TextView
-                android:id="@+id/btn_two"
-                android:layout_width="0dp"
-                android:layout_height="40dp"
-                android:ellipsize="middle"
-                android:singleLine="true"
-                android:textColor="#000"
-                android:text="我是一只小蜜蜂"
-                app:layout_constraintWidth_default="wrap"
-                app:layout_constraintLeft_toRightOf="@id/btn_one"
-                app:layout_constraintRight_toLeftOf="@+id/btn_three"
-                app:layout_constraintTop_toTopOf="@id/btn_one" />
+<!--            <TextView-->
+<!--                android:id="@+id/btn_two"-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="40dp"-->
+<!--                android:ellipsize="middle"-->
+<!--                android:singleLine="true"-->
+<!--                android:textColor="#000"-->
+<!--                android:text="我是一只小蜜蜂"-->
+<!--                app:layout_constraintWidth_default="wrap"-->
+<!--                app:layout_constraintLeft_toRightOf="@id/btn_one"-->
+<!--                app:layout_constraintRight_toLeftOf="@+id/btn_three"-->
+<!--                app:layout_constraintTop_toTopOf="@id/btn_one" />-->
 
-            <ImageView
-                android:id="@+id/btn_three"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                app:layout_constraintHorizontal_chainStyle="packed"
-                android:background="#F00"
-                app:layout_constraintLeft_toRightOf="@id/btn_two"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/btn_two" />
+<!--            <ImageView-->
+<!--                android:id="@+id/btn_three"-->
+<!--                android:layout_width="40dp"-->
+<!--                android:layout_height="40dp"-->
+<!--                app:layout_constraintHorizontal_chainStyle="packed"-->
+<!--                android:background="#F00"-->
+<!--                app:layout_constraintLeft_toRightOf="@id/btn_two"-->
+<!--                app:layout_constraintRight_toRightOf="parent"-->
+<!--                app:layout_constraintTop_toTopOf="@id/btn_two" />-->
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+<!--        </androidx.constraintlayout.widget.ConstraintLayout>-->
 
-    </FrameLayout>
+<!--    </FrameLayout>-->
 
 
 </RelativeLayout>
