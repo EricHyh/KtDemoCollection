@@ -51,7 +51,25 @@ fun formatValueWithPlaces(
     return decimalFormat.format(value)
 }
 
+private fun getKeepDecimalSizedNumber(price: String, keepDecimalSize: Int): String {
+    if (price.contains(".")) {
+        val num: Int = price.subSequence(price.indexOf(".") + 1, price.length).length
+        if (num > keepDecimalSize) {
+            val removeLength = num - keepDecimalSize
+            return price.subSequence(0, price.length - removeLength).toString()
+        }
+    }
+    return price
+}
+
+
 fun main() {
+
+    var numStr = "99999999999"
+
+    val keepDecimalSizedNumber = getKeepDecimalSizedNumber("10.0", 0)
+
+    val toPlainString = keepDecimalSizedNumber.toBigDecimal().stripTrailingZeros().toPlainString()
 
     val str = "xxx{{t11p}}} good"
     val regex = "\\{\\{.*}}"
