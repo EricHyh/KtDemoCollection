@@ -1,11 +1,12 @@
 #include <jni.h>
 #include <string>
+#include "..\..\..\..\ndk_cpp_lib\Circle.h"
 
 extern "C" JNIEXPORT jstring
 JNICALL
 stringFromJNI(JNIEnv *env, jobject thiz)
 {
-	std::string hello = "Hello from C++";
+	std::string hello =Test::getString();
 	return env->NewStringUTF(hello.c_str());
 }
 
