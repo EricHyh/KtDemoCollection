@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <functional>
+#include <vector>
 
 using namespace std;
 
@@ -95,6 +96,10 @@ namespace const_test
             value->value = 100;
             return value->value;
         }
+
+        void good(int *other) const
+        {
+        }
     };
 
     int getNum()
@@ -161,9 +166,137 @@ namespace const_test
         cout << *ptr1 << endl;
     }
 
-    void test() {
+    void test5()
+    {
         ConstTest ct;
         cout << ct.getValue() << endl;
     }
 
+    void const_test1(
+        const int &num1, // 常量引用
+        int const &num2, // 常量引用
+
+        int const *num4,       // 常量指针
+        int *const num5,       // 指针常量
+        const int *const num6, // 指向常量的指针常量
+
+        int const *&num7,       // 常量指针的引用
+        const int *const &num10 // 指向常量的指针常量的引用
+    )
+    {
+        // num1 = num1 + 10;
+        // num2 = num2 + 10;
+        // num3 = num3 + 10;
+
+        // *num4 = *num4 + 10;
+        // num4 = new int(*num4 + 10);
+
+        // *num5 = *num5 + 10;
+        // num5 = new int(*num5 + 10);
+
+        // *num6 = *num6 + 10;
+        // num6 = new int(*num6 + 10);
+
+        // *num7 = *num7 + 10;
+        // num7 = new int(*num7 + 10);
+
+        // *num8 = *num8 + 10;
+        // num8 = new int(*num8 + 10);
+
+        // *num9 = *num9 + 10;
+        // num9 = new int(*num9 + 10);
+
+        // *num9 = *num9 + 10;
+        // num10 = new int(*num10 + 10);
+    }
+
+    void test6()
+    {
+        int num1 = 1;
+        int num2 = 2;
+
+        int num4 = 4;
+        int num5 = 5;
+        int num6 = 6;
+
+        int num7 = 7;
+        int num10 = 10;
+
+        int *num4_ptr = &num4;
+        int *num5_ptr = &num5;
+        int *const num6_ptr = &num6;
+
+        int const *num7_ptr = &num7;
+        int *num10_ptr = &num10;
+
+        const_test1(num1, num2, num4_ptr, num5_ptr, num6_ptr, num7_ptr, num10_ptr);
+    }
+
+    const int getIntNum1()
+    {
+        return 1;
+    }
+
+    const int &getIntNum2()
+    {
+        return 1;
+    }
+
+    const int *getIntNum3()
+    {
+        return new int(1);
+    }
+
+    int *const getIntNum4()
+    {
+        return new int(1);
+    }
+
+    const int *const getIntNum5()
+    {
+        return new int(1);
+    }
+
+    void test7()
+    {
+        int num1 = getIntNum1();
+
+        int num2 = getIntNum2();
+
+        const int *num33 = getIntNum3();
+
+        int *num4 = getIntNum4();
+        const int *num44 = getIntNum4();
+
+        const int *num5 = getIntNum5();
+        const int *const num55 = getIntNum5();
+    }
+
+    void test()
+    {
+        vector<int> vec = {1, 2, 3};
+
+        for (vector<int>::iterator it = vec.begin(); it != vec.end(); ++it)
+        {
+            *it = *it + 10;
+            cout << *it << endl;
+        }
+
+        for (vector<int>::const_iterator it = vec.begin(); it != vec.end(); ++it)
+        {
+            cout << *it << endl;
+        }
+
+        for (int &num : vec)
+        {
+            num = num + 10;
+            cout << num << " " << endl;
+        }
+
+        for (const int &num : vec)
+        {
+            cout << num << " " << endl;
+        }
+
+    }
 }

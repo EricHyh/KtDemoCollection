@@ -8,20 +8,20 @@
 
 package com.example.ndk_demo_lib;
 
-public class TestCallback {
+public class TestCallbackWrapper {
   private transient long swigCPtr;
   protected transient boolean swigCMemOwn;
 
-  protected TestCallback(long cPtr, boolean cMemoryOwn) {
+  protected TestCallbackWrapper(long cPtr, boolean cMemoryOwn) {
     swigCMemOwn = cMemoryOwn;
     swigCPtr = cPtr;
   }
 
-  protected static long getCPtr(TestCallback obj) {
+  protected static long getCPtr(TestCallbackWrapper obj) {
     return (obj == null) ? 0 : obj.swigCPtr;
   }
 
-  protected static long swigRelease(TestCallback obj) {
+  protected static long swigRelease(TestCallbackWrapper obj) {
     long ptr = 0;
     if (obj != null) {
       if (!obj.swigCMemOwn)
@@ -42,14 +42,34 @@ public class TestCallback {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        SWIGDemoJNI.delete_TestCallback(swigCPtr);
+        SwigDemoJNI.delete_TestCallbackWrapper(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
-  public void onTest(double msg) {
-    SWIGDemoJNI.TestCallback_onTest(swigCPtr, this, msg);
+  protected void swigDirectorDisconnect() {
+    swigCMemOwn = false;
+    delete();
+  }
+
+  public void swigReleaseOwnership() {
+    swigCMemOwn = false;
+    SwigDemoJNI.TestCallbackWrapper_change_ownership(this, swigCPtr, false);
+  }
+
+  public void swigTakeOwnership() {
+    swigCMemOwn = true;
+    SwigDemoJNI.TestCallbackWrapper_change_ownership(this, swigCPtr, true);
+  }
+
+  public void call(double value) {
+    SwigDemoJNI.TestCallbackWrapper_call(swigCPtr, this, value);
+  }
+
+  public TestCallbackWrapper() {
+    this(SwigDemoJNI.new_TestCallbackWrapper(), true);
+    SwigDemoJNI.TestCallbackWrapper_director_connect(this, swigCPtr, true, true);
   }
 
 }

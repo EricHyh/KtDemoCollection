@@ -35,6 +35,7 @@
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
+                "-std=c++14", 
                 "-fexceptions",
                 "",
                 "${fileDirname}\\*.cpp",

@@ -24,6 +24,9 @@ add_library( # Sets the name of the library.
         src/main/cpp/TestSwig.h
         src/main/cpp/TestSwig.cpp
         src/main/cpp/testswig_wrap.cxx
+        src/main/cpp/TestJavaCpp.h
+        src/main/cpp/TestJavaCpp.cpp
+        src/main/cpp/LegacyLibrary.h
         ${SRC_LIST}
 )
 

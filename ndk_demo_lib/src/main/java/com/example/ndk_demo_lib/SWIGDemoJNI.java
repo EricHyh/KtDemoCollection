@@ -8,12 +8,25 @@
 
 package com.example.ndk_demo_lib;
 
-public class SWIGDemoJNI {
-  public final static native void TestCallback_onTest(long jarg1, TestCallback jarg1_, double jarg2);
-  public final static native void delete_TestCallback(long jarg1);
+public class SwigDemoJNI {
   public final static native long new_TestSwig__SWIG_0();
   public final static native long new_TestSwig__SWIG_1(double jarg1);
   public final static native double TestSwig_Area(long jarg1, TestSwig jarg1_);
-  public final static native void TestSwig_testCallback(long jarg1, TestSwig jarg1_, long jarg2, TestCallback jarg2_);
+  public final static native void TestSwig_testCallback(long jarg1, TestSwig jarg1_, long jarg2, TestCallbackWrapper jarg2_);
   public final static native void delete_TestSwig(long jarg1);
+  public final static native void delete_TestCallbackWrapper(long jarg1);
+  public final static native void TestCallbackWrapper_call(long jarg1, TestCallbackWrapper jarg1_, double jarg2);
+  public final static native long new_TestCallbackWrapper();
+  public final static native void TestCallbackWrapper_director_connect(TestCallbackWrapper obj, long cptr, boolean mem_own, boolean weak_global);
+  public final static native void TestCallbackWrapper_change_ownership(TestCallbackWrapper obj, long cptr, boolean take_or_release);
+  public final static native void testCallbackAdapter(long jarg1, TestSwig jarg1_, long jarg2, TestCallbackWrapper jarg2_);
+
+  public static void SwigDirector_TestCallbackWrapper_call(TestCallbackWrapper jself, double value) {
+    jself.call(value);
+  }
+
+  private final static native void swig_module_init();
+  static {
+    swig_module_init();
+  }
 }

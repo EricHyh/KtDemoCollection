@@ -104,9 +104,43 @@ namespace reference_test
         cout << rt2.value << endl;
     }
 
+    struct TestPtrRsult
+    {
+        int *result1;
+        int &result2;
+        int *&result3;
+    };
+
+    TestPtrRsult testPtr(int *other1, int &other2, int *&other3)
+    {
+        int *num1_ptr = new int(10);
+        other2 = 20;
+        int *num3_ptr = new int(30);
+
+        other1 = num1_ptr;
+        other3 = num3_ptr;
+
+        return {num1_ptr, other2, other3};
+    }
+
     void test()
     {
-        
+        int num1 = 1;
+        int num2 = 2;
+        int num3 = 3;
+
+        int *num1_ptr = &num1;
+        int &num2_ref = num2;
+        int *num3_ptr = &num3;
+
+        TestPtrRsult test_ptr = testPtr(num1_ptr, num2_ref, num3_ptr);
+
+        cout << "*num1_ptr=" << *num1_ptr << endl;
+        cout << "num2_ref=" << num2_ref << endl;
+        cout << "*num3_ptr=" << *num3_ptr << endl;
+
+        delete test_ptr.result1;
+        delete test_ptr.result3;
     }
 
 }

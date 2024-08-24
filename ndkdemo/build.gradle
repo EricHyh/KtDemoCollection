@@ -75,4 +75,6 @@ dependencies {
     // For Kotlin use paging-rxjava2-ktx
 
     implementation project(path: ':ndk_demo_lib')
+
+    implementation("org.bytedeco:javacpp:1.5.10")
 }

@@ -8,5 +8,9 @@
 
 package com.example.ndk_demo_lib;
 
-public class SWIGDemo {
+public class SwigDemo {
+  public static void testCallbackAdapter(TestSwig self, TestCallbackWrapper wrapper) {
+    SwigDemoJNI.testCallbackAdapter(TestSwig.getCPtr(self), self, TestCallbackWrapper.getCPtr(wrapper), wrapper);
+  }
+
 }

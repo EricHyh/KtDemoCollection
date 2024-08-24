@@ -42,26 +42,26 @@ public class TestSwig {
     if (swigCPtr != 0) {
       if (swigCMemOwn) {
         swigCMemOwn = false;
-        SWIGDemoJNI.delete_TestSwig(swigCPtr);
+        SwigDemoJNI.delete_TestSwig(swigCPtr);
       }
       swigCPtr = 0;
     }
   }
 
   public TestSwig() {
-    this(SWIGDemoJNI.new_TestSwig__SWIG_0(), true);
+    this(SwigDemoJNI.new_TestSwig__SWIG_0(), true);
   }
 
   public TestSwig(double R) {
-    this(SWIGDemoJNI.new_TestSwig__SWIG_1(R), true);
+    this(SwigDemoJNI.new_TestSwig__SWIG_1(R), true);
   }
 
   public double Area() {
-    return SWIGDemoJNI.TestSwig_Area(swigCPtr, this);
+    return SwigDemoJNI.TestSwig_Area(swigCPtr, this);
   }
 
-  public void testCallback(TestCallback callback) {
-    SWIGDemoJNI.TestSwig_testCallback(swigCPtr, this, TestCallback.getCPtr(callback), callback);
+  public void testCallback(TestCallbackWrapper callback) {
+    SwigDemoJNI.TestSwig_testCallback(swigCPtr, this, TestCallbackWrapper.getCPtr(callback), callback);
   }
 
 }
