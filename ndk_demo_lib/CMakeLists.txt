@@ -21,6 +21,9 @@ add_library( # Sets the name of the library.
 
         # Provides a relative path to your source file(s).
         src/main/cpp/native-lib.cpp
+        src/main/cpp/TestSwig.h
+        src/main/cpp/TestSwig.cpp
+        src/main/cpp/testswig_wrap.cxx
         ${SRC_LIST}
 )
 

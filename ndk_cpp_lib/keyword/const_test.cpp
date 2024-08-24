@@ -30,6 +30,8 @@ namespace const_test
     public:
         IntValueWrapper *value;
 
+        int value2;
+
         shared_ptr<IntValueWrapper> sp_value;
 
         ConstTest() : value(new IntValueWrapper(6)), sp_value(make_shared<IntValueWrapper>(6))
@@ -159,8 +161,7 @@ namespace const_test
         cout << *ptr1 << endl;
     }
 
-    void test()
-    {
+    void test() {
         ConstTest ct;
         cout << ct.getValue() << endl;
     }
