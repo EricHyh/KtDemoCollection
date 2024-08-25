@@ -5,6 +5,7 @@
 #pragma once
 
 #include <string>
+
 namespace LegacyLibrary {
     class LegacyClass {
     public:

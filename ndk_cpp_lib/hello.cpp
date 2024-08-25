@@ -8,7 +8,7 @@
 #include "reference/reference_test.cpp"
 #include "keyword/static_test.cpp"
 #include "keyword/const_test.cpp"
-#include "keyword/const_template_test.cpp"
+//#include "keyword/const_template_test.cpp"
 
 
 
@@ -24,7 +24,7 @@ int main()
     // string test = Test::getString();
     // //printf(test.c_str());
     // reference_test::test();
-    const_template_test::test();
+    //const_template_test::test();
 
     return 0;
 }

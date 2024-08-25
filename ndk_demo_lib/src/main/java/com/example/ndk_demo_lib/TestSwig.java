@@ -60,8 +60,12 @@ public class TestSwig {
     return SwigDemoJNI.TestSwig_Area(swigCPtr, this);
   }
 
-  public void testCallback(TestCallbackWrapper callback) {
-    SwigDemoJNI.TestSwig_testCallback(swigCPtr, this, TestCallbackWrapper.getCPtr(callback), callback);
+  public void test1(TestSwigData data) {
+    SwigDemoJNI.TestSwig_test1(swigCPtr, this, TestSwigData.getCPtr(data), data);
+  }
+
+  public void test2(TestCallbackWrapper callback) {
+    SwigDemoJNI.TestSwig_test2(swigCPtr, this, TestCallbackWrapper.getCPtr(callback), callback);
   }
 
 }

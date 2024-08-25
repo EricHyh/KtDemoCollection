@@ -63,8 +63,8 @@ public class TestCallbackWrapper {
     SwigDemoJNI.TestCallbackWrapper_change_ownership(this, swigCPtr, true);
   }
 
-  public void call(double value) {
-    SwigDemoJNI.TestCallbackWrapper_call(swigCPtr, this, value);
+  public void call(TestSwigData value) {
+    SwigDemoJNI.TestCallbackWrapper_call(swigCPtr, this, TestSwigData.getCPtr(value), value);
   }
 
   public TestCallbackWrapper() {

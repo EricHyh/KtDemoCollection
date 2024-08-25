@@ -16,14 +16,19 @@ double TestSwig::Area() const {
     return this->r * this->r;
 }
 
-void TestSwig::testCallback(const TestCallback& callback) const {
-    callback(this->Area());
+void TestSwig::test1(const TestSwigData &data) const {
+
 }
+
+void TestSwig::test2(const TestCallback& callback) const {
+    callback(TestSwigData());
+}
+
 
 // 实现适配器函数
 void testCallbackAdapter(TestSwig* self, TestCallbackWrapper* wrapper) {
     if (self && wrapper) {
-        self->testCallback([wrapper](const double& value) {
+        self->test2([wrapper](const TestSwigData& value) {
             wrapper->call(value);
         });
     }

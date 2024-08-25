@@ -15,7 +15,7 @@ public:
     void swig_connect_director(JNIEnv *jenv, jobject jself, jclass jcls, bool swig_mem_own, bool weak_global);
     SwigDirector_TestCallbackWrapper(JNIEnv *jenv);
     virtual ~SwigDirector_TestCallbackWrapper();
-    virtual void call(double const &value);
+    virtual void call(TestSwigData const &value);
 public:
     bool swig_overrides(int n) {
       return (n < 1 ? swig_override[n] : false);

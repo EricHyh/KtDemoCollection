@@ -6,6 +6,7 @@
 
 #include <string>
 #include <functional>
+#include "TestSwigData.h"
 
 //class TestCallback {
 //public:
@@ -15,7 +16,7 @@
 //    virtual ~TestCallback() {}
 //};
 
-using TestCallback = std::function<void(const double &)>;
+using TestCallback = std::function<void(const TestSwigData &)>;
 
 
 
@@ -28,7 +29,9 @@ public:
     TestSwig(double R); // 构造函数
     double Area() const;    // 求面积函数
 
-    void testCallback(const TestCallback &callback) const;
+    void test1(const TestSwigData &data) const;
+
+    void test2(const TestCallback &callback) const;
 
 };
 
@@ -36,6 +39,6 @@ public:
 class TestCallbackWrapper {
 public:
     virtual ~TestCallbackWrapper() {}
-    virtual void call(const double& value) = 0;
+    virtual void call(const TestSwigData& value) = 0;
 };
 void testCallbackAdapter(TestSwig* self, TestCallbackWrapper* wrapper);

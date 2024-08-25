@@ -7,8 +7,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.example.ndk_demo_lib.LegacyLibrary.LegacyClass
+import com.example.ndk_demo_lib.TestCallbackWrapper
 import com.example.ndk_demo_lib.TestJNI
 import com.example.ndk_demo_lib.TestSwig
+import com.example.ndk_demo_lib.TestSwigData
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,6 +21,7 @@ class MainActivity : ComponentActivity() {
         val testSwig = TestSwig(1.2)
         textView.text = "" + testJNI.stringFromJNI() + ":" + testSwig.Area()
 
+
 //        testSwig.testCallback(object : TestCallbackWrapper() {
 //            override fun call(value: Double) {
 //                Toast.makeText(applicationContext, "$value", Toast.LENGTH_LONG).show()
@@ -26,9 +29,9 @@ class MainActivity : ComponentActivity() {
 //        })
 
 
-        val l = LegacyClass()
-        l.set_property("Hello World!")
-        Toast.makeText(applicationContext, "good:${l._property}", Toast.LENGTH_LONG).show()
+//        val l = LegacyClass()
+//        l.set_property("Hello World!")
+//        Toast.makeText(applicationContext, "good:${l._property}", Toast.LENGTH_LONG).show()
 
 //        TestJavaCpp.TestJavaCppClass().test(object :TestJavaCpp.TestJavaCppCallback(){
 //            override fun call(value: Int): Boolean {
@@ -37,10 +40,13 @@ class MainActivity : ComponentActivity() {
 //            }
 //        })
 
-        TestGc()
 
         Handler().postDelayed({
-            System.gc()
+            testSwig.test2(object : TestCallbackWrapper() {
+                override fun call(value: TestSwigData?) {
+                    Log.d("TAG", "call: ")
+                }
+            })
         }, 1000L)
     }
 
