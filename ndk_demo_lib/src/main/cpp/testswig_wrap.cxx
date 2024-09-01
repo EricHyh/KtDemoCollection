@@ -781,7 +781,7 @@ namespace Swig {
 namespace Swig {
   namespace {
     jclass jclass_SwigDemoJNI = NULL;
-    jmethodID director_method_ids[1];
+    jmethodID director_method_ids[2];
   }
 }
 
@@ -836,6 +836,12 @@ template <typename T> T SwigValueInit() {
 #include <functional>
 #include "TestSwigData.h"
 #include "TestSwig.h"
+#include <unordered_map>
+#include <jni.h>
+#include <memory>
+// 全局变量来存储 Java 对象的全局引用
+std::unordered_map<Callback1*, jobject> g_callbackRefs;
+std::unordered_map<Callback2*, jobject> g_callback2Refs;
 
 
 #include <string>
@@ -1057,6 +1063,16 @@ SWIGINTERN void TestSwig_test2(TestSwig *self,TestCallbackWrapper *callback){
             }
         }
 
+struct SWIG_null_deleter {
+  void operator() (void const *) const {
+  }
+};
+#define SWIG_NO_NULL_DELETER_0 , SWIG_null_deleter()
+#define SWIG_NO_NULL_DELETER_1
+#define SWIG_NO_NULL_DELETER_SWIG_POINTER_NEW
+#define SWIG_NO_NULL_DELETER_SWIG_POINTER_OWN
+
+
 
 /* ---------------------------------------------------
  * C++ director class methods
@@ -1098,10 +1114,64 @@ void SwigDirector_TestCallbackWrapper::call(TestSwigData const &value) {
 }
 
 void SwigDirector_TestCallbackWrapper::swig_connect_director(JNIEnv *jenv, jobject jself, jclass jcls, bool swig_mem_own, bool weak_global) {
-  static jclass baseclass = swig_new_global_ref(jenv, "com/example/ndk_demo_lib/TestCallbackWrapper");
+  static jclass baseclass = swig_new_global_ref(jenv, "TestCallbackWrapper");
   if (!baseclass) return;
   static SwigDirectorMethod methods[] = {
-    SwigDirectorMethod(jenv, baseclass, "call", "(Lcom/example/ndk_demo_lib/TestSwigData;)V")
+    SwigDirectorMethod(jenv, baseclass, "call", "(LTestSwigData;)V")
+  };
+  
+  if (swig_set_self(jenv, jself, swig_mem_own, weak_global)) {
+    bool derived = (jenv->IsSameObject(baseclass, jcls) ? false : true);
+    for (int i = 0; i < 1; ++i) {
+      swig_override[i] = false;
+      if (derived) {
+        jmethodID methid = jenv->GetMethodID(jcls, methods[i].name, methods[i].desc);
+        swig_override[i] = methods[i].methid && (methid != methods[i].methid);
+        jenv->ExceptionClear();
+      }
+    }
+  }
+}
+
+
+SwigDirector_Callback2::SwigDirector_Callback2(JNIEnv *jenv) : Callback2(), Swig::Director(jenv) {
+}
+
+void SwigDirector_Callback2::onTest(int a) {
+  JNIEnvWrapper swigjnienv(this) ;
+  JNIEnv * jenv = swigjnienv.getJNIEnv() ;
+  jobject swigjobj = (jobject) NULL ;
+  jint ja  ;
+  
+  if (!swig_override[0]) {
+    SWIG_JavaThrowException(JNIEnvWrapper(this).getJNIEnv(), SWIG_JavaDirectorPureVirtual, "Attempted to invoke pure virtual method Callback2::onTest.");
+    return;
+  }
+  swigjobj = swig_get_self(jenv);
+  if (swigjobj && jenv->IsSameObject(swigjobj, NULL) == JNI_FALSE) {
+    ja = (jint) a;
+    jenv->CallStaticVoidMethod(Swig::jclass_SwigDemoJNI, Swig::director_method_ids[1], swigjobj, ja);
+    jthrowable swigerror = jenv->ExceptionOccurred();
+    if (swigerror) {
+      Swig::DirectorException::raise(jenv, swigerror);
+    }
+    
+  } else {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "null upcall object in Callback2::onTest ");
+  }
+  if (swigjobj) jenv->DeleteLocalRef(swigjobj);
+}
+
+SwigDirector_Callback2::~SwigDirector_Callback2() {
+  swig_disconnect_director_self("swigDirectorDisconnect");
+}
+
+
+void SwigDirector_Callback2::swig_connect_director(JNIEnv *jenv, jobject jself, jclass jcls, bool swig_mem_own, bool weak_global) {
+  static jclass baseclass = swig_new_global_ref(jenv, "Callback2");
+  if (!baseclass) return;
+  static SwigDirectorMethod methods[] = {
+    SwigDirectorMethod(jenv, baseclass, "onTest", "(I)V")
   };
   
   if (swig_set_self(jenv, jself, swig_mem_own, weak_global)) {
@@ -1123,7 +1193,7 @@ void SwigDirector_TestCallbackWrapper::swig_connect_director(JNIEnv *jenv, jobje
 extern "C" {
 #endif
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1StringVector_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1StringVector_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   std::vector< std::string > *result = 0 ;
   
@@ -1135,7 +1205,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1String
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1StringVector_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1StringVector_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   std::vector< std::string > *arg1 = 0 ;
   std::vector< std::string > *result = 0 ;
@@ -1154,7 +1224,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1String
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1isEmpty(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jboolean JNICALL Java_SwigDemoJNI_StringVector_1isEmpty(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jboolean jresult = 0 ;
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   bool result;
@@ -1169,7 +1239,7 @@ SWIGEXPORT jboolean JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVe
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_StringVector_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   
   (void)jenv;
@@ -1180,7 +1250,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1StringVector_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1, jstring jarg2) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1StringVector_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1, jstring jarg2) {
   jlong jresult = 0 ;
   jint arg1 ;
   std::string *arg2 = 0 ;
@@ -1209,7 +1279,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1String
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doCapacity(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_StringVector_1doCapacity(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint result;
@@ -1229,7 +1299,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doReserve(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_StringVector_1doReserve(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint arg2 ;
   
@@ -1250,7 +1320,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doSize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_StringVector_1doSize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint result;
@@ -1270,7 +1340,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doAdd_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_StringVector_1doAdd_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   std::vector< std::string >::value_type *arg2 = 0 ;
   
@@ -1291,7 +1361,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doAdd_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jstring jarg3) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_StringVector_1doAdd_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jstring jarg3) {
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint arg2 ;
   std::vector< std::string >::value_type *arg3 = 0 ;
@@ -1319,7 +1389,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doRemove(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_SwigDemoJNI_StringVector_1doRemove(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint arg2 ;
@@ -1341,7 +1411,7 @@ SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVec
 }
 
 
-SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doGet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jstring JNICALL Java_SwigDemoJNI_StringVector_1doGet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jstring jresult = 0 ;
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint arg2 ;
@@ -1363,7 +1433,7 @@ SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVec
 }
 
 
-SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doSet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jstring jarg3) {
+SWIGEXPORT jstring JNICALL Java_SwigDemoJNI_StringVector_1doSet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jstring jarg3) {
   jstring jresult = 0 ;
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint arg2 ;
@@ -1395,7 +1465,7 @@ SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVec
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector_1doRemoveRange(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_StringVector_1doRemoveRange(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   jint arg2 ;
   jint arg3 ;
@@ -1415,7 +1485,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_StringVector
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1StringVector(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1StringVector(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   std::vector< std::string > *arg1 = (std::vector< std::string > *) 0 ;
   
   (void)jenv;
@@ -1425,7 +1495,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1Stri
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1IntVector_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1IntVector_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   std::vector< int > *result = 0 ;
   
@@ -1437,7 +1507,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1IntVec
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1IntVector_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1IntVector_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   std::vector< int > *arg1 = 0 ;
   std::vector< int > *result = 0 ;
@@ -1456,7 +1526,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1IntVec
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1isEmpty(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jboolean JNICALL Java_SwigDemoJNI_IntVector_1isEmpty(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jboolean jresult = 0 ;
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   bool result;
@@ -1471,7 +1541,7 @@ SWIGEXPORT jboolean JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVecto
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_IntVector_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   
   (void)jenv;
@@ -1482,7 +1552,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1c
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1IntVector_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1, jint jarg2) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1IntVector_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1, jint jarg2) {
   jlong jresult = 0 ;
   jint arg1 ;
   int *arg2 = 0 ;
@@ -1505,7 +1575,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1IntVec
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doCapacity(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_IntVector_1doCapacity(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint result;
@@ -1525,7 +1595,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doReserve(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_IntVector_1doReserve(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint arg2 ;
   
@@ -1546,7 +1616,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doSize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_IntVector_1doSize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint result;
@@ -1566,7 +1636,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doAdd_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_IntVector_1doAdd_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   std::vector< int >::value_type *arg2 = 0 ;
   std::vector< int >::value_type temp2 ;
@@ -1581,7 +1651,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doAdd_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_IntVector_1doAdd_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint arg2 ;
   std::vector< int >::value_type *arg3 = 0 ;
@@ -1603,7 +1673,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doRemove(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_IntVector_1doRemove(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jint jresult = 0 ;
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint arg2 ;
@@ -1625,7 +1695,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doGet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_IntVector_1doGet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jint jresult = 0 ;
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint arg2 ;
@@ -1647,7 +1717,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doSet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_IntVector_1doSet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
   jint jresult = 0 ;
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint arg2 ;
@@ -1673,7 +1743,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1doRemoveRange(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_IntVector_1doRemoveRange(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   jint arg2 ;
   jint arg3 ;
@@ -1693,7 +1763,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_IntVector_1d
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1IntVector(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1IntVector(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   std::vector< int > *arg1 = (std::vector< int > *) 0 ;
   
   (void)jenv;
@@ -1703,7 +1773,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1IntV
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwigData2Vector_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwigData2Vector_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   std::vector< TestSwigData2 > *result = 0 ;
   
@@ -1715,7 +1785,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwigData2Vector_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwigData2Vector_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = 0 ;
   std::vector< TestSwigData2 > *result = 0 ;
@@ -1734,7 +1804,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT jboolean JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1isEmpty(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jboolean JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1isEmpty(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jboolean jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   bool result;
@@ -1749,7 +1819,7 @@ SWIGEXPORT jboolean JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1clear(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   
   (void)jenv;
@@ -1760,7 +1830,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwigData2Vector_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwigData2Vector_1_1SWIG_12(JNIEnv *jenv, jclass jcls, jint jarg1, jlong jarg2, jobject jarg2_) {
   jlong jresult = 0 ;
   jint arg1 ;
   TestSwigData2 *arg2 = 0 ;
@@ -1786,7 +1856,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doCapacity(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doCapacity(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint result;
@@ -1806,7 +1876,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doReserve(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doReserve(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint arg2 ;
   
@@ -1827,7 +1897,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doSize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doSize(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint result;
@@ -1847,7 +1917,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doAdd_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doAdd_1_1SWIG_10(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   std::vector< TestSwigData2 >::value_type *arg2 = 0 ;
   
@@ -1865,7 +1935,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doAdd_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doAdd_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jlong jarg3, jobject jarg3_) {
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint arg2 ;
   std::vector< TestSwigData2 >::value_type *arg3 = 0 ;
@@ -1890,7 +1960,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doRemove(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doRemove(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jlong jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint arg2 ;
@@ -1912,7 +1982,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doGet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doGet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   jlong jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint arg2 ;
@@ -1934,7 +2004,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doSet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jlong jarg3, jobject jarg3_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doSet(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jlong jarg3, jobject jarg3_) {
   jlong jresult = 0 ;
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint arg2 ;
@@ -1963,7 +2033,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2Vector_1doRemoveRange(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2Vector_1doRemoveRange(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2, jint jarg3) {
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   jint arg2 ;
   jint arg3 ;
@@ -1983,7 +2053,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1TestSwigData2Vector(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1TestSwigData2Vector(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   std::vector< TestSwigData2 > *arg1 = (std::vector< TestSwigData2 > *) 0 ;
   
   (void)jenv;
@@ -1993,7 +2063,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1Test
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   int arg2 ;
   
@@ -2006,7 +2076,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value1_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_TestSwigData2_1value1_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   int result;
@@ -2021,7 +2091,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   unsigned int arg2 ;
   
@@ -2034,7 +2104,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value2_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData2_1value2_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   unsigned int result;
@@ -2049,7 +2119,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value3_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value3_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   long arg2 ;
   
@@ -2062,7 +2132,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value3_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_TestSwigData2_1value3_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   long result;
@@ -2077,7 +2147,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value4_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value4_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   unsigned long arg2 ;
   
@@ -2090,7 +2160,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value4_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData2_1value4_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   unsigned long result;
@@ -2105,7 +2175,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value5_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jfloat jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value5_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jfloat jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   float arg2 ;
   
@@ -2118,7 +2188,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jfloat JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value5_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jfloat JNICALL Java_SwigDemoJNI_TestSwigData2_1value5_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jfloat jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   float result;
@@ -2133,7 +2203,7 @@ SWIGEXPORT jfloat JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDa
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value6_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jdouble jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value6_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jdouble jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   double arg2 ;
   
@@ -2146,7 +2216,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jdouble JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value6_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jdouble JNICALL Java_SwigDemoJNI_TestSwigData2_1value6_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jdouble jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   double result;
@@ -2161,7 +2231,7 @@ SWIGEXPORT jdouble JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigD
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value7_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData2_1value7_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -2182,7 +2252,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData2_1value7_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_SwigDemoJNI_TestSwigData2_1value7_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   std::string *result = 0 ;
@@ -2197,7 +2267,7 @@ SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigD
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwigData2(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwigData2(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   TestSwigData2 *result = 0 ;
   
@@ -2209,7 +2279,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1TestSwigData2(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1TestSwigData2(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   TestSwigData2 *arg1 = (TestSwigData2 *) 0 ;
   
   (void)jenv;
@@ -2219,7 +2289,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1Test
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   int arg2 ;
   
@@ -2232,7 +2302,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value1_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_TestSwigData_1value1_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   int result;
@@ -2247,7 +2317,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   unsigned int arg2 ;
   
@@ -2260,7 +2330,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value2_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData_1value2_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   unsigned int result;
@@ -2275,7 +2345,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value3_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value3_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   long arg2 ;
   
@@ -2288,7 +2358,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value3_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jint JNICALL Java_SwigDemoJNI_TestSwigData_1value3_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jint jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   long result;
@@ -2303,7 +2373,7 @@ SWIGEXPORT jint JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value4_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value4_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   unsigned long arg2 ;
   
@@ -2316,7 +2386,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value4_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData_1value4_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   unsigned long result;
@@ -2331,7 +2401,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value5_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jfloat jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value5_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jfloat jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   float arg2 ;
   
@@ -2344,7 +2414,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jfloat JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value5_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jfloat JNICALL Java_SwigDemoJNI_TestSwigData_1value5_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jfloat jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   float result;
@@ -2359,7 +2429,7 @@ SWIGEXPORT jfloat JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDa
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value6_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jdouble jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value6_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jdouble jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   double arg2 ;
   
@@ -2372,7 +2442,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jdouble JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value6_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jdouble JNICALL Java_SwigDemoJNI_TestSwigData_1value6_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jdouble jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   double result;
@@ -2387,7 +2457,7 @@ SWIGEXPORT jdouble JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigD
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value7_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1value7_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jstring jarg2) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::string *arg2 = 0 ;
   
@@ -2408,7 +2478,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1value7_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jstring JNICALL Java_SwigDemoJNI_TestSwigData_1value7_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jstring jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::string *result = 0 ;
@@ -2423,7 +2493,7 @@ SWIGEXPORT jstring JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigD
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1values1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1values1_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::vector< int > *arg2 = (std::vector< int > *) 0 ;
   
@@ -2437,7 +2507,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1values1_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData_1values1_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::vector< int > *result = 0 ;
@@ -2452,7 +2522,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1values2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1values2_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::vector< std::string > *arg2 = (std::vector< std::string > *) 0 ;
   
@@ -2466,7 +2536,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1values2_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData_1values2_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::vector< std::string > *result = 0 ;
@@ -2481,7 +2551,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1values3_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwigData_1values3_1set(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::vector< TestSwigData2 > *arg2 = (std::vector< TestSwigData2 > *) 0 ;
   
@@ -2495,7 +2565,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigData_1values3_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_TestSwigData_1values3_1get(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jlong jresult = 0 ;
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   std::vector< TestSwigData2 > *result = 0 ;
@@ -2510,7 +2580,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwigDat
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwigData(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwigData(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   TestSwigData *result = 0 ;
   
@@ -2522,7 +2592,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1TestSwigData(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1TestSwigData(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   TestSwigData *arg1 = (TestSwigData *) 0 ;
   
   (void)jenv;
@@ -2532,7 +2602,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1Test
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwig_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwig_1_1SWIG_10(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   TestSwig *result = 0 ;
   
@@ -2544,7 +2614,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSwig_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jdouble jarg1) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestSwig_1_1SWIG_11(JNIEnv *jenv, jclass jcls, jdouble jarg1) {
   jlong jresult = 0 ;
   double arg1 ;
   TestSwig *result = 0 ;
@@ -2558,7 +2628,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestSw
 }
 
 
-SWIGEXPORT jdouble JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig_1Area(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
+SWIGEXPORT jdouble JNICALL Java_SwigDemoJNI_TestSwig_1Area(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_) {
   jdouble jresult = 0 ;
   TestSwig *arg1 = (TestSwig *) 0 ;
   double result;
@@ -2573,7 +2643,7 @@ SWIGEXPORT jdouble JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig_
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig_1test1(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwig_1test1(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestSwig *arg1 = (TestSwig *) 0 ;
   TestSwigData *arg2 = 0 ;
   
@@ -2591,7 +2661,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig_1te
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig_1test2(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestSwig_1test2(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestSwig *arg1 = (TestSwig *) 0 ;
   TestCallbackWrapper *arg2 = (TestCallbackWrapper *) 0 ;
   
@@ -2605,7 +2675,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestSwig_1te
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1TestSwig(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1TestSwig(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   TestSwig *arg1 = (TestSwig *) 0 ;
   
   (void)jenv;
@@ -2615,7 +2685,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1Test
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1TestCallbackWrapper(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1TestCallbackWrapper(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   TestCallbackWrapper *arg1 = (TestCallbackWrapper *) 0 ;
   
   (void)jenv;
@@ -2625,7 +2695,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_delete_1Test
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestCallbackWrapper_1call(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestCallbackWrapper_1call(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestCallbackWrapper *arg1 = (TestCallbackWrapper *) 0 ;
   TestSwigData *arg2 = 0 ;
   
@@ -2643,7 +2713,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestCallback
 }
 
 
-SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestCallbackWrapper(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1TestCallbackWrapper(JNIEnv *jenv, jclass jcls) {
   jlong jresult = 0 ;
   TestCallbackWrapper *result = 0 ;
   
@@ -2655,7 +2725,7 @@ SWIGEXPORT jlong JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_new_1TestCa
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestCallbackWrapper_1director_1connect(JNIEnv *jenv, jclass jcls, jobject jself, jlong objarg, jboolean jswig_mem_own, jboolean jweak_global) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestCallbackWrapper_1director_1connect(JNIEnv *jenv, jclass jcls, jobject jself, jlong objarg, jboolean jswig_mem_own, jboolean jweak_global) {
   TestCallbackWrapper *obj = *((TestCallbackWrapper **)&objarg);
   (void)jcls;
   SwigDirector_TestCallbackWrapper *director = static_cast<SwigDirector_TestCallbackWrapper *>(obj);
@@ -2663,7 +2733,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestCallback
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestCallbackWrapper_1change_1ownership(JNIEnv *jenv, jclass jcls, jobject jself, jlong objarg, jboolean jtake_or_release) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_TestCallbackWrapper_1change_1ownership(JNIEnv *jenv, jclass jcls, jobject jself, jlong objarg, jboolean jtake_or_release) {
   TestCallbackWrapper *obj = *((TestCallbackWrapper **)&objarg);
   SwigDirector_TestCallbackWrapper *director = dynamic_cast<SwigDirector_TestCallbackWrapper *>(obj);
   (void)jcls;
@@ -2673,7 +2743,7 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_TestCallback
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_testCallbackAdapter(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_testCallbackAdapter(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
   TestSwig *arg1 = (TestSwig *) 0 ;
   TestCallbackWrapper *arg2 = (TestCallbackWrapper *) 0 ;
   
@@ -2687,15 +2757,250 @@ SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_testCallback
 }
 
 
-SWIGEXPORT void JNICALL Java_com_example_ndk_1demo_1lib_SwigDemoJNI_swig_1module_1init(JNIEnv *jenv, jclass jcls) {
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_Callback1_1onTest(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+  Callback1 *arg1 = (Callback1 *) 0 ;
+  int arg2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  arg1 = *(Callback1 **)&jarg1; 
+  arg2 = (int)jarg2; 
+  (arg1)->onTest(arg2);
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1Callback1(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+  Callback1 *arg1 = (Callback1 *) 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = *(Callback1 **)&jarg1; 
+  delete arg1;
+}
+
+
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1Callback1(JNIEnv *jenv, jclass jcls) {
+  jlong jresult = 0 ;
+  Callback1 *result = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  result = (Callback1 *)new Callback1();
+  *(Callback1 **)&jresult = result; 
+  return jresult;
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_Callback2_1onTest(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jint jarg2) {
+  Callback2 *arg1 = (Callback2 *) 0 ;
+  int arg2 ;
+  std::shared_ptr< Callback2 > *smartarg1 = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  
+  smartarg1 = *(std::shared_ptr<  Callback2 > **)&jarg1;
+  arg1 = (Callback2 *)(smartarg1 ? smartarg1->get() : 0); 
+  arg2 = (int)jarg2; 
+  (arg1)->onTest(arg2);
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1Callback2(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+  Callback2 *arg1 = (Callback2 *) 0 ;
+  std::shared_ptr< Callback2 > *smartarg1 = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  
+  smartarg1 = *(std::shared_ptr<  Callback2 > **)&jarg1;
+  arg1 = (Callback2 *)(smartarg1 ? smartarg1->get() : 0); 
+  (void)arg1; delete smartarg1;
+}
+
+
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1Callback2(JNIEnv *jenv, jclass jcls) {
+  jlong jresult = 0 ;
+  Callback2 *result = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  result = (Callback2 *)new SwigDirector_Callback2(jenv);
+  
+  *(std::shared_ptr<  Callback2 > **)&jresult = result ? new std::shared_ptr<  Callback2 >(result SWIG_NO_NULL_DELETER_1) : 0;
+  
+  return jresult;
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_Callback2_1director_1connect(JNIEnv *jenv, jclass jcls, jobject jself, jlong objarg, jboolean jswig_mem_own, jboolean jweak_global) {
+  std::shared_ptr< Callback2 > *obj = *((std::shared_ptr< Callback2 > **)&objarg);
+  (void)jcls;
+  // Keep a local instance of the smart pointer around while we are using the raw pointer
+  // Avoids using smart pointer specific API.
+  SwigDirector_Callback2 *director = static_cast<SwigDirector_Callback2 *>(obj->operator->());
+  director->swig_connect_director(jenv, jself, jenv->GetObjectClass(jself), (jswig_mem_own == JNI_TRUE), (jweak_global == JNI_TRUE));
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_Callback2_1change_1ownership(JNIEnv *jenv, jclass jcls, jobject jself, jlong objarg, jboolean jtake_or_release) {
+  std::shared_ptr< Callback2 > *obj = *((std::shared_ptr< Callback2 > **)&objarg);
+  // Keep a local instance of the smart pointer around while we are using the raw pointer
+  // Avoids using smart pointer specific API.
+  SwigDirector_Callback2 *director = dynamic_cast<SwigDirector_Callback2 *>(obj->operator->());
+  (void)jcls;
+  if (director) {
+    director->swig_java_change_ownership(jenv, jself, jtake_or_release ? true : false);
+  }
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_CallbackTest_1addCallback(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  CallbackTest *arg1 = (CallbackTest *) 0 ;
+  Callback1 arg2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(CallbackTest **)&jarg1; 
+  {
+    Callback1 *argp = *(Callback1 **)&jarg2;
+    if (!argp) {
+      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Attempt to dereference null Callback1");
+      return ;
+    }
+    arg2 = *argp;
+    
+    auto it = g_callbackRefs.find(argp);
+    if (it != g_callbackRefs.end()) {
+      jenv->DeleteGlobalRef(it->second);
+      g_callbackRefs.erase(it);
+    }
+  }
+  (arg1)->addCallback(arg2);
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_CallbackTest_1removeCallback(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  CallbackTest *arg1 = (CallbackTest *) 0 ;
+  Callback1 arg2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(CallbackTest **)&jarg1; 
+  {
+    Callback1 *argp = *(Callback1 **)&jarg2;
+    if (!argp) {
+      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Attempt to dereference null Callback1");
+      return ;
+    }
+    arg2 = *argp;
+    
+    auto it = g_callbackRefs.find(argp);
+    if (it != g_callbackRefs.end()) {
+      jenv->DeleteGlobalRef(it->second);
+      g_callbackRefs.erase(it);
+    }
+  }
+  (arg1)->removeCallback(arg2);
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_CallbackTest_1setCallback(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  CallbackTest *arg1 = (CallbackTest *) 0 ;
+  Callback2 arg2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(CallbackTest **)&jarg1; 
+  {
+    Callback2 *argp = *(Callback2 **)&jarg2;
+    if (!argp) {
+      SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "Attempt to dereference null Callback2");
+      return ;
+    }
+    arg2 = *argp;
+    
+    auto it = g_callback2Refs.find(argp);
+    if (it != g_callback2Refs.end()) {
+      jenv->DeleteGlobalRef(it->second);
+      g_callbackRefs.erase(it);
+    }
+  }
+  (arg1)->setCallback(arg2);
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_CallbackTest_1setCallback2(JNIEnv *jenv, jclass jcls, jlong jarg1, jobject jarg1_, jlong jarg2, jobject jarg2_) {
+  CallbackTest *arg1 = (CallbackTest *) 0 ;
+  std::shared_ptr< Callback2 > arg2 ;
+  
+  (void)jenv;
+  (void)jcls;
+  (void)jarg1_;
+  (void)jarg2_;
+  arg1 = *(CallbackTest **)&jarg1; 
+  {
+    std::shared_ptr<Callback2> *argp = *(std::shared_ptr<Callback2> **)&jarg2;
+    if (argp) {
+      // 创建全局引用
+      jobject globalRef = jenv->NewGlobalRef(jarg2_);
+      
+      // 创建新的 shared_ptr，使用自定义删除器
+      arg2 = std::shared_ptr<Callback2>(argp->get(), [globalRef](Callback2* ptr) {
+        JNIEnv* env;
+          if (g_jvm->GetEnv((void**)&env, JNI_VERSION_1_6) == JNI_OK) {
+          env->DeleteGlobalRef(globalRef);
+          }
+          delete ptr;
+        });
+    }
+  }
+  (arg1)->setCallback2(arg2);
+}
+
+
+SWIGEXPORT jlong JNICALL Java_SwigDemoJNI_new_1CallbackTest(JNIEnv *jenv, jclass jcls) {
+  jlong jresult = 0 ;
+  CallbackTest *result = 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  result = (CallbackTest *)new CallbackTest();
+  *(CallbackTest **)&jresult = result; 
+  return jresult;
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_delete_1CallbackTest(JNIEnv *jenv, jclass jcls, jlong jarg1) {
+  CallbackTest *arg1 = (CallbackTest *) 0 ;
+  
+  (void)jenv;
+  (void)jcls;
+  arg1 = *(CallbackTest **)&jarg1; 
+  delete arg1;
+}
+
+
+SWIGEXPORT void JNICALL Java_SwigDemoJNI_swig_1module_1init(JNIEnv *jenv, jclass jcls) {
   int i;
   
   static struct {
     const char *method;
     const char *signature;
-  } methods[1] = {
+  } methods[2] = {
     {
-      "SwigDirector_TestCallbackWrapper_call", "(Lcom/example/ndk_demo_lib/TestCallbackWrapper;J)V" 
+      "SwigDirector_TestCallbackWrapper_call", "(LTestCallbackWrapper;J)V" 
+    },
+    {
+      "SwigDirector_Callback2_onTest", "(LCallback2;I)V" 
     }
   };
   Swig::jclass_SwigDemoJNI = (jclass) jenv->NewGlobalRef(jcls);

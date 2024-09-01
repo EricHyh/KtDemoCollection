@@ -24,5 +24,20 @@ protected:
     Swig::BoolArray<1> swig_override;
 };
 
+class SwigDirector_Callback2 : public Callback2, public Swig::Director {
+
+public:
+    void swig_connect_director(JNIEnv *jenv, jobject jself, jclass jcls, bool swig_mem_own, bool weak_global);
+    SwigDirector_Callback2(JNIEnv *jenv);
+    virtual void onTest(int a);
+    virtual ~SwigDirector_Callback2();
+public:
+    bool swig_overrides(int n) {
+      return (n < 1 ? swig_override[n] : false);
+    }
+protected:
+    Swig::BoolArray<1> swig_override;
+};
+
 
 #endif
